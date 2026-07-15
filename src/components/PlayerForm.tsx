@@ -1,0 +1,248 @@
+import { useState } from "react";
+import type {
+  BoardType,
+  EquipmentProfile,
+  InputMethod,
+  PlayerProfile,
+} from "../types/models";
+import { SCHEMA_VERSION } from "../types/models";
+import { newId, nowIso } from "../utils/id";
+import { t } from "../i18n/ja";
+
+const DART_COLOR_PRESETS = [
+  "#e05252",
+  "#4f7fe0",
+  "#f0f0f0",
+  "#f0b246",
+  "#3d9960",
+  "#9b59b6",
+  "#222222",
+];
+
+interface PlayerFormProps {
+  initial?: PlayerProfile;
+  equipmentProfiles: EquipmentProfile[];
+  onSave: (player: PlayerProfile) => void;
+  saveLabel?: string;
+}
+
+export function PlayerForm({
+  initial,
+  equipmentProfiles,
+  onSave,
+  saveLabel,
+}: PlayerFormProps) {
+  const s = t();
+  const [displayName, setDisplayName] = useState(initial?.displayName ?? "");
+  const [dominantHand, setDominantHand] = useState<PlayerProfile["dominantHand"]>(
+    initial?.dominantHand ?? "right"
+  );
+  const [boardType, setBoardType] = useState<BoardType>(
+    initial?.defaultBoardType ?? "steel"
+  );
+  const [equipmentId, setEquipmentId] = useState(
+    initial?.defaultEquipmentProfileId ?? ""
+  );
+  const [dartColors, setDartColors] = useState<[string, string, string]>(
+    initial?.dartColors ?? ["#e05252", "#4f7fe0", "#f0f0f0"]
+  );
+  const [inputMethod, setInputMethod] = useState<InputMethod>(
+    initial?.defaultInputMethod ?? "coordinate"
+  );
+  const [vibration, setVibration] = useState(initial?.vibrationEnabled ?? true);
+  const [sound, setSound] = useState(initial?.soundEnabled ?? false);
+  const [autoAdvance, setAutoAdvance] = useState(
+    initial?.autoAdvanceEnabled ?? true
+  );
+  const [error, setError] = useState("");
+
+  const save = () => {
+    if (!displayName.trim()) {
+      setError(s.player.nameRequired);
+      return;
+    }
+    const now = nowIso();
+    onSave({
+      schemaVersion: SCHEMA_VERSION,
+      id: initial?.id ?? newId(),
+      displayName: displayName.trim(),
+      dominantHand,
+      defaultBoardType: boardType,
+      ...(equipmentId ? { defaultEquipmentProfileId: equipmentId } : {}),
+      dartColors,
+      defaultInputMethod: inputMethod,
+      vibrationEnabled: vibration,
+      soundEnabled: sound,
+      autoAdvanceEnabled: autoAdvance,
+      createdAt: initial?.createdAt ?? now,
+      updatedAt: now,
+    });
+  };
+
+  const setColor = (index: 0 | 1 | 2, color: string) => {
+    setDartColors((prev) => {
+      const next: [string, string, string] = [...prev];
+      next[index] = color;
+      return next;
+    });
+  };
+
+  return (
+    <div>
+      <label className="field">
+        <span>
+          {s.player.displayName} ({s.common.required})
+        </span>
+        <input
+          type="text"
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+          maxLength={30}
+        />
+      </label>
+      {error && <p className="error-text">{error}</p>}
+
+      <fieldset>
+        <legend>{s.player.dominantHand}</legend>
+        <div className="choice-row">
+          {(
+            [
+              ["right", s.player.right],
+              ["left", s.player.left],
+              ["ambidextrous", s.player.ambidextrous],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              className={`choice${dominantHand === key ? " selected" : ""}`}
+              onClick={() => setDominantHand(key)}
+              aria-pressed={dominantHand === key}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>{s.player.defaultBoardType}</legend>
+        <div className="choice-row">
+          {(
+            [
+              ["steel", s.player.steel],
+              ["soft", s.player.soft],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              className={`choice${boardType === key ? " selected" : ""}`}
+              onClick={() => setBoardType(key)}
+              aria-pressed={boardType === key}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      {equipmentProfiles.length > 0 && (
+        <label className="field">
+          <span>{s.player.defaultEquipment}</span>
+          <select
+            value={equipmentId}
+            onChange={(e) => setEquipmentId(e.target.value)}
+          >
+            <option value="">{s.common.none}</option>
+            {equipmentProfiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <fieldset>
+        <legend>
+          {s.player.dartColors} — {s.player.dartColorsHint}
+        </legend>
+        {([0, 1, 2] as const).map((i) => (
+          <div key={i} className="list-row">
+            <span className="dart-chip">
+              <span
+                className="color-dot"
+                style={{ background: dartColors[i] }}
+              />
+              {i === 0 ? s.player.dart1 : i === 1 ? s.player.dart2 : s.player.dart3}
+            </span>
+            <span className="choice-row">
+              {DART_COLOR_PRESETS.map((c) => (
+                <button
+                  key={c}
+                  className="choice"
+                  style={{
+                    background: c,
+                    minWidth: 36,
+                    minHeight: 36,
+                    padding: 0,
+                    borderColor: dartColors[i] === c ? "var(--accent)" : undefined,
+                    borderWidth: dartColors[i] === c ? 3 : 1,
+                  }}
+                  onClick={() => setColor(i, c)}
+                  aria-label={`${i + 1}投目の色 ${c}`}
+                  aria-pressed={dartColors[i] === c}
+                />
+              ))}
+            </span>
+          </div>
+        ))}
+      </fieldset>
+
+      <fieldset>
+        <legend>{s.player.defaultInputMethod}</legend>
+        <div className="choice-row">
+          {(
+            [
+              ["coordinate", s.player.inputCoordinate],
+              ["simple", s.player.inputSimple],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              className={`choice${inputMethod === key ? " selected" : ""}`}
+              onClick={() => setInputMethod(key)}
+              aria-pressed={inputMethod === key}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      {(
+        [
+          [s.player.vibration, vibration, setVibration],
+          [s.player.sound, sound, setSound],
+          [s.player.autoAdvance, autoAdvance, setAutoAdvance],
+        ] as const
+      ).map(([label, value, setter]) => (
+        <div className="toggle-row" key={label}>
+          <span>{label}</span>
+          <button
+            className={`choice${value ? " selected" : ""}`}
+            onClick={() => setter(!value)}
+            aria-pressed={value}
+          >
+            {value ? "ON" : "OFF"}
+          </button>
+        </div>
+      ))}
+
+      <div className="action-bar">
+        <button className="btn primary block" onClick={save}>
+          {saveLabel ?? s.common.save}
+        </button>
+      </div>
+    </div>
+  );
+}

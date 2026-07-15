@@ -1,0 +1,178 @@
+import { DARTS_PER_SET } from "../config/constants";
+import {
+  getSession,
+  getThrows,
+  getThrowSets,
+  saveSession,
+  saveStatistics,
+  saveThrow,
+  saveThrows,
+  saveThrowSet,
+} from "../db/db";
+import { deriveThrow } from "../domain/derive";
+import { calculateStatistics } from "../domain/stats";
+import { SCHEMA_VERSION } from "../types/models";
+import type {
+  LandingRecord,
+  PlayerProfile,
+  SessionStatistics,
+  TargetDefinition,
+  ThrowRecord,
+  ThrowSet,
+  TrainingSession,
+  UUID,
+} from "../types/models";
+import { newId, nowIso } from "../utils/id";
+
+/** 中間自己評価を表示するセット番号(そのセット終了直後)。奇数は切り上げ。 */
+export function middleAssessmentSet(setCount: number): number {
+  return Math.ceil(setCount / 2);
+}
+
+export interface PendingDart {
+  dartInSet: 1 | 2 | 3;
+  target: TargetDefinition;
+  landing: LandingRecord;
+  note?: string;
+}
+
+/**
+ * 1セット分(3投)の入力を確定し、派生データを計算して保存する。
+ * 直前セットまでの最後の投擲を基準に previousThrow 系を求める。
+ */
+export async function commitSet(
+  session: TrainingSession,
+  setNumber: number,
+  darts: PendingDart[],
+  player: PlayerProfile | undefined,
+  setStartedAt: string | undefined
+): Promise<{ throwSet: ThrowSet; records: ThrowRecord[] }> {
+  const existing = await getThrows(session.id);
+  const lastExisting = existing[existing.length - 1];
+  const baseGlobal = existing.length;
+  const sessionStart = Date.parse(session.startedAt);
+  const now = nowIso();
+
+  const throwSet: ThrowSet = {
+    schemaVersion: SCHEMA_VERSION,
+    id: newId(),
+    sessionId: session.id,
+    setNumber,
+    startedAt: setStartedAt ?? now,
+    completedAt: now,
+  };
+
+  const records: ThrowRecord[] = [];
+  let prevTarget: TargetDefinition | undefined = lastExisting?.target;
+  let prevHit: boolean | undefined = lastExisting?.derived.exactHit;
+  darts.forEach((dart, i) => {
+    const globalThrowNumber = baseGlobal + i + 1;
+    const derived = deriveThrow(dart.target, dart.landing, {
+      previousTarget: prevTarget,
+      previousWasHit: prevHit,
+      globalThrowNumber,
+      plannedThrowCount: session.plannedThrowCount,
+    });
+    const record: ThrowRecord = {
+      schemaVersion: SCHEMA_VERSION,
+      id: newId(),
+      sessionId: session.id,
+      setId: throwSet.id,
+      globalThrowNumber,
+      dartInSet: dart.dartInSet,
+      dartColor: player?.dartColors[dart.dartInSet - 1],
+      target: dart.target,
+      thrownAt: now,
+      elapsedMs: Math.max(0, Date.now() - sessionStart),
+      landing: dart.landing,
+      derived,
+      ...(dart.note ? { note: dart.note } : {}),
+      createdAt: now,
+      updatedAt: now,
+    };
+    records.push(record);
+    prevTarget = dart.target;
+    prevHit = derived.exactHit;
+  });
+
+  await saveThrowSet(throwSet);
+  await saveThrows(records);
+  return { throwSet, records };
+}
+
+/** セッションの統計を再計算して保存する */
+export async function recalcAndSaveStatistics(
+  sessionId: UUID
+): Promise<SessionStatistics | undefined> {
+  const session = await getSession(sessionId);
+  if (!session) return undefined;
+  const throws = await getThrows(sessionId);
+  const stats = calculateStatistics(
+    sessionId,
+    session.plannedThrowCount,
+    throws
+  );
+  await saveStatistics(stats);
+  return stats;
+}
+
+/**
+ * 投擲1件の着弾を修正する。
+ * 派生データを再計算し、次の投擲の previousThrowWasHit も更新、統計を再計算する。
+ */
+export async function updateThrowLanding(
+  record: ThrowRecord,
+  landing: LandingRecord,
+  note?: string
+): Promise<void> {
+  const session = await getSession(record.sessionId);
+  if (!session) throw new Error("session not found");
+  const all = await getThrows(record.sessionId);
+  const index = all.findIndex((x) => x.id === record.id);
+  const prev = index > 0 ? all[index - 1] : undefined;
+  const derived = deriveThrow(record.target, landing, {
+    previousTarget: prev?.target,
+    previousWasHit: prev?.derived.exactHit,
+    globalThrowNumber: record.globalThrowNumber,
+    plannedThrowCount: session.plannedThrowCount,
+  });
+  const updated: ThrowRecord = {
+    ...record,
+    landing,
+    derived,
+    ...(note !== undefined ? { note: note || undefined } : {}),
+  };
+  await saveThrow(updated);
+  const next = index >= 0 ? all[index + 1] : undefined;
+  if (next && next.derived.previousThrowWasHit !== derived.exactHit) {
+    await saveThrow({
+      ...next,
+      derived: { ...next.derived, previousThrowWasHit: derived.exactHit },
+    });
+  }
+  await recalcAndSaveStatistics(record.sessionId);
+}
+
+/** セッションを終了(完了/中断)し統計を確定する */
+export async function finishSession(
+  session: TrainingSession,
+  status: "completed" | "aborted"
+): Promise<void> {
+  await saveSession({
+    ...session,
+    status,
+    endedAt: nowIso(),
+  });
+  await recalcAndSaveStatistics(session.id);
+}
+
+/** セッションの完了セット数(保存済みセット)を数える */
+export async function completedSetCount(sessionId: UUID): Promise<number> {
+  const sets = await getThrowSets(sessionId);
+  return sets.length;
+}
+
+/** セッション概要用: 総投擲数から完了率などを出す小ヘルパー */
+export function plannedThrowCountOf(setCount: number): number {
+  return setCount * DARTS_PER_SET;
+}
