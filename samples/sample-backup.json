@@ -1,0 +1,538 @@
+{
+  "format": "darts-training-analyzer-backup",
+  "backupVersion": 1,
+  "createdAt": "2026-07-15T15:30:02.063Z",
+  "appVersion": "0.1.0",
+  "counts": {
+    "settings": 1,
+    "players": 1,
+    "equipmentProfiles": 0,
+    "trainingPlans": 0,
+    "sessions": 1,
+    "throwSets": 0,
+    "throws": 6,
+    "sessionStatistics": 1
+  },
+  "data": {
+    "settings": [
+      {
+        "schemaVersion": 1,
+        "id": "app",
+        "onboardingCompleted": true,
+        "activePlayerId": "player-1",
+        "updatedAt": "2026-01-01T00:00:00.000Z"
+      }
+    ],
+    "players": [
+      {
+        "schemaVersion": 1,
+        "id": "player-1",
+        "displayName": "サンプルプレイヤー",
+        "dominantHand": "right",
+        "defaultBoardType": "steel",
+        "dartColors": [
+          "#e05252",
+          "#4f7fe0",
+          "#f0f0f0"
+        ],
+        "defaultInputMethod": "coordinate",
+        "vibrationEnabled": true,
+        "soundEnabled": false,
+        "autoAdvanceEnabled": true,
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z"
+      }
+    ],
+    "equipmentProfiles": [],
+    "trainingPlans": [],
+    "sessions": [
+      {
+        "schemaVersion": 1,
+        "id": "session-1",
+        "playerId": "player-1",
+        "boardType": "steel",
+        "boardProfileId": "steel_standard",
+        "trainingMode": "same_target",
+        "inputMethod": "coordinate",
+        "dominantHand": "right",
+        "setCount": 2,
+        "plannedThrowCount": 6,
+        "plannedTargets": [
+          [
+            {
+              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "label": "T20",
+              "type": "exact_segment",
+              "number": 20,
+              "ring": "triple",
+              "representativePoint": {
+                "x": 0,
+                "y": 0.6058823529411765
+              }
+            },
+            {
+              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "label": "T20",
+              "type": "exact_segment",
+              "number": 20,
+              "ring": "triple",
+              "representativePoint": {
+                "x": 0,
+                "y": 0.6058823529411765
+              }
+            },
+            {
+              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "label": "T20",
+              "type": "exact_segment",
+              "number": 20,
+              "ring": "triple",
+              "representativePoint": {
+                "x": 0,
+                "y": 0.6058823529411765
+              }
+            }
+          ],
+          [
+            {
+              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "label": "T20",
+              "type": "exact_segment",
+              "number": 20,
+              "ring": "triple",
+              "representativePoint": {
+                "x": 0,
+                "y": 0.6058823529411765
+              }
+            },
+            {
+              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "label": "T20",
+              "type": "exact_segment",
+              "number": 20,
+              "ring": "triple",
+              "representativePoint": {
+                "x": 0,
+                "y": 0.6058823529411765
+              }
+            },
+            {
+              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "label": "T20",
+              "type": "exact_segment",
+              "number": 20,
+              "ring": "triple",
+              "representativePoint": {
+                "x": 0,
+                "y": 0.6058823529411765
+              }
+            }
+          ]
+        ],
+        "startedAt": "2026-01-01T10:00:00.000Z",
+        "dailyCondition": "usual",
+        "assessments": [
+          {
+            "timing": "before",
+            "recordedAt": "2026-01-01T09:59:00.000Z",
+            "fatigue": 3,
+            "concentration": 7,
+            "pain": 0,
+            "confidence": 6
+          },
+          {
+            "timing": "middle",
+            "recordedAt": "2026-01-01T10:10:00.000Z",
+            "fatigue": 4,
+            "concentration": 7,
+            "pain": 0,
+            "confidence": 6,
+            "conditionChange": "same"
+          },
+          {
+            "timing": "after",
+            "recordedAt": "2026-01-01T10:20:00.000Z",
+            "fatigue": 6,
+            "concentration": 5,
+            "pain": 1,
+            "confidence": 5,
+            "conditionChange": "worse",
+            "note": "後半に集中が切れた"
+          }
+        ],
+        "status": "completed",
+        "progress": {
+          "currentSetNumber": 2,
+          "middleAssessmentDone": true
+        },
+        "createdAt": "2026-01-01T10:00:00.000Z",
+        "updatedAt": "2026-01-01T10:00:00.000Z",
+        "sessionNote": "サンプルセッション(フィクスチャから生成)"
+      }
+    ],
+    "throwSets": [],
+    "throws": [
+      {
+        "schemaVersion": 1,
+        "id": "throw-1",
+        "sessionId": "session-1",
+        "setId": "set-1",
+        "globalThrowNumber": 1,
+        "dartInSet": 1,
+        "target": {
+          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "label": "T20",
+          "type": "exact_segment",
+          "number": 20,
+          "ring": "triple",
+          "representativePoint": {
+            "x": 0,
+            "y": 0.6058823529411765
+          }
+        },
+        "thrownAt": "2026-01-01T10:00:00.000Z",
+        "elapsedMs": 10000,
+        "landing": {
+          "number": 20,
+          "ring": "triple",
+          "score": 60,
+          "x": 0,
+          "y": 0.6058823529411765,
+          "radius": 0.6058823529411765,
+          "angleDeg": 0,
+          "positionPrecision": "coordinate"
+        },
+        "derived": {
+          "exactHit": true,
+          "targetChangedFromPrevious": false,
+          "sessionProgress": 0.16666666666666666,
+          "errorX": 0,
+          "errorY": 0,
+          "errorDistance": 0,
+          "errorAngleDeg": 0,
+          "missDirection": "center"
+        },
+        "createdAt": "2026-01-01T10:00:00.000Z",
+        "updatedAt": "2026-01-01T10:00:00.000Z"
+      },
+      {
+        "schemaVersion": 1,
+        "id": "throw-2",
+        "sessionId": "session-1",
+        "setId": "set-1",
+        "globalThrowNumber": 2,
+        "dartInSet": 2,
+        "target": {
+          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "label": "T20",
+          "type": "exact_segment",
+          "number": 20,
+          "ring": "triple",
+          "representativePoint": {
+            "x": 0,
+            "y": 0.6058823529411765
+          }
+        },
+        "thrownAt": "2026-01-01T10:00:00.000Z",
+        "elapsedMs": 20000,
+        "landing": {
+          "number": 1,
+          "ring": "triple",
+          "score": 3,
+          "x": 0.1,
+          "y": 0.6058823529411765,
+          "radius": 0.6140793316873125,
+          "angleDeg": 9.372092708579085,
+          "positionPrecision": "coordinate"
+        },
+        "derived": {
+          "exactHit": false,
+          "targetChangedFromPrevious": false,
+          "previousThrowWasHit": true,
+          "sessionProgress": 0.3333333333333333,
+          "errorX": 0.1,
+          "errorY": 0,
+          "errorDistance": 0.1,
+          "errorAngleDeg": 90,
+          "missDirection": "right"
+        },
+        "createdAt": "2026-01-01T10:00:00.000Z",
+        "updatedAt": "2026-01-01T10:00:00.000Z"
+      },
+      {
+        "schemaVersion": 1,
+        "id": "throw-3",
+        "sessionId": "session-1",
+        "setId": "set-1",
+        "globalThrowNumber": 3,
+        "dartInSet": 3,
+        "target": {
+          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "label": "T20",
+          "type": "exact_segment",
+          "number": 20,
+          "ring": "triple",
+          "representativePoint": {
+            "x": 0,
+            "y": 0.6058823529411765
+          }
+        },
+        "thrownAt": "2026-01-01T10:00:00.000Z",
+        "elapsedMs": 30000,
+        "landing": {
+          "number": 20,
+          "ring": "outer_single",
+          "score": 20,
+          "x": 0,
+          "y": 0.8058823529411765,
+          "radius": 0.8058823529411765,
+          "angleDeg": 0,
+          "positionPrecision": "coordinate"
+        },
+        "derived": {
+          "exactHit": false,
+          "targetChangedFromPrevious": false,
+          "previousThrowWasHit": false,
+          "sessionProgress": 0.5,
+          "errorX": 0,
+          "errorY": 0.19999999999999996,
+          "errorDistance": 0.19999999999999996,
+          "errorAngleDeg": 0,
+          "missDirection": "up"
+        },
+        "createdAt": "2026-01-01T10:00:00.000Z",
+        "updatedAt": "2026-01-01T10:00:00.000Z"
+      },
+      {
+        "schemaVersion": 1,
+        "id": "throw-4",
+        "sessionId": "session-1",
+        "setId": "set-2",
+        "globalThrowNumber": 4,
+        "dartInSet": 1,
+        "target": {
+          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "label": "T20",
+          "type": "exact_segment",
+          "number": 20,
+          "ring": "triple",
+          "representativePoint": {
+            "x": 0,
+            "y": 0.6058823529411765
+          }
+        },
+        "thrownAt": "2026-01-01T10:00:00.000Z",
+        "elapsedMs": 40000,
+        "landing": {
+          "number": 5,
+          "ring": "outer_single",
+          "score": 5,
+          "x": -0.3,
+          "y": 0.6058823529411765,
+          "radius": 0.6760868476797463,
+          "angleDeg": 333.65788847411955,
+          "positionPrecision": "coordinate"
+        },
+        "derived": {
+          "exactHit": false,
+          "targetChangedFromPrevious": false,
+          "previousThrowWasHit": false,
+          "sessionProgress": 0.6666666666666666,
+          "errorX": -0.3,
+          "errorY": 0,
+          "errorDistance": 0.3,
+          "errorAngleDeg": 270,
+          "missDirection": "left"
+        },
+        "createdAt": "2026-01-01T10:00:00.000Z",
+        "updatedAt": "2026-01-01T10:00:00.000Z"
+      },
+      {
+        "schemaVersion": 1,
+        "id": "throw-5",
+        "sessionId": "session-1",
+        "setId": "set-2",
+        "globalThrowNumber": 5,
+        "dartInSet": 2,
+        "target": {
+          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "label": "T20",
+          "type": "exact_segment",
+          "number": 20,
+          "ring": "triple",
+          "representativePoint": {
+            "x": 0,
+            "y": 0.6058823529411765
+          }
+        },
+        "thrownAt": "2026-01-01T10:00:00.000Z",
+        "elapsedMs": 50000,
+        "landing": {
+          "ring": "bounce_out",
+          "score": 0,
+          "positionPrecision": "unknown"
+        },
+        "derived": {
+          "exactHit": false,
+          "targetChangedFromPrevious": false,
+          "previousThrowWasHit": false,
+          "sessionProgress": 0.8333333333333334
+        },
+        "createdAt": "2026-01-01T10:00:00.000Z",
+        "updatedAt": "2026-01-01T10:00:00.000Z"
+      },
+      {
+        "schemaVersion": 1,
+        "id": "throw-6",
+        "sessionId": "session-1",
+        "setId": "set-2",
+        "globalThrowNumber": 6,
+        "dartInSet": 3,
+        "target": {
+          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "label": "T20",
+          "type": "exact_segment",
+          "number": 20,
+          "ring": "triple",
+          "representativePoint": {
+            "x": 0,
+            "y": 0.6058823529411765
+          }
+        },
+        "thrownAt": "2026-01-01T10:00:00.000Z",
+        "elapsedMs": 60000,
+        "landing": {
+          "ring": "outboard",
+          "score": 0,
+          "outboardDirection": "up",
+          "positionPrecision": "direction_only"
+        },
+        "derived": {
+          "exactHit": false,
+          "targetChangedFromPrevious": false,
+          "previousThrowWasHit": false,
+          "sessionProgress": 1,
+          "missDirection": "up"
+        },
+        "createdAt": "2026-01-01T10:00:00.000Z",
+        "updatedAt": "2026-01-01T10:00:00.000Z"
+      }
+    ],
+    "sessionStatistics": [
+      {
+        "schemaVersion": 1,
+        "sessionId": "session-1",
+        "totalThrows": 6,
+        "completedThrows": 6,
+        "exactHits": 1,
+        "exactHitRate": 0.16666666666666666,
+        "outboardCount": 1,
+        "outboardRate": 0.16666666666666666,
+        "bounceOutCount": 1,
+        "coordinateInputCount": 4,
+        "approximateInputCount": 0,
+        "coordinateError": {
+          "sampleCount": 4,
+          "averageErrorDistance": 0.14999999999999997,
+          "medianErrorDistance": 0.14999999999999997,
+          "averageErrorX": -0.049999999999999996,
+          "averageErrorY": 0.04999999999999999,
+          "byDirection": {
+            "center": 1,
+            "up": 1,
+            "up_right": 0,
+            "right": 1,
+            "down_right": 0,
+            "down": 0,
+            "down_left": 0,
+            "left": 1,
+            "up_left": 0
+          }
+        },
+        "combinedError": {
+          "sampleCount": 4,
+          "averageErrorDistance": 0.14999999999999997,
+          "medianErrorDistance": 0.14999999999999997,
+          "averageErrorX": -0.049999999999999996,
+          "averageErrorY": 0.04999999999999999,
+          "byDirection": {
+            "center": 1,
+            "up": 2,
+            "up_right": 0,
+            "right": 1,
+            "down_right": 0,
+            "down": 0,
+            "down_left": 0,
+            "left": 1,
+            "up_left": 0
+          }
+        },
+        "byDartInSet": {
+          "1": {
+            "throwCount": 2,
+            "hitCount": 1,
+            "hitRate": 0.5,
+            "averageErrorDistance": 0.15,
+            "outboardCount": 0,
+            "outboardRate": 0
+          },
+          "2": {
+            "throwCount": 2,
+            "hitCount": 0,
+            "hitRate": 0,
+            "averageErrorDistance": 0.1,
+            "outboardCount": 0,
+            "outboardRate": 0
+          },
+          "3": {
+            "throwCount": 2,
+            "hitCount": 0,
+            "hitRate": 0,
+            "averageErrorDistance": 0.19999999999999996,
+            "outboardCount": 1,
+            "outboardRate": 0.5
+          }
+        },
+        "byTarget": {
+          "T20": {
+            "label": "T20",
+            "throwCount": 6,
+            "hitCount": 1,
+            "hitRate": 0.16666666666666666,
+            "averageErrorDistance": 0.14999999999999997,
+            "mainMissDirection": "up",
+            "outboardCount": 1
+          }
+        },
+        "byDirection": {
+          "center": 1,
+          "up": 2,
+          "up_right": 0,
+          "right": 1,
+          "down_right": 0,
+          "down": 0,
+          "down_left": 0,
+          "left": 1,
+          "up_left": 0
+        },
+        "firstHalf": {
+          "throwCount": 3,
+          "hitCount": 1,
+          "hitRate": 0.3333333333333333,
+          "averageErrorDistance": 0.09999999999999998,
+          "outboardCount": 0,
+          "outboardRate": 0
+        },
+        "secondHalf": {
+          "throwCount": 3,
+          "hitCount": 0,
+          "hitRate": 0,
+          "averageErrorDistance": 0.3,
+          "outboardCount": 1,
+          "outboardRate": 0.3333333333333333
+        },
+        "calculatedAt": "2026-07-15T15:30:02.063Z"
+      }
+    ]
+  }
+}
