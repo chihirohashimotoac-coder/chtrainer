@@ -110,7 +110,8 @@ export async function recalcAndSaveStatistics(
   const stats = calculateStatistics(
     sessionId,
     session.plannedThrowCount,
-    throws
+    throws,
+    session.trainingMode
   );
   await saveStatistics(stats);
   return stats;

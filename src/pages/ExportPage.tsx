@@ -38,6 +38,9 @@ export default function ExportPage() {
   const [candidateStats, setCandidateStats] = useState<
     Record<string, SessionStatistics>
   >({});
+  const [recentSessions, setRecentSessions] = useState<
+    { session: TrainingSession; stats: SessionStatistics }[]
+  >([]);
   const [selectedCompare, setSelectedCompare] = useState<string[]>([]);
   const [embedAll, setEmbedAll] = useState(true);
   const [markdown, setMarkdown] = useState("");
@@ -61,6 +64,17 @@ export default function ExportPage() {
       const others = (await getSessions()).filter(
         (x) => x.id !== id && x.status !== "active"
       );
+      // 長期トレンド: 同モードの直近セッション(最大10件・古い順)
+      const sameMode = others
+        .filter((x) => x.trainingMode === sess.trainingMode)
+        .slice(0, 10)
+        .reverse();
+      const trend: { session: TrainingSession; stats: SessionStatistics }[] = [];
+      for (const x of sameMode) {
+        const st = await getStatistics(x.id);
+        if (st) trend.push({ session: x, stats: st });
+      }
+      setRecentSessions(trend);
       const ranked = rankComparisonCandidates(sess, others).slice(0, 8);
       setCandidates(ranked.map((r) => r.session));
       const map: Record<string, SessionStatistics> = {};
@@ -98,6 +112,7 @@ export default function ExportPage() {
         throws,
         setNumberOf,
         comparisons,
+        recentSessions,
         embedAllThrows: embedAll,
       });
       setMarkdown(md);

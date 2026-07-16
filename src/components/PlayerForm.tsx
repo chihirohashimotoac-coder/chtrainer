@@ -4,6 +4,7 @@ import type {
   DominantEye,
   EquipmentProfile,
   InputMethod,
+  PlayerGoal,
   PlayerProfile,
   Stance,
 } from "../types/models";
@@ -43,6 +44,10 @@ export function PlayerForm({
     initial?.dominantEye ?? "unknown"
   );
   const [stance, setStance] = useState<Stance | "">(initial?.stance ?? "");
+  const [goal, setGoal] = useState<PlayerGoal | "">(initial?.goal ?? "");
+  const [currentLevel, setCurrentLevel] = useState(initial?.currentLevel ?? "");
+  const [targetLevel, setTargetLevel] = useState(initial?.targetLevel ?? "");
+  const [concern, setConcern] = useState(initial?.concern ?? "");
   const [boardType, setBoardType] = useState<BoardType>(
     initial?.defaultBoardType ?? "soft"
   );
@@ -75,6 +80,10 @@ export function PlayerForm({
       dominantHand,
       dominantEye,
       ...(stance ? { stance } : {}),
+      ...(goal ? { goal } : {}),
+      ...(currentLevel.trim() ? { currentLevel: currentLevel.trim() } : {}),
+      ...(targetLevel.trim() ? { targetLevel: targetLevel.trim() } : {}),
+      ...(concern.trim() ? { concern: concern.trim() } : {}),
       defaultBoardType: boardType,
       ...(equipmentId ? { defaultEquipmentProfileId: equipmentId } : {}),
       dartColors,
@@ -174,6 +183,63 @@ export function PlayerForm({
             </button>
           ))}
         </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>{s.player.goalSection}</legend>
+        <p className="muted small" style={{ margin: "0 0 0.4rem" }}>
+          {s.player.goalSectionHint}
+        </p>
+        <div className="choice-row">
+          {(
+            [
+              ["recovery", s.player.goalRecovery],
+              ["zero_one", s.player.goalZeroOne],
+              ["cricket", s.player.goalCricket],
+              ["pro", s.player.goalPro],
+              ["form_check", s.player.goalFormCheck],
+              ["bull", s.player.goalBull],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              className={`choice${goal === key ? " selected" : ""}`}
+              onClick={() => setGoal(goal === key ? "" : key)}
+              aria-pressed={goal === key}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <label className="field">
+          <span>{s.player.currentLevel}</span>
+          <input
+            type="text"
+            value={currentLevel}
+            onChange={(e) => setCurrentLevel(e.target.value)}
+            placeholder={s.player.currentLevelPlaceholder}
+            maxLength={60}
+          />
+        </label>
+        <label className="field">
+          <span>{s.player.targetLevel}</span>
+          <input
+            type="text"
+            value={targetLevel}
+            onChange={(e) => setTargetLevel(e.target.value)}
+            placeholder={s.player.targetLevelPlaceholder}
+            maxLength={60}
+          />
+        </label>
+        <label className="field">
+          <span>{s.player.concern}</span>
+          <textarea
+            value={concern}
+            onChange={(e) => setConcern(e.target.value)}
+            placeholder={s.player.concernPlaceholder}
+            maxLength={300}
+          />
+        </label>
       </fieldset>
 
       <fieldset>
