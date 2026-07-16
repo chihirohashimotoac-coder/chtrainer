@@ -7,7 +7,7 @@ import { t } from "../i18n/ja";
 export default function PlayerSettingsPage() {
   const s = t();
   const navigate = useNavigate();
-  const { player, settings, equipmentProfiles, refresh, loading } = useApp();
+  const { player, settings, refresh, loading } = useApp();
 
   if (loading) return <p>{s.common.loading}</p>;
 
@@ -16,7 +16,6 @@ export default function PlayerSettingsPage() {
       <h1>{s.player.title}</h1>
       <PlayerForm
         initial={player}
-        equipmentProfiles={equipmentProfiles}
         onSave={async (updated) => {
           try {
             await savePlayer(updated);

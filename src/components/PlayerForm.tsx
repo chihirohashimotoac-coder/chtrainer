@@ -1,9 +1,6 @@
 import { useState } from "react";
 import type {
-  BoardType,
   DominantEye,
-  EquipmentProfile,
-  InputMethod,
   PlayerGoal,
   PlayerProfile,
   Stance,
@@ -24,17 +21,11 @@ const DART_COLOR_PRESETS = [
 
 interface PlayerFormProps {
   initial?: PlayerProfile;
-  equipmentProfiles: EquipmentProfile[];
   onSave: (player: PlayerProfile) => void;
   saveLabel?: string;
 }
 
-export function PlayerForm({
-  initial,
-  equipmentProfiles,
-  onSave,
-  saveLabel,
-}: PlayerFormProps) {
+export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
   const s = t();
   const [displayName, setDisplayName] = useState(initial?.displayName ?? "");
   const [dominantHand, setDominantHand] = useState<PlayerProfile["dominantHand"]>(
@@ -48,22 +39,8 @@ export function PlayerForm({
   const [currentLevel, setCurrentLevel] = useState(initial?.currentLevel ?? "");
   const [targetLevel, setTargetLevel] = useState(initial?.targetLevel ?? "");
   const [concern, setConcern] = useState(initial?.concern ?? "");
-  const [boardType, setBoardType] = useState<BoardType>(
-    initial?.defaultBoardType ?? "soft"
-  );
-  const [equipmentId, setEquipmentId] = useState(
-    initial?.defaultEquipmentProfileId ?? ""
-  );
   const [dartColors, setDartColors] = useState<[string, string, string]>(
     initial?.dartColors ?? ["#e05252", "#4f7fe0", "#f0f0f0"]
-  );
-  const [inputMethod, setInputMethod] = useState<InputMethod>(
-    initial?.defaultInputMethod ?? "coordinate"
-  );
-  const [vibration, setVibration] = useState(initial?.vibrationEnabled ?? true);
-  const [sound, setSound] = useState(initial?.soundEnabled ?? false);
-  const [autoAdvance, setAutoAdvance] = useState(
-    initial?.autoAdvanceEnabled ?? true
   );
   const [error, setError] = useState("");
 
@@ -84,13 +61,17 @@ export function PlayerForm({
       ...(currentLevel.trim() ? { currentLevel: currentLevel.trim() } : {}),
       ...(targetLevel.trim() ? { targetLevel: targetLevel.trim() } : {}),
       ...(concern.trim() ? { concern: concern.trim() } : {}),
-      defaultBoardType: boardType,
-      ...(equipmentId ? { defaultEquipmentProfileId: equipmentId } : {}),
+      // 以下はセッション開始前設定で毎回選択するため、UIからは設定しない
+      // (既存プロファイルの値、または既定値を保持)
+      defaultBoardType: initial?.defaultBoardType ?? "soft",
+      ...(initial?.defaultEquipmentProfileId
+        ? { defaultEquipmentProfileId: initial.defaultEquipmentProfileId }
+        : {}),
       dartColors,
-      defaultInputMethod: inputMethod,
-      vibrationEnabled: vibration,
-      soundEnabled: sound,
-      autoAdvanceEnabled: autoAdvance,
+      defaultInputMethod: initial?.defaultInputMethod ?? "coordinate",
+      vibrationEnabled: initial?.vibrationEnabled ?? true,
+      soundEnabled: initial?.soundEnabled ?? false,
+      autoAdvanceEnabled: initial?.autoAdvanceEnabled ?? true,
       createdAt: initial?.createdAt ?? now,
       updatedAt: now,
     });
@@ -243,44 +224,6 @@ export function PlayerForm({
       </fieldset>
 
       <fieldset>
-        <legend>{s.player.defaultBoardType}</legend>
-        <div className="choice-row">
-          {(
-            [
-              ["soft", s.player.soft],
-              ["steel", s.player.steel],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              className={`choice${boardType === key ? " selected" : ""}`}
-              onClick={() => setBoardType(key)}
-              aria-pressed={boardType === key}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-
-      {equipmentProfiles.length > 0 && (
-        <label className="field">
-          <span>{s.player.defaultEquipment}</span>
-          <select
-            value={equipmentId}
-            onChange={(e) => setEquipmentId(e.target.value)}
-          >
-            <option value="">{s.common.none}</option>
-            {equipmentProfiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
-      )}
-
-      <fieldset>
         <legend>
           {s.player.dartColors} — {s.player.dartColorsHint}
         </legend>
@@ -315,46 +258,6 @@ export function PlayerForm({
           </div>
         ))}
       </fieldset>
-
-      <fieldset>
-        <legend>{s.player.defaultInputMethod}</legend>
-        <div className="choice-row">
-          {(
-            [
-              ["coordinate", s.player.inputCoordinate],
-              ["simple", s.player.inputSimple],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              className={`choice${inputMethod === key ? " selected" : ""}`}
-              onClick={() => setInputMethod(key)}
-              aria-pressed={inputMethod === key}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-
-      {(
-        [
-          [s.player.vibration, vibration, setVibration],
-          [s.player.sound, sound, setSound],
-          [s.player.autoAdvance, autoAdvance, setAutoAdvance],
-        ] as const
-      ).map(([label, value, setter]) => (
-        <div className="toggle-row" key={label}>
-          <span>{label}</span>
-          <button
-            className={`choice${value ? " selected" : ""}`}
-            onClick={() => setter(!value)}
-            aria-pressed={value}
-          >
-            {value ? "ON" : "OFF"}
-          </button>
-        </div>
-      ))}
 
       <div className="action-bar">
         <button className="btn primary block" onClick={save}>

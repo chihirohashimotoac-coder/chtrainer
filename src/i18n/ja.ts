@@ -446,6 +446,9 @@ export const ja = {
     all: "すべて",
     detail: "セッション詳細",
     deleteConfirm: "このセッションを削除しますか?投擲データも削除されます。",
+    resumeAborted: "途中から再開",
+    resumeAbortedDesc: "入力済みのデータはそのままに、続きのセットから再開します",
+    resumeBlocked: "別のセッションが進行中です。ホームから再開または破棄してから、このセッションをやり直してください。",
   },
   compare: {
     title: "セッション比較",

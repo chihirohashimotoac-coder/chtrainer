@@ -8,7 +8,7 @@ import { t } from "../i18n/ja";
 export default function OnboardingPage() {
   const s = t();
   const navigate = useNavigate();
-  const { equipmentProfiles, refresh } = useApp();
+  const { refresh } = useApp();
   const [step, setStep] = useState<"intro" | "player">("intro");
 
   return (
@@ -31,7 +31,6 @@ export default function OnboardingPage() {
         <>
           <h2>{s.onboarding.playerSetup}</h2>
           <PlayerForm
-            equipmentProfiles={equipmentProfiles}
             saveLabel={s.onboarding.finish}
             onSave={async (player) => {
               try {

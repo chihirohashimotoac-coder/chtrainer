@@ -165,6 +165,15 @@ export async function finishSession(
   await recalcAndSaveStatistics(session.id);
 }
 
+/**
+ * 中断したセッションを再開可能な状態に戻す。
+ * 入力済みのセットはそのまま残り、続きのセットから再開される。
+ */
+export async function reopenSession(session: TrainingSession): Promise<void> {
+  const { endedAt: _endedAt, ...rest } = session;
+  await saveSession({ ...rest, status: "active" });
+}
+
 /** セッションの完了セット数(保存済みセット)を数える */
 export async function completedSetCount(sessionId: UUID): Promise<number> {
   const sets = await getThrowSets(sessionId);
