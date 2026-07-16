@@ -149,6 +149,10 @@
   JS/CSSとアイコンも取得し、初回訪問直後からオフライン起動可能に)
   ③60投セッションのcommitSet→統計→Markdown→CSV統合テストを追加。テスト129件
 
+- 2026-07-17 (16) v1.16.0: アプリ名を「CH Darts Training Analyzer」へ変更。
+  バージョンを更新回数準拠(1.16.0)へ改め、情報画面にバージョン履歴(src/config/versionHistory.ts)と
+  「© Chihiro Hashimoto」を追加。LICENSEの著作権者表記も統一
+
 ## 既知の制約
 
 - PWAアイコンはスクリプト生成の簡易デザイン

@@ -1,4 +1,4 @@
-# Darts Training Analyzer
+# CH Darts Training Analyzer
 
 ダーツの投擲を記録し、AI分析用の依頼文(Markdown)を生成するトレーニング支援PWAです。
 
