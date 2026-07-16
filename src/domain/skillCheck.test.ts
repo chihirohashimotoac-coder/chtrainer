@@ -9,7 +9,7 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     expect(plan).toHaveLength(20);
     // R1: グルーピング
     for (let i = 0; i < 5; i++) {
-      expect(plan[i]?.every((x) => x.label === "グルーピング(20全体)")).toBe(true);
+      expect(plan[i]?.every((x) => x.label === "グルーピング")).toBe(true);
     }
     // R2: ブル
     for (let i = 5; i < 10; i++) {
@@ -44,13 +44,13 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     const plan22 = buildSkillCheckPlan(STEEL_BOARD, 22);
     expect(plan22).toHaveLength(22);
     // 22 = 6,6,5,5
-    expect(plan22[5]?.[0]?.label).toBe("グルーピング(20全体)");
+    expect(plan22[5]?.[0]?.label).toBe("グルーピング");
     expect(plan22[6]?.[0]?.label).toBe("Bull");
   });
 
   it("使用ターゲット一覧は10種", () => {
     expect(skillCheckUniqueTargets(STEEL_BOARD).map((x) => x.label)).toEqual([
-      "グルーピング(20全体)",
+      "グルーピング",
       "Bull",
       "T20",
       "T16",

@@ -14,6 +14,7 @@ import {
  *              (三角形を1投ずつなぞる切替セット2種を含む)
  *  R4 ダブル: D16固定セットとD20固定セットを交互に(チェックアウト力)
  * セット数は4ラウンドへ均等配分(余りは先頭ラウンドから+1)。
+ * 各ターゲットの instruction に「狙い方と測定内容」を持たせ、投擲画面に表示する。
  */
 export const SKILL_ROUND_LABELS = [
   "グルーピング",
@@ -22,10 +23,31 @@ export const SKILL_ROUND_LABELS = [
   "ダブル",
 ] as const;
 
+/** 投擲画面に表示するラウンド別の指示文 */
+export const SKILL_INSTRUCTIONS = {
+  grouping:
+    "20エリアのどこでもOK。3本をできるだけ狭くまとめて投げてください。測定するのは3投のまとまり(着弾間の距離)で、命中率は問いません。",
+  bull: "Bullを狙って3本投げてください。ブルへの命中精度を測定します。",
+  numberSame:
+    "T20に3本連続で投げてください。同じターゲットを狙い続ける精度を測定します。",
+  triangle:
+    "表示の順に1投ずつ狙いを変えて投げてください。ターゲットを切り替えたときの精度を測定します。",
+  double:
+    "表示のダブルを狙って3本投げてください。チェックアウト(ダブル)の精度を測定します。",
+} as const;
+
+function withInstruction(
+  target: TargetDefinition,
+  instruction: string
+): TargetDefinition {
+  return { ...target, instruction };
+}
+
 function groupingTarget(profile: BoardProfile): TargetDefinition {
   return {
     ...makeNumberSectorTarget(20, profile),
-    label: "グルーピング(20全体)",
+    label: "グルーピング",
+    instruction: SKILL_INSTRUCTIONS.grouping,
   };
 }
 
@@ -34,15 +56,21 @@ export function buildSkillCheckPlan(
   setCount: number
 ): TargetDefinition[][] {
   const grouping = groupingTarget(profile);
-  const bull = makeBullAnyTarget();
-  const t20 = makeSegmentTarget("triple", profile, 20);
-  const t16 = makeSegmentTarget("triple", profile, 16);
-  const t15 = makeSegmentTarget("triple", profile, 15);
-  const t12 = makeSegmentTarget("triple", profile, 12);
-  const t18 = makeSegmentTarget("triple", profile, 18);
-  const t3 = makeSegmentTarget("triple", profile, 3);
-  const d16 = makeSegmentTarget("double", profile, 16);
-  const d20 = makeSegmentTarget("double", profile, 20);
+  const bull = withInstruction(makeBullAnyTarget(), SKILL_INSTRUCTIONS.bull);
+  const t20Same = withInstruction(
+    makeSegmentTarget("triple", profile, 20),
+    SKILL_INSTRUCTIONS.numberSame
+  );
+  const tri = (n: number) =>
+    withInstruction(
+      makeSegmentTarget("triple", profile, n),
+      SKILL_INSTRUCTIONS.triangle
+    );
+  const dbl = (n: number) =>
+    withInstruction(
+      makeSegmentTarget("double", profile, n),
+      SKILL_INSTRUCTIONS.double
+    );
 
   const base = Math.floor(setCount / 4);
   const extra = setCount % 4;
@@ -57,15 +85,15 @@ export function buildSkillCheckPlan(
   }
   // R3: 同一3投 → 三角形1(T20→T16→T15) → 三角形2(T12→T18→T3) を循環
   const numberPatterns: TargetDefinition[][] = [
-    [t20, t20, t20],
-    [t20, t16, t15],
-    [t12, t18, t3],
+    [t20Same, t20Same, t20Same],
+    [tri(20), tri(16), tri(15)],
+    [tri(12), tri(18), tri(3)],
   ];
   for (let k = 0; k < (counts[2] ?? 0); k++) {
     sets.push((numberPatterns[k % 3] ?? numberPatterns[0]) as TargetDefinition[]);
   }
   for (let k = 0; k < (counts[3] ?? 0); k++) {
-    const d = k % 2 === 0 ? d16 : d20;
+    const d = k % 2 === 0 ? dbl(16) : dbl(20);
     sets.push([d, d, d]);
   }
   return sets;

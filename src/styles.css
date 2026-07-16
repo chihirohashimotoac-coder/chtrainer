@@ -389,6 +389,13 @@ table.stats th {
   font-weight: 800;
   line-height: 1.1;
   color: var(--accent);
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+/* 長いラベル(5文字以上)は画面幅に収まるサイズへ */
+.target-display .target-label.long {
+  font-size: clamp(1.9rem, 11vw, 3.6rem);
 }
 .target-display .set-info {
   font-size: 1rem;
@@ -398,15 +405,18 @@ table.stats th {
   display: flex;
   gap: 0.75rem;
   justify-content: center;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 .per-dart-targets .one {
   text-align: center;
 }
 .per-dart-targets .one .lbl {
-  font-size: clamp(1.8rem, 11vw, 3.2rem);
+  font-size: clamp(1.5rem, 8.5vw, 3rem);
   font-weight: 800;
   color: var(--accent);
   line-height: 1.15;
+  word-break: keep-all;
 }
 .per-dart-targets .one .sub {
   font-size: 0.8rem;

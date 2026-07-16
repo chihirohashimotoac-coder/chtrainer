@@ -448,12 +448,13 @@ function DiagnosticPicker({ profile, proceed, error }: PickerProps) {
       {diagType === "skill" && (
         <>
           <div className="info-box">{s.target.skillCheckDesc}</div>
-          <div className="card">
-            <span className="muted small">{s.target.selected}: </span>
-            <strong>
-              R1 グルーピング(20全体) → R2 Bull → R3 ナンバー(T20同一3投 / T20→T16→T15 / T12→T18→T3) → R4 ダブル(D16 / D20)
-            </strong>
-          </div>
+          {s.target.skillRounds.map((round) => (
+            <div className="card" key={round.name} style={{ padding: "0.6rem 0.9rem" }}>
+              <strong>{round.name}</strong>
+              <div className="muted small">出題: {round.aim}</div>
+              <div className="muted small">測定: {round.measure}</div>
+            </div>
+          ))}
         </>
       )}
 
