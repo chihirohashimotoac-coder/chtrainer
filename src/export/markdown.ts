@@ -46,6 +46,26 @@ const INPUT_LABELS: Record<string, string> = {
   coordinate: "詳細座標入力",
 };
 
+const ARRANGEMENT_LABELS: Record<string, string> = {
+  balanced: "均等ランダム",
+  pure: "完全ランダム",
+  same_per_set: "同一ターゲット3投",
+  fixed_three: "3投別ターゲット",
+  cycle: "登録順",
+};
+
+const EYE_LABELS: Record<string, string> = {
+  right: "右",
+  left: "左",
+  unknown: "不明",
+};
+
+const STANCE_LABELS: Record<string, string> = {
+  closed: "クローズド",
+  middle: "ミドル",
+  open: "オープン",
+};
+
 const TIMING_LABELS: Record<string, string> = {
   before: "開始前",
   middle: "中間",
@@ -410,12 +430,20 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   out.push("");
   out.push(`- セッションID: ${session.id}`);
   out.push(`- 実施日時: ${fmtDateTime(session.startedAt)}${session.endedAt ? ` 〜 ${fmtDateTime(session.endedAt)}` : ""}`);
-  out.push(`- 練習モード: ${modeLabel(session.trainingMode)}`);
+  out.push(
+    `- 練習モード: ${modeLabel(session.trainingMode)}${session.arrangement ? ` (出題方式: ${ARRANGEMENT_LABELS[session.arrangement] ?? session.arrangement})` : ""}`
+  );
   out.push(`- ボード種別: ${session.boardType === "steel" ? "スティール" : "ソフト"}`);
   out.push(`- セット数: ${session.setCount} (1セット3投)`);
   out.push(`- 総投擲数(予定): ${session.plannedThrowCount}`);
-  out.push(`- 使用機材: ${equipmentSummary(equipment)}`);
+  out.push(`- セッティング: ${equipmentSummary(equipment)}`);
   out.push(`- 利き腕: ${HAND_LABELS[session.dominantHand] ?? session.dominantHand}`);
+  if (player?.dominantEye) {
+    out.push(`- 利き目: ${EYE_LABELS[player.dominantEye] ?? player.dominantEye}`);
+  }
+  if (player?.stance) {
+    out.push(`- スタンス: ${STANCE_LABELS[player.stance] ?? player.stance}`);
+  }
   out.push(`- 入力方式: ${INPUT_LABELS[session.inputMethod] ?? session.inputMethod}`);
   out.push(`- 今日の調子: ${CONDITION_LABELS[session.dailyCondition] ?? session.dailyCondition}${session.dailyConditionNote ? ` (${session.dailyConditionNote})` : ""}`);
   if (player) out.push(`- プレイヤー: ${player.displayName}`);

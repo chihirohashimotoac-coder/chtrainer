@@ -67,11 +67,14 @@ describe("SessionPage (3投入力フロー)", () => {
       onboardingCompleted: true,
       activePlayerId: player.id,
     });
+    // 各テストで最新のstartedAtを持たせ、getActiveSessionが
+    // このテストのセッションを一意に選択できるようにする
     await saveSession(
       fixtureSession({
         id: sessionId,
         status: "active",
         inputMethod: "simple",
+        startedAt: new Date().toISOString(),
         progress: { currentSetNumber: 1, middleAssessmentDone: false },
         assessments: [],
         endedAt: undefined,

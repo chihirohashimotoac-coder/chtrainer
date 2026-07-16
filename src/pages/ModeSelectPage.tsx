@@ -9,18 +9,9 @@ export default function ModeSelectPage() {
   const { update } = useSetup();
 
   const modes: { key: TrainingMode; label: string; desc: string }[] = [
-    { key: "same_target", label: s.mode.same_target, desc: s.mode.same_targetDesc },
-    {
-      key: "per_dart_targets",
-      label: s.mode.per_dart_targets,
-      desc: s.mode.per_dart_targetsDesc,
-    },
-    { key: "random", label: s.mode.random, desc: s.mode.randomDesc },
-    { key: "sequence", label: s.mode.sequence, desc: s.mode.sequenceDesc },
     { key: "bull", label: s.mode.bull, desc: s.mode.bullDesc },
-    { key: "double", label: s.mode.double, desc: s.mode.doubleDesc },
-    { key: "triple", label: s.mode.triple, desc: s.mode.tripleDesc },
     { key: "number", label: s.mode.number, desc: s.mode.numberDesc },
+    { key: "random", label: s.mode.random, desc: s.mode.randomDesc },
   ];
 
   return (

@@ -93,11 +93,18 @@ export interface EquipmentProfile {
   updatedAt: ISODateTime;
 }
 
+export type DominantEye = "right" | "left" | "unknown";
+export type Stance = "closed" | "middle" | "open";
+
 export interface PlayerProfile {
   schemaVersion: number;
   id: UUID;
   displayName: string;
   dominantHand: "right" | "left" | "ambidextrous";
+  /** 利き目(任意・後から追加されたフィールド) */
+  dominantEye?: DominantEye;
+  /** スタンス(任意・後から追加されたフィールド) */
+  stance?: Stance;
   defaultBoardType: BoardType;
   defaultEquipmentProfileId?: UUID;
   /** 1投目・2投目・3投目の識別用フライト色 */
@@ -182,6 +189,8 @@ export interface TrainingSession {
   equipmentProfileId?: UUID;
   trainingMode: TrainingMode;
   randomVariant?: RandomVariant;
+  /** 出題方式 (balanced/pure/same_per_set/fixed_three/cycle) */
+  arrangement?: string;
   inputMethod: InputMethod;
   dominantHand: "right" | "left" | "ambidextrous";
   setCount: number;
