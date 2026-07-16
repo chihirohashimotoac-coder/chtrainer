@@ -1,10 +1,10 @@
 /*
  * Darts Training Analyzer - Service Worker
- * 譁ｹ驥・
- *  - install 譎ゅ↓繧｢繝励Μ繧ｷ繧ｧ繝ｫ繧偵く繝｣繝・す繝･
- *  - 蜷御ｸ繧ｪ繝ｪ繧ｸ繝ｳ縺ｮ GET 縺ｯ繧ｭ繝｣繝・す繝･蜆ｪ蜈・+ 繝舌ャ繧ｯ繧ｰ繝ｩ繧ｦ繝ｳ繝画峩譁ｰ (stale-while-revalidate)
- *  - 繝翫ン繧ｲ繝ｼ繧ｷ繝ｧ繝ｳ縺ｯ繝阪ャ繝医Ρ繝ｼ繧ｯ螟ｱ謨玲凾縺ｫ index.html 縺ｸ繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ
- *  - 譁ｰ縺励＞ SW 縺・waiting 縺ｫ縺ｪ縺｣縺溘ｉ繧ｯ繝ｩ繧､繧｢繝ｳ繝医∈譖ｴ譁ｰ蜿ｯ閭ｽ繧帝夂衍
+ * 方針:
+ *  - install 時にアプリシェルをキャッシュ
+ *  - 同一オリジンの GET はキャッシュ優先 + バックグラウンド更新 (stale-while-revalidate)
+ *  - ナビゲーションはネットワーク失敗時に index.html へフォールバック
+ *  - 新しい SW が waiting になったらクライアントへ更新可能を通知
  */
 const CACHE_VERSION = "dta-v1";
 const APP_SHELL = [
