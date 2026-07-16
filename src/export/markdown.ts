@@ -17,6 +17,7 @@ const NA = "N/A";
 const MODE_LABELS: Record<string, string> = {
   zero_one: "01練習",
   cricket: "クリケット練習",
+  skill_check: "スキル診断",
   same_target: "同一ターゲット3投",
   per_dart_targets: "3投別ターゲット",
   random: "全体診断(ランダム)",
@@ -187,7 +188,8 @@ type FocusCategory =
   | "bull"
   | "finish"
   | "cricket"
-  | "diagnostic";
+  | "diagnostic"
+  | "skill";
 
 /** トレーニングモードから分析焦点カテゴリを決める */
 export function focusCategoryOf(
@@ -200,6 +202,8 @@ export function focusCategoryOf(
       return "cricket";
     case "random":
       return "diagnostic";
+    case "skill_check":
+      return "skill";
     case "zero_one":
       return session.arrangement === "fixed_three" ? "finish" : "repeat";
     // 旧バージョンのモードは近い焦点へマッピング
@@ -254,6 +258,18 @@ const FOCUS_SECTIONS: Record<FocusCategory, string> = {
 - 出題ブロックの切り替わり直後(新しいナンバーの最初のセット)に精度低下があるか
 - ナンバーによる外れ方向の違い(ボード上の位置=狙う角度による癖)
 - Bullとナンバーで精度傾向に差があるか`,
+  skill: `### このセッションの分析焦点(スキル診断)
+
+このセッションは定型メニュー(Bull → T20 → T19 → D16 → D20 をブロック順に出題)による技能測定です。以下を最優先で分析してください。
+
+- 種目ごとの命中率・平均誤差・外れ方向を整理し、以下の3カテゴリのスキルを100点満点で評価してください(採点基準・計算方法を必ず明示すること):
+  - ブル精度 (Bull)
+  - スコアリング力 (T20・T19)
+  - チェックアウト力 (D16・D20)
+- 3カテゴリのバランスから得意・不得意のプロファイルを要約してください
+- 過去のスキル診断セッションが比較対象にある場合は、種目別・カテゴリ別の伸びを比較してください
+- 種目の出題順(後半ほど疲労の影響)を考慮して評価してください
+- 総合評価と、最も伸びしろが大きい種目に対する具体的な練習提案を示してください`,
   diagnostic: `### このセッションの分析焦点(全体診断)
 
 このセッションはボード全体からランダム出題した診断用データです。以下を最優先で分析してください。

@@ -414,48 +414,109 @@ function CricketPicker({ profile, proceed, error }: PickerProps) {
   );
 }
 
-/** 全体診断: ボード全体から自動出題 */
+/** スキル診断の定型メニュー(ブロック順に出題) */
+export function buildSkillCheckTargets(
+  profile: ReturnType<typeof defaultBoardProfileFor>
+): TargetDefinition[] {
+  return [
+    makeBullAnyTarget(),
+    makeSegmentTarget("triple", profile, 20),
+    makeSegmentTarget("triple", profile, 19),
+    makeSegmentTarget("double", profile, 16),
+    makeSegmentTarget("double", profile, 20),
+  ];
+}
+
+/** 全体診断: スキル診断(定型メニュー) / フリースキャン(ランダム) */
 function DiagnosticPicker({ profile, proceed, error }: PickerProps) {
   const s = t();
+  const { update } = useSetup();
+  const navigate = useNavigate();
+  const [diagType, setDiagType] = useState<"skill" | "free">("skill");
   const [arrangement, setArrangement] = useState<Arrangement>("balanced");
 
   return (
     <div>
       <h1>{s.target.title} — {s.mode.random}</h1>
-      <div className="info-box">{s.target.randomAutoInfo}</div>
-      <div className="info-box">{s.target.diagnosticSetHint}</div>
 
-      <fieldset>
-        <legend>{s.mode.arrangementTitle}</legend>
-        <div className="choice-row">
-          {(
-            [
-              ["balanced", s.mode.balancedRandom],
-              ["pure", s.mode.pureRandom],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              className={`choice${arrangement === key ? " selected" : ""}`}
-              onClick={() => setArrangement(key)}
-              aria-pressed={arrangement === key}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <p className="muted small">
-          {arrangement === "balanced"
-            ? s.mode.balancedRandomDesc
-            : s.mode.pureRandomDesc}
-        </p>
-      </fieldset>
+      <div className="choice-row">
+        {(
+          [
+            ["skill", s.target.skillCheck],
+            ["free", s.target.freeScan],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            className={`choice${diagType === key ? " selected" : ""}`}
+            onClick={() => setDiagType(key)}
+            aria-pressed={diagType === key}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {diagType === "skill" && (
+        <>
+          <div className="info-box">{s.target.skillCheckDesc}</div>
+          <div className="card">
+            <span className="muted small">{s.target.selected}: </span>
+            <strong>Bull → T20 → T19 → D16 → D20</strong>
+          </div>
+        </>
+      )}
+
+      {diagType === "free" && (
+        <>
+          <div className="info-box">{s.target.randomAutoInfo}</div>
+          <div className="info-box">{s.target.diagnosticSetHint}</div>
+          <fieldset>
+            <legend>{s.mode.arrangementTitle}</legend>
+            <div className="choice-row">
+              {(
+                [
+                  ["balanced", s.mode.balancedRandom],
+                  ["pure", s.mode.pureRandom],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  className={`choice${arrangement === key ? " selected" : ""}`}
+                  onClick={() => setArrangement(key)}
+                  aria-pressed={arrangement === key}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="muted small">
+              {arrangement === "balanced"
+                ? s.mode.balancedRandomDesc
+                : s.mode.pureRandomDesc}
+            </p>
+          </fieldset>
+        </>
+      )}
 
       {error && <p className="error-text">{error}</p>}
       <div className="action-bar">
         <button
           className="btn primary block"
-          onClick={() => proceed(shuffle(buildFullRandomPool(profile)), arrangement)}
+          onClick={() => {
+            if (diagType === "skill") {
+              // スキル診断は専用モードとして記録し、種目別ブロックで出題する
+              update({
+                mode: "skill_check",
+                targets: buildSkillCheckTargets(profile),
+                arrangement: "blocks",
+                randomVariant: undefined,
+              });
+              navigate("/train/sets");
+            } else {
+              proceed(shuffle(buildFullRandomPool(profile)), arrangement);
+            }
+          }}
         >
           {s.common.next}
         </button>
