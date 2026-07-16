@@ -3,11 +3,10 @@ import {
   getSession,
   getThrows,
   getThrowSets,
+  saveCommittedSet,
   saveSession,
   saveStatistics,
   saveThrow,
-  saveThrows,
-  saveThrowSet,
 } from "../db/db";
 import { deriveThrow } from "../domain/derive";
 import { calculateStatistics } from "../domain/stats";
@@ -95,8 +94,7 @@ export async function commitSet(
     prevHit = derived.exactHit;
   });
 
-  await saveThrowSet(throwSet);
-  await saveThrows(records);
+  await saveCommittedSet(throwSet, records);
   return { throwSet, records };
 }
 
