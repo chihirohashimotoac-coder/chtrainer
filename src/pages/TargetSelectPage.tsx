@@ -7,6 +7,7 @@ import {
   makeSegmentTarget,
 } from "../domain/targets";
 import { shuffle, type Arrangement } from "../domain/planner";
+import { skillCheckUniqueTargets } from "../domain/skillCheck";
 import { useApp } from "../state/AppContext";
 import { useSetup } from "../state/SetupContext";
 import type { Ring, TargetDefinition } from "../types/models";
@@ -414,19 +415,6 @@ function CricketPicker({ profile, proceed, error }: PickerProps) {
   );
 }
 
-/** スキル診断の定型メニュー(ブロック順に出題) */
-export function buildSkillCheckTargets(
-  profile: ReturnType<typeof defaultBoardProfileFor>
-): TargetDefinition[] {
-  return [
-    makeBullAnyTarget(),
-    makeSegmentTarget("triple", profile, 20),
-    makeSegmentTarget("triple", profile, 19),
-    makeSegmentTarget("double", profile, 16),
-    makeSegmentTarget("double", profile, 20),
-  ];
-}
-
 /** 全体診断: スキル診断(定型メニュー) / フリースキャン(ランダム) */
 function DiagnosticPicker({ profile, proceed, error }: PickerProps) {
   const s = t();
@@ -462,7 +450,9 @@ function DiagnosticPicker({ profile, proceed, error }: PickerProps) {
           <div className="info-box">{s.target.skillCheckDesc}</div>
           <div className="card">
             <span className="muted small">{s.target.selected}: </span>
-            <strong>Bull → T20 → T19 → D16 → D20</strong>
+            <strong>
+              R1 グルーピング(20全体) → R2 Bull → R3 ナンバー(T20 / T20→T16→T15) → R4 ダブル(D16 / D20)
+            </strong>
           </div>
         </>
       )}
@@ -508,8 +498,8 @@ function DiagnosticPicker({ profile, proceed, error }: PickerProps) {
               // スキル診断は専用モードとして記録し、種目別ブロックで出題する
               update({
                 mode: "skill_check",
-                targets: buildSkillCheckTargets(profile),
-                arrangement: "blocks",
+                targets: skillCheckUniqueTargets(profile),
+                arrangement: "skill_rounds",
                 randomVariant: undefined,
               });
               navigate("/train/sets");

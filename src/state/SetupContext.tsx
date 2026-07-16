@@ -16,7 +16,7 @@ import type {
 export interface SetupState {
   mode?: TrainingMode;
   randomVariant?: RandomVariant;
-  arrangement?: Arrangement;
+  arrangement?: Arrangement | "skill_rounds";
   targets: TargetDefinition[];
   setCount: number;
 }
