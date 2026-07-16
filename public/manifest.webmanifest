@@ -1,6 +1,6 @@
 {
-  "name": "Darts Training Analyzer",
-  "short_name": "DartsTA",
+  "name": "CH Darts Training Analyzer",
+  "short_name": "CH DartsTA",
   "description": "ダーツの投擲を記録し、AI分析用プロンプトを生成するトレーニング支援アプリ",
   "lang": "ja",
   "start_url": "./",

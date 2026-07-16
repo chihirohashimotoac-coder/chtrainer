@@ -4,7 +4,7 @@
  * t() の参照先を切り替える。
  */
 export const ja = {
-  appName: "Darts Training Analyzer",
+  appName: "CH Darts Training Analyzer",
   common: {
     ok: "OK",
     cancel: "キャンセル",
@@ -510,8 +510,10 @@ export const ja = {
     disclaimer2: "本アプリは生成AIのAPIを内蔵していません。生成された分析依頼文を外部のAIサービスへ貼り付ける際は、含まれるデータの内容をご確認のうえ、各サービスの利用規約に従ってください。",
     disclaimer3: "疲労度・痛み等の自己評価記録は医学的診断ではありません。体調に不安がある場合は医療機関にご相談ください。",
     disclaimer4: "データは端末内にのみ保存されます。ブラウザデータの削除やアプリのアンインストールでデータが失われる場合があります。",
+    versionHistory: "バージョン履歴",
     license: "ライセンス",
     licenseBody: "本アプリは MIT License で公開されています。使用ライブラリ: React (MIT), React Router (MIT), idb (ISC)。",
+    copyright: "© Chihiro Hashimoto",
   },
   aiPrompt: {
     // AI分析依頼文の見出し等はexport/markdown.tsで管理
