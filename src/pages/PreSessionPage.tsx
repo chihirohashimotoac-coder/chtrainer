@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AssessmentForm } from "../components/AssessmentForm";
 import { defaultBoardProfileFor } from "../config/boardProfiles";
 import { DARTS_PER_SET } from "../config/constants";
-import { saveSession } from "../db/db";
+import { getSessions, saveSession } from "../db/db";
 import { generatePlannedTargets } from "../domain/planner";
 import { buildSkillCheckPlan } from "../domain/skillCheck";
 import { useApp } from "../state/AppContext";
@@ -31,7 +31,6 @@ export default function PreSessionPage() {
   const [boardType, setBoardType] = useState<BoardType>(
     player?.defaultBoardType ?? "soft"
   );
-  const [hand, setHand] = useState(player?.dominantHand ?? "right");
   const [equipmentId, setEquipmentId] = useState(
     player?.defaultEquipmentProfileId ?? ""
   );
@@ -46,6 +45,17 @@ export default function PreSessionPage() {
   const [temperature, setTemperature] = useState("");
   const [ocheNote, setOcheNote] = useState("");
   const [assessment, setAssessment] = useState<SelfAssessment>();
+
+  // 前回セッションのボード種別・セッティング・入力方式を初期値として引き継ぐ
+  useEffect(() => {
+    void (async () => {
+      const last = (await getSessions()).find((x) => x.status !== "active");
+      if (!last) return;
+      setBoardType(last.boardType);
+      setEquipmentId(last.equipmentProfileId ?? "");
+      setInputMethod(last.inputMethod);
+    })();
+  }, []);
 
   if (!setup.mode || setup.targets.length === 0) {
     return (
@@ -94,7 +104,7 @@ export default function PreSessionPage() {
       ...(setup.randomVariant ? { randomVariant: setup.randomVariant } : {}),
       ...(setup.arrangement ? { arrangement: setup.arrangement } : {}),
       inputMethod,
-      dominantHand: hand,
+      dominantHand: player?.dominantHand ?? "right",
       setCount: setup.setCount,
       plannedThrowCount: setup.setCount * DARTS_PER_SET,
       plannedTargets,
@@ -217,28 +227,6 @@ export default function PreSessionPage() {
               className={`choice${boardType === key ? " selected" : ""}`}
               onClick={() => setBoardType(key)}
               aria-pressed={boardType === key}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>{s.preSession.dominantHand}</legend>
-        <div className="choice-row">
-          {(
-            [
-              ["right", s.player.right],
-              ["left", s.player.left],
-              ["ambidextrous", s.player.ambidextrous],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              className={`choice${hand === key ? " selected" : ""}`}
-              onClick={() => setHand(key)}
-              aria-pressed={hand === key}
             >
               {label}
             </button>

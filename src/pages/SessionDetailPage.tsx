@@ -4,7 +4,10 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { StatsView } from "../components/StatsView";
 import { deleteSessionCascade, getSession, getStatistics } from "../db/db";
 import { modeLabel } from "../export/markdown";
-import { recalcAndSaveStatistics } from "../services/sessionService";
+import {
+  recalcAndSaveStatistics,
+  reopenSession,
+} from "../services/sessionService";
 import { useApp } from "../state/AppContext";
 import type { SessionStatistics, TrainingSession } from "../types/models";
 import { fmtDateTime } from "../utils/format";
@@ -14,7 +17,7 @@ export default function SessionDetailPage() {
   const s = t();
   const { id } = useParams();
   const navigate = useNavigate();
-  const { equipmentProfiles } = useApp();
+  const { equipmentProfiles, activeSession, refresh } = useApp();
   const [session, setSession] = useState<TrainingSession>();
   const [stats, setStats] = useState<SessionStatistics>();
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -71,6 +74,31 @@ export default function SessionDetailPage() {
       {stats && <StatsView stats={stats} />}
 
       <div className="action-bar">
+        {session.status === "aborted" && (
+          <>
+            <button
+              className="btn primary block"
+              onClick={async () => {
+                if (activeSession) {
+                  alert(s.sessions.resumeBlocked);
+                  return;
+                }
+                try {
+                  await reopenSession(session);
+                  await refresh();
+                  navigate("/train/session");
+                } catch {
+                  alert(s.errors.dbSaveFailed);
+                }
+              }}
+            >
+              {s.sessions.resumeAborted}
+            </button>
+            <p className="muted small" style={{ textAlign: "center", margin: "0.2rem 0 0.6rem" }}>
+              {s.sessions.resumeAbortedDesc}
+            </p>
+          </>
+        )}
         <Link className="btn primary block" to={`/session/${session.id}/export`}>
           {s.result.exportAI}
         </Link>

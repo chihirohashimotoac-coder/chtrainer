@@ -11,6 +11,12 @@ export interface VersionEntry {
 
 export const VERSION_HISTORY: VersionEntry[] = [
   {
+    version: "1.17.0",
+    date: "2026-07-17",
+    summary:
+      "プレイヤー設定を整理(ボード種別・セッティング・入力方式は開始前設定へ一本化し前回値を自動引き継ぎ、利き腕は開始前設定から削除。バイブ・効果音・自動進行を削除)。中断セッションを詳細画面から途中再開できる機能を追加",
+  },
+  {
     version: "1.16.0",
     date: "2026-07-17",
     summary:
