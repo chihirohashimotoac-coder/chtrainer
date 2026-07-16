@@ -28,7 +28,7 @@ export default function PreSessionPage() {
 
   const [step, setStep] = useState<"form" | "assessment" | "confirm">("form");
   const [boardType, setBoardType] = useState<BoardType>(
-    player?.defaultBoardType ?? "steel"
+    player?.defaultBoardType ?? "soft"
   );
   const [hand, setHand] = useState(player?.dominantHand ?? "right");
   const [equipmentId, setEquipmentId] = useState(
@@ -81,8 +81,9 @@ export default function PreSessionPage() {
       boardType,
       boardProfileId: defaultBoardProfileFor(boardType).id,
       ...(equipmentId ? { equipmentProfileId: equipmentId } : {}),
-      trainingMode: setup.mode ?? "same_target",
+      trainingMode: setup.mode ?? "random",
       ...(setup.randomVariant ? { randomVariant: setup.randomVariant } : {}),
+      ...(setup.arrangement ? { arrangement: setup.arrangement } : {}),
       inputMethod,
       dominantHand: hand,
       setCount: setup.setCount,
@@ -198,8 +199,8 @@ export default function PreSessionPage() {
         <div className="choice-row">
           {(
             [
-              ["steel", s.player.steel],
               ["soft", s.player.soft],
+              ["steel", s.player.steel],
             ] as const
           ).map(([key, label]) => (
             <button

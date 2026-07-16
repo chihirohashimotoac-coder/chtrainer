@@ -1,7 +1,7 @@
 {
   "format": "darts-training-analyzer-backup",
   "backupVersion": 1,
-  "createdAt": "2026-07-15T15:30:02.063Z",
+  "createdAt": "2026-07-16T01:15:29.045Z",
   "appVersion": "0.1.0",
   "counts": {
     "settings": 1,
@@ -60,7 +60,7 @@
         "plannedTargets": [
           [
             {
-              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -71,7 +71,7 @@
               }
             },
             {
-              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -82,7 +82,7 @@
               }
             },
             {
-              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -95,7 +95,7 @@
           ],
           [
             {
-              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -106,7 +106,7 @@
               }
             },
             {
-              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -117,7 +117,7 @@
               }
             },
             {
-              "id": "148de86d-f019-4c4d-a613-e99945725d50",
+              "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -180,7 +180,7 @@
         "globalThrowNumber": 1,
         "dartInSet": 1,
         "target": {
-          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -223,7 +223,7 @@
         "globalThrowNumber": 2,
         "dartInSet": 2,
         "target": {
-          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -267,7 +267,7 @@
         "globalThrowNumber": 3,
         "dartInSet": 3,
         "target": {
-          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -311,7 +311,7 @@
         "globalThrowNumber": 4,
         "dartInSet": 1,
         "target": {
-          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -355,7 +355,7 @@
         "globalThrowNumber": 5,
         "dartInSet": 2,
         "target": {
-          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -389,7 +389,7 @@
         "globalThrowNumber": 6,
         "dartInSet": 3,
         "target": {
-          "id": "148de86d-f019-4c4d-a613-e99945725d50",
+          "id": "f141be41-639f-4723-8bd1-c9f9b48c2f9a",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -531,7 +531,7 @@
           "outboardCount": 1,
           "outboardRate": 0.3333333333333333
         },
-        "calculatedAt": "2026-07-15T15:30:02.063Z"
+        "calculatedAt": "2026-07-16T01:15:29.045Z"
       }
     ]
   }

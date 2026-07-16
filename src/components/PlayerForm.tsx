@@ -1,9 +1,11 @@
 import { useState } from "react";
 import type {
   BoardType,
+  DominantEye,
   EquipmentProfile,
   InputMethod,
   PlayerProfile,
+  Stance,
 } from "../types/models";
 import { SCHEMA_VERSION } from "../types/models";
 import { newId, nowIso } from "../utils/id";
@@ -37,8 +39,12 @@ export function PlayerForm({
   const [dominantHand, setDominantHand] = useState<PlayerProfile["dominantHand"]>(
     initial?.dominantHand ?? "right"
   );
+  const [dominantEye, setDominantEye] = useState<DominantEye>(
+    initial?.dominantEye ?? "unknown"
+  );
+  const [stance, setStance] = useState<Stance | "">(initial?.stance ?? "");
   const [boardType, setBoardType] = useState<BoardType>(
-    initial?.defaultBoardType ?? "steel"
+    initial?.defaultBoardType ?? "soft"
   );
   const [equipmentId, setEquipmentId] = useState(
     initial?.defaultEquipmentProfileId ?? ""
@@ -67,6 +73,8 @@ export function PlayerForm({
       id: initial?.id ?? newId(),
       displayName: displayName.trim(),
       dominantHand,
+      dominantEye,
+      ...(stance ? { stance } : {}),
       defaultBoardType: boardType,
       ...(equipmentId ? { defaultEquipmentProfileId: equipmentId } : {}),
       dartColors,
@@ -125,12 +133,56 @@ export function PlayerForm({
       </fieldset>
 
       <fieldset>
+        <legend>{s.player.dominantEye}</legend>
+        <div className="choice-row">
+          {(
+            [
+              ["right", s.player.eyeRight],
+              ["left", s.player.eyeLeft],
+              ["unknown", s.player.eyeUnknown],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              className={`choice${dominantEye === key ? " selected" : ""}`}
+              onClick={() => setDominantEye(key)}
+              aria-pressed={dominantEye === key}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>{s.player.stance} ({s.common.optional})</legend>
+        <div className="choice-row">
+          {(
+            [
+              ["closed", s.player.stanceClosed],
+              ["middle", s.player.stanceMiddle],
+              ["open", s.player.stanceOpen],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              className={`choice${stance === key ? " selected" : ""}`}
+              onClick={() => setStance(stance === key ? "" : key)}
+              aria-pressed={stance === key}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset>
         <legend>{s.player.defaultBoardType}</legend>
         <div className="choice-row">
           {(
             [
-              ["steel", s.player.steel],
               ["soft", s.player.soft],
+              ["steel", s.player.steel],
             ] as const
           ).map(([key, label]) => (
             <button

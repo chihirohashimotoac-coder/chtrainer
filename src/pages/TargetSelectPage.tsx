@@ -31,7 +31,7 @@ export default function TargetSelectPage() {
   const { setup, update } = useSetup();
   const mode = setup.mode ?? "same_target";
   const profile = useMemo(
-    () => defaultBoardProfileFor(player?.defaultBoardType ?? "steel"),
+    () => defaultBoardProfileFor(player?.defaultBoardType ?? "soft"),
     [player]
   );
 
@@ -39,8 +39,8 @@ export default function TargetSelectPage() {
   const [pickKind, setPickKind] = useState<PickKind>(
     mode === "double" ? "double" : mode === "triple" ? "triple" : "triple"
   );
-  const [variant, setVariant] = useState<"balanced" | "pure">(
-    setup.randomVariant ?? "balanced"
+  const [arrangement, setArrangement] = useState<Arrangement>(
+    setup.arrangement ?? "balanced"
   );
   const [orderOrBalanced, setOrderOrBalanced] = useState<"cycle" | "balanced">(
     "balanced"
@@ -55,9 +55,13 @@ export default function TargetSelectPage() {
   const [activeDartSlot, setActiveDartSlot] = useState<0 | 1 | 2>(0);
   const [error, setError] = useState("");
 
+  const fixedThree =
+    mode === "per_dart_targets" ||
+    (mode === "random" && arrangement === "fixed_three");
+
   const addTarget = (target: TargetDefinition) => {
     setError("");
-    if (mode === "per_dart_targets") {
+    if (fixedThree) {
       setTargets((prev) => {
         const next = prev.slice(0, 3);
         while (next.length < 3) next.push(target);
@@ -89,15 +93,21 @@ export default function TargetSelectPage() {
     }
   };
 
-  const proceed = (finalTargets: TargetDefinition[], arrangement: Arrangement) => {
+  const proceed = (
+    finalTargets: TargetDefinition[],
+    finalArrangement: Arrangement
+  ) => {
     if (finalTargets.length === 0) {
       setError(s.target.selectAtLeastOne);
       return;
     }
     update({
       targets: finalTargets,
-      arrangement,
-      randomVariant: mode === "random" ? variant : undefined,
+      arrangement: finalArrangement,
+      randomVariant:
+        finalArrangement === "balanced" || finalArrangement === "pure"
+          ? finalArrangement
+          : undefined,
     });
     navigate("/train/sets");
   };
@@ -382,7 +392,7 @@ export default function TargetSelectPage() {
     <div>
       <h1>{s.target.title}</h1>
 
-      {mode === "per_dart_targets" && (
+      {fixedThree && (
         <div className="choice-row">
           {[0, 1, 2].map((i) => (
             <button
@@ -404,27 +414,37 @@ export default function TargetSelectPage() {
 
       {mode === "random" && (
         <fieldset>
-          <legend>{s.mode.random}</legend>
+          <legend>{s.mode.arrangementTitle}</legend>
           <div className="choice-row">
-            <button
-              className={`choice${variant === "balanced" ? " selected" : ""}`}
-              onClick={() => setVariant("balanced")}
-              aria-pressed={variant === "balanced"}
-            >
-              {s.mode.balancedRandom}
-            </button>
-            <button
-              className={`choice${variant === "pure" ? " selected" : ""}`}
-              onClick={() => setVariant("pure")}
-              aria-pressed={variant === "pure"}
-            >
-              {s.mode.pureRandom}
-            </button>
+            {(
+              [
+                ["balanced", s.mode.balancedRandom, s.mode.balancedRandomDesc],
+                ["pure", s.mode.pureRandom, s.mode.pureRandomDesc],
+                ["same_per_set", s.mode.arrSamePerSet, s.mode.arrSamePerSetDesc],
+                ["fixed_three", s.mode.arrFixedThree, s.mode.arrFixedThreeDesc],
+                ["cycle", s.mode.arrCycle, s.mode.arrCycleDesc],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                className={`choice${arrangement === key ? " selected" : ""}`}
+                onClick={() => setArrangement(key)}
+                aria-pressed={arrangement === key}
+              >
+                {label}
+              </button>
+            ))}
           </div>
           <p className="muted small">
-            {variant === "balanced"
+            {arrangement === "balanced"
               ? s.mode.balancedRandomDesc
-              : s.mode.pureRandomDesc}
+              : arrangement === "pure"
+                ? s.mode.pureRandomDesc
+                : arrangement === "same_per_set"
+                  ? s.mode.arrSamePerSetDesc
+                  : arrangement === "fixed_three"
+                    ? s.mode.arrFixedThreeDesc
+                    : s.mode.arrCycleDesc}
           </p>
         </fieldset>
       )}
@@ -461,7 +481,7 @@ export default function TargetSelectPage() {
         </fieldset>
       )}
 
-      {mode !== "per_dart_targets" && (
+      {!fixedThree && (
         <div className="card">
           <h3>
             {s.target.selected} ({targets.length})
@@ -492,23 +512,20 @@ export default function TargetSelectPage() {
         <button
           className="btn primary block"
           onClick={() => {
-            const arrangement: Arrangement =
+            const chosen: Arrangement =
               mode === "same_target"
                 ? "same_per_set"
                 : mode === "per_dart_targets"
                   ? "fixed_three"
                   : mode === "sequence"
                     ? "cycle"
-                    : variant === "balanced"
-                      ? "balanced"
-                      : "pure";
-            const finalTargets =
-              mode === "per_dart_targets" ? targets.slice(0, 3) : targets;
-            if (mode === "per_dart_targets" && finalTargets.length < 3) {
+                    : arrangement;
+            const finalTargets = fixedThree ? targets.slice(0, 3) : targets;
+            if (fixedThree && finalTargets.length < 3) {
               setError(s.target.selectAtLeastOne);
               return;
             }
-            proceed(finalTargets, arrangement);
+            proceed(finalTargets, chosen);
           }}
         >
           {s.common.next}

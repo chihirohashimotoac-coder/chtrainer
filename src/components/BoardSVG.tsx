@@ -10,13 +10,40 @@ import { segmentLabel } from "../domain/targets";
  */
 export const BOARD_UNIT = 100;
 
-const SECTOR_DARK = "#23232b";
-const SECTOR_LIGHT = "#e9e3d1";
-const RING_RED = "#c94f44";
-const RING_GREEN = "#3d9960";
-const BULL_GREEN = "#3d9960";
-const BULL_RED = "#c94f44";
-const BOARD_EDGE = "#101418";
+/** ボード種別ごとの配色。既存サービスの配色を模倣しない独自トーン。 */
+interface BoardColors {
+  sectorDark: string;
+  sectorLight: string;
+  ringA: string;
+  ringB: string;
+  outerBull: string;
+  innerBull: string;
+  edge: string;
+  spider: string;
+}
+
+const STEEL_COLORS: BoardColors = {
+  sectorDark: "#23232b",
+  sectorLight: "#e9e3d1",
+  ringA: "#c94f44",
+  ringB: "#3d9960",
+  outerBull: "#3d9960",
+  innerBull: "#c94f44",
+  edge: "#101418",
+  spider: "#4a4a52",
+};
+
+/** ソフト(プラスチックセグメント)風: 青系×白、明るいスパイダー */
+const SOFT_COLORS: BoardColors = {
+  sectorDark: "#1e2a3d",
+  sectorLight: "#eef1f4",
+  ringA: "#d0483c",
+  ringB: "#2f6fc4",
+  outerBull: "#2f6fc4",
+  innerBull: "#d0483c",
+  edge: "#0e1826",
+  spider: "#c7cdd6",
+};
 
 function pt(radius: number, angleDeg: number): [number, number] {
   const rad = (angleDeg * Math.PI) / 180;
@@ -118,6 +145,7 @@ export const BoardSVG = memo(function BoardSVG({
   };
   const extent = showOutboardArea ? R.input + 4 : R.doubleOut + 18;
   const vb = viewBox ?? `${-extent} ${-extent} ${extent * 2} ${extent * 2}`;
+  const colors = profile.type === "soft" ? SOFT_COLORS : STEEL_COLORS;
 
   const interactive = onSegmentClick != null;
 
@@ -126,8 +154,8 @@ export const BoardSVG = memo(function BoardSVG({
     const a1 = i * 18 - 9;
     const a2 = i * 18 + 9;
     const dark = i % 2 === 0;
-    const singleFill = dark ? SECTOR_DARK : SECTOR_LIGHT;
-    const ringFill = dark ? RING_RED : RING_GREEN;
+    const singleFill = dark ? colors.sectorDark : colors.sectorLight;
+    const ringFill = dark ? colors.ringA : colors.ringB;
     const parts: { ring: Ring; r1: number; r2: number; fill: string }[] = [
       { ring: "inner_single", r1: R.outerBull, r2: R.tripleIn, fill: singleFill },
       { ring: "triple", r1: R.tripleIn, r2: R.tripleOut, fill: ringFill },
@@ -141,7 +169,7 @@ export const BoardSVG = memo(function BoardSVG({
           key={`${number}-${part.ring}`}
           d={annularSectorPath(part.r1, part.r2, a1, a2)}
           fill={part.fill}
-          stroke={highlighted ? "#f0b246" : "#4a4a52"}
+          stroke={highlighted ? "#f0b246" : colors.spider}
           strokeWidth={highlighted ? 2.2 : 0.4}
           data-ring={part.ring}
           data-number={number}
@@ -210,14 +238,14 @@ export const BoardSVG = memo(function BoardSVG({
           data-ring="outboard"
         />
       )}
-      <circle cx={0} cy={0} r={R.doubleOut + (showOutboardArea ? 0 : 16)} fill={BOARD_EDGE} />
+      <circle cx={0} cy={0} r={R.doubleOut + (showOutboardArea ? 0 : 16)} fill={colors.edge} />
       {segments}
       <circle
         cx={0}
         cy={0}
         r={R.outerBull}
-        fill={BULL_GREEN}
-        stroke={bullHighlightOuter ? "#f0b246" : "#4a4a52"}
+        fill={colors.outerBull}
+        stroke={bullHighlightOuter ? "#f0b246" : colors.spider}
         strokeWidth={bullHighlightOuter ? 2.2 : 0.4}
         data-ring="outer_bull"
         role={interactive ? "button" : undefined}
@@ -242,8 +270,8 @@ export const BoardSVG = memo(function BoardSVG({
         cx={0}
         cy={0}
         r={R.innerBull}
-        fill={BULL_RED}
-        stroke={bullHighlightInner ? "#f0b246" : "#4a4a52"}
+        fill={colors.innerBull}
+        stroke={bullHighlightInner ? "#f0b246" : colors.spider}
         strokeWidth={bullHighlightInner ? 2 : 0.4}
         data-ring="inner_bull"
         role={interactive ? "button" : undefined}
