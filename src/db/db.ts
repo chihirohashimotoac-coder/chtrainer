@@ -198,6 +198,20 @@ export async function saveThrowSet(set: ThrowSet): Promise<void> {
   await db.put("throwSets", set);
 }
 
+export async function saveCommittedSet(
+  set: ThrowSet,
+  records: ThrowRecord[]
+): Promise<void> {
+  const db = await getDb();
+  const tx = db.transaction(["throwSets", "throws"], "readwrite");
+  await tx.objectStore("throwSets").put(set);
+  const now = nowIso();
+  for (const r of records) {
+    await tx.objectStore("throws").put({ ...r, updatedAt: now });
+  }
+  await tx.done;
+}
+
 export async function getThrowSets(sessionId: UUID): Promise<ThrowSet[]> {
   const db = await getDb();
   const sets = await db.getAllFromIndex("throwSets", "bySession", sessionId);
