@@ -47,11 +47,14 @@ export type OutboardDirection =
 export type InputMethod = "simple" | "coordinate";
 
 export type TrainingMode =
+  | "zero_one"
+  | "cricket"
+  | "bull"
+  | "random"
+  // 以下は旧バージョンで記録されたセッションとの互換用
   | "same_target"
   | "per_dart_targets"
-  | "random"
   | "sequence"
-  | "bull"
   | "double"
   | "triple"
   | "number";

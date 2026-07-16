@@ -10,8 +10,9 @@ export default function ModeSelectPage() {
   const { update } = useSetup();
 
   const modes: { key: TrainingMode; label: string; desc: string }[] = [
+    { key: "zero_one", label: s.mode.zeroOne, desc: s.mode.zeroOneDesc },
+    { key: "cricket", label: s.mode.cricket, desc: s.mode.cricketDesc },
     { key: "bull", label: s.mode.bull, desc: s.mode.bullDesc },
-    { key: "number", label: s.mode.number, desc: s.mode.numberDesc },
     { key: "random", label: s.mode.random, desc: s.mode.randomDesc },
   ];
 

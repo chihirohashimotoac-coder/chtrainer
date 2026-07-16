@@ -15,9 +15,11 @@ import { t } from "../i18n/ja";
 const NA = "N/A";
 
 const MODE_LABELS: Record<string, string> = {
+  zero_one: "01練習",
+  cricket: "クリケット練習",
   same_target: "同一ターゲット3投",
   per_dart_targets: "3投別ターゲット",
-  random: "ランダムターゲット",
+  random: "全体診断(ランダム)",
   sequence: "登録順出題",
   bull: "ブル練習",
   double: "ダブル練習",
