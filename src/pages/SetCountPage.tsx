@@ -40,6 +40,9 @@ export default function SetCountPage() {
   return (
     <div>
       <h1>{s.sets.title}</h1>
+      {setup.mode === "random" && (
+        <div className="info-box">{s.target.diagnosticSetHint}</div>
+      )}
       <div className="choice-row">
         {SET_PRESETS.map((preset) => (
           <button

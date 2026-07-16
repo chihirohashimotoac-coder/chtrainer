@@ -3,16 +3,27 @@ import { useNavigate } from "react-router-dom";
 import { defaultBoardProfileFor } from "../config/boardProfiles";
 import {
   buildFullRandomPool,
-  makeCustomTarget,
+  makeBullAnyTarget,
   makeSegmentTarget,
 } from "../domain/targets";
 import { shuffle, type Arrangement } from "../domain/planner";
 import { useApp } from "../state/AppContext";
 import { useSetup } from "../state/SetupContext";
-import type { TargetArea, TargetDefinition } from "../types/models";
+import type { Ring, TargetDefinition } from "../types/models";
 import { t } from "../i18n/ja";
 
 const NUMBERS = Array.from({ length: 20 }, (_, i) => i + 1);
+const CRICKET_NUMBERS = [20, 19, 18, 17, 16, 15];
+
+type SegmentKind = "triple" | "double" | "single";
+
+function ringOf(kind: SegmentKind): Ring {
+  return kind === "single"
+    ? "outer_single"
+    : kind === "double"
+      ? "double"
+      : "triple";
+}
 
 export default function TargetSelectPage() {
   const s = t();
@@ -25,17 +36,6 @@ export default function TargetSelectPage() {
     [player]
   );
 
-  const [targets, setTargets] = useState<TargetDefinition[]>(setup.targets);
-  const [arrangement, setArrangement] = useState<Arrangement>(
-    setup.arrangement ?? "balanced"
-  );
-  const [orderOrBalanced, setOrderOrBalanced] = useState<"cycle" | "balanced">(
-    "balanced"
-  );
-  const [numberKind, setNumberKind] = useState<
-    "single" | "double" | "triple" | "custom"
-  >("triple");
-  const [customAreas, setCustomAreas] = useState<TargetArea[]>([]);
   const [error, setError] = useState("");
 
   const proceed = (
@@ -57,138 +57,313 @@ export default function TargetSelectPage() {
     navigate("/train/sets");
   };
 
-  // ---- 特定ナンバー練習 ----
+  if (mode === "zero_one") {
+    return <ZeroOnePicker profile={profile} proceed={proceed} error={error} />;
+  }
+  if (mode === "cricket") {
+    return <CricketPicker profile={profile} proceed={proceed} error={error} />;
+  }
+  return <DiagnosticPicker profile={profile} proceed={proceed} error={error} />;
+}
 
-  if (mode === "number") {
-    const selectedNumbers = [
-      ...new Set(
-        targets.map((x) => x.number).filter((n): n is number => n != null)
-      ),
-    ];
-    const toggleNumber = (n: number) => {
-      setError("");
-      setTargets((prev) => {
-        const exists = prev.some((x) => x.number === n);
-        if (exists) return prev.filter((x) => x.number !== n);
-        const ring =
-          numberKind === "single"
-            ? "outer_single"
-            : numberKind === "double"
-              ? "double"
-              : "triple";
-        return [...prev, makeSegmentTarget(ring, profile, n)];
-      });
-    };
-    return (
-      <div>
-        <h1>{s.target.title} — {s.mode.number}</h1>
-        <fieldset>
-          <legend>{s.target.targetKind}</legend>
+interface PickerProps {
+  profile: ReturnType<typeof defaultBoardProfileFor>;
+  proceed: (targets: TargetDefinition[], arrangement: Arrangement) => void;
+  error: string;
+}
+
+/** 01練習: 同一ターゲット反復 / フィニッシュ3投指定 */
+function ZeroOnePicker({ profile, proceed, error }: PickerProps) {
+  const s = t();
+  const [practiceType, setPracticeType] = useState<"repeat" | "finish">(
+    "repeat"
+  );
+  // 反復: 選択ターゲット(複数可)
+  const [kind, setKind] = useState<SegmentKind>("triple");
+  const [targets, setTargets] = useState<TargetDefinition[]>([
+    makeSegmentTarget("triple", profile, 20),
+  ]);
+  // フィニッシュ: 3投固定 (初期値 T20→T20→D16)
+  const [finishTargets, setFinishTargets] = useState<TargetDefinition[]>([
+    makeSegmentTarget("triple", profile, 20),
+    makeSegmentTarget("triple", profile, 20),
+    makeSegmentTarget("double", profile, 16),
+  ]);
+  const [activeSlot, setActiveSlot] = useState<0 | 1 | 2>(0);
+  const [slotKind, setSlotKind] = useState<SegmentKind>("triple");
+
+  const selectedNumbers = targets
+    .filter((x) => x.ring === ringOf(kind))
+    .map((x) => x.number);
+
+  const kindChips = (
+    current: SegmentKind,
+    setter: (k: SegmentKind) => void
+  ) => (
+    <div className="choice-row">
+      {(
+        [
+          ["triple", s.target.triple],
+          ["double", s.target.double],
+          ["single", s.target.single],
+        ] as const
+      ).map(([key, label]) => (
+        <button
+          key={key}
+          className={`choice${current === key ? " selected" : ""}`}
+          onClick={() => setter(key)}
+          aria-pressed={current === key}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
+  return (
+    <div>
+      <h1>{s.target.title} — {s.mode.zeroOne}</h1>
+      <div className="choice-row">
+        {(
+          [
+            ["repeat", s.target.zeroOneRepeat],
+            ["finish", s.target.zeroOneFinish],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            className={`choice${practiceType === key ? " selected" : ""}`}
+            onClick={() => setPracticeType(key)}
+            aria-pressed={practiceType === key}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <p className="muted small">
+        {practiceType === "repeat"
+          ? s.target.zeroOneRepeatDesc
+          : s.target.zeroOneFinishDesc}
+      </p>
+
+      {practiceType === "repeat" && (
+        <>
+          <fieldset>
+            <legend>{s.target.targetKind}</legend>
+            {kindChips(kind, setKind)}
+          </fieldset>
+          <fieldset>
+            <legend>{s.input.selectNumber}</legend>
+            <div className="number-grid">
+              {NUMBERS.map((n) => {
+                const selected = selectedNumbers.includes(n);
+                return (
+                  <button
+                    key={n}
+                    className={selected ? "selected" : ""}
+                    aria-pressed={selected}
+                    onClick={() =>
+                      setTargets((prev) => {
+                        const ring = ringOf(kind);
+                        const exists = prev.some(
+                          (x) => x.ring === ring && x.number === n
+                        );
+                        return exists
+                          ? prev.filter(
+                              (x) => !(x.ring === ring && x.number === n)
+                            )
+                          : [...prev, makeSegmentTarget(ring, profile, n)];
+                      })
+                    }
+                  >
+                    {n}
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+          <div className="card">
+            <span className="muted small">{s.target.selected}: </span>
+            <strong>
+              {targets.map((x) => x.label).join(", ") || "-"}
+            </strong>
+          </div>
+        </>
+      )}
+
+      {practiceType === "finish" && (
+        <>
           <div className="choice-row">
-            {(
-              [
-                ["triple", s.target.triple],
-                ["double", s.target.double],
-                ["single", s.target.single],
-                ["custom", s.target.customAreas],
-              ] as const
-            ).map(([key, label]) => (
+            {[0, 1, 2].map((i) => (
               <button
-                key={key}
-                className={`choice${numberKind === key ? " selected" : ""}`}
-                onClick={() => {
-                  setNumberKind(key);
-                  setTargets([]);
-                  setCustomAreas([]);
-                }}
-                aria-pressed={numberKind === key}
+                key={i}
+                className={`choice${activeSlot === i ? " selected" : ""}`}
+                onClick={() => setActiveSlot(i as 0 | 1 | 2)}
+                aria-pressed={activeSlot === i}
               >
-                {label}
+                {i === 0
+                  ? s.target.dart1Target
+                  : i === 1
+                    ? s.target.dart2Target
+                    : s.target.dart3Target}
+                : {finishTargets[i]?.label ?? "-"}
               </button>
             ))}
           </div>
-        </fieldset>
-
-        {numberKind !== "custom" && (
+          <fieldset>
+            <legend>{s.target.targetKind}</legend>
+            {kindChips(slotKind, setSlotKind)}
+          </fieldset>
           <fieldset>
             <legend>{s.input.selectNumber}</legend>
             <div className="number-grid">
               {NUMBERS.map((n) => (
                 <button
                   key={n}
-                  className={selectedNumbers.includes(n) ? "selected" : ""}
-                  aria-pressed={selectedNumbers.includes(n)}
-                  onClick={() => toggleNumber(n)}
+                  onClick={() => {
+                    setFinishTargets((prev) => {
+                      const next = prev.slice();
+                      next[activeSlot] = makeSegmentTarget(
+                        ringOf(slotKind),
+                        profile,
+                        n
+                      );
+                      return next;
+                    });
+                    setActiveSlot((prev) =>
+                      prev < 2 ? ((prev + 1) as 0 | 1 | 2) : prev
+                    );
+                  }}
                 >
                   {n}
                 </button>
               ))}
             </div>
           </fieldset>
-        )}
-
-        {numberKind === "custom" && (
-          <CustomAreaPicker areas={customAreas} onChange={setCustomAreas} />
-        )}
-
-        <div className="choice-row">
-          {(
-            [
-              ["cycle", s.mode.sequence],
-              ["balanced", s.mode.balancedRandom],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              className={`choice${orderOrBalanced === key ? " selected" : ""}`}
-              onClick={() => setOrderOrBalanced(key)}
-              aria-pressed={orderOrBalanced === key}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        {error && <p className="error-text">{error}</p>}
-        <div className="action-bar">
           <button
-            className="btn primary block"
-            onClick={() => {
-              if (numberKind === "custom") {
-                if (customAreas.length === 0) {
-                  setError(s.target.selectAtLeastOne);
-                  return;
-                }
-                const labels = customAreas
-                  .map((a) =>
-                    a.ring === "inner_bull"
-                      ? "IB"
-                      : a.ring === "outer_bull"
-                        ? "OB"
-                        : `${a.ring === "double" ? "D" : a.ring === "triple" ? "T" : "S"}${a.number}`
-                  )
-                  .join("+");
-                proceed(
-                  [makeCustomTarget(labels, customAreas, profile)],
-                  "same_per_set"
-                );
-              } else {
-                proceed(targets, orderOrBalanced);
-              }
-            }}
+            className="btn small block"
+            onClick={() =>
+              setFinishTargets((prev) => {
+                const next = prev.slice();
+                next[activeSlot] = makeBullAnyTarget();
+                return next;
+              })
+            }
           >
-            {s.common.next}
+            {s.target.bullAny}を{activeSlot + 1}投目にセット
+          </button>
+        </>
+      )}
+
+      {error && <p className="error-text">{error}</p>}
+      <div className="action-bar">
+        <button
+          className="btn primary block"
+          onClick={() => {
+            if (practiceType === "repeat") {
+              proceed(targets, "same_per_set");
+            } else {
+              proceed(finishTargets, "fixed_three");
+            }
+          }}
+        >
+          {s.common.next}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** クリケット練習: 15〜20のトリプル + Bull */
+function CricketPicker({ profile, proceed, error }: PickerProps) {
+  const s = t();
+  const [numbers, setNumbers] = useState<number[]>(CRICKET_NUMBERS);
+  const [includeBull, setIncludeBull] = useState(true);
+  const [orderOrBalanced, setOrderOrBalanced] = useState<"cycle" | "balanced">(
+    "balanced"
+  );
+
+  return (
+    <div>
+      <h1>{s.target.title} — {s.mode.cricket}</h1>
+      <p className="muted small">{s.target.cricketInfo}</p>
+      <fieldset>
+        <legend>{s.target.cricketNumbers}</legend>
+        <div className="choice-row">
+          {CRICKET_NUMBERS.map((n) => {
+            const selected = numbers.includes(n);
+            return (
+              <button
+                key={n}
+                className={`choice${selected ? " selected" : ""}`}
+                aria-pressed={selected}
+                onClick={() =>
+                  setNumbers((prev) =>
+                    selected ? prev.filter((x) => x !== n) : [...prev, n]
+                  )
+                }
+              >
+                T{n}
+              </button>
+            );
+          })}
+          <button
+            className={`choice${includeBull ? " selected" : ""}`}
+            aria-pressed={includeBull}
+            onClick={() => setIncludeBull((v) => !v)}
+          >
+            Bull
           </button>
         </div>
-      </div>
-    );
-  }
+      </fieldset>
 
-  // ---- ランダムターゲット: ターゲットはボード全体から自動選出 ----
+      <div className="choice-row">
+        {(
+          [
+            ["balanced", s.mode.balancedRandom],
+            ["cycle", s.mode.sequence],
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            className={`choice${orderOrBalanced === key ? " selected" : ""}`}
+            onClick={() => setOrderOrBalanced(key)}
+            aria-pressed={orderOrBalanced === key}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {error && <p className="error-text">{error}</p>}
+      <div className="action-bar">
+        <button
+          className="btn primary block"
+          onClick={() => {
+            const targets: TargetDefinition[] = CRICKET_NUMBERS.filter((n) =>
+              numbers.includes(n)
+            ).map((n) => makeSegmentTarget("triple", profile, n));
+            if (includeBull) targets.push(makeBullAnyTarget());
+            proceed(targets, orderOrBalanced);
+          }}
+        >
+          {s.common.next}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** 全体診断: ボード全体から自動出題 */
+function DiagnosticPicker({ profile, proceed, error }: PickerProps) {
+  const s = t();
+  const [arrangement, setArrangement] = useState<Arrangement>("balanced");
 
   return (
     <div>
       <h1>{s.target.title} — {s.mode.random}</h1>
       <div className="info-box">{s.target.randomAutoInfo}</div>
+      <div className="info-box">{s.target.diagnosticSetHint}</div>
 
       <fieldset>
         <legend>{s.mode.arrangementTitle}</legend>
@@ -197,8 +372,6 @@ export default function TargetSelectPage() {
             [
               ["balanced", s.mode.balancedRandom],
               ["pure", s.mode.pureRandom],
-              ["same_per_set", s.mode.arrSamePerSet],
-              ["fixed_three", s.mode.arrFixedThree],
             ] as const
           ).map(([key, label]) => (
             <button
@@ -214,100 +387,18 @@ export default function TargetSelectPage() {
         <p className="muted small">
           {arrangement === "balanced"
             ? s.mode.balancedRandomDesc
-            : arrangement === "pure"
-              ? s.mode.pureRandomDesc
-              : arrangement === "same_per_set"
-                ? s.mode.arrSamePerSetRandomDesc
-                : s.mode.arrFixedThreeRandomDesc}
+            : s.mode.pureRandomDesc}
         </p>
       </fieldset>
 
       {error && <p className="error-text">{error}</p>}
-
       <div className="action-bar">
         <button
           className="btn primary block"
-          onClick={() => {
-            // ボード全体のプールをシャッフルして使用。
-            // same_per_set はセットごとに先頭から順に、fixed_three は先頭3件を使う
-            const pool = shuffle(buildFullRandomPool(profile));
-            proceed(pool, arrangement);
-          }}
+          onClick={() => proceed(shuffle(buildFullRandomPool(profile)), arrangement)}
         >
           {s.common.next}
         </button>
-      </div>
-    </div>
-  );
-}
-
-function CustomAreaPicker({
-  areas,
-  onChange,
-}: {
-  areas: TargetArea[];
-  onChange: (areas: TargetArea[]) => void;
-}) {
-  const s = t();
-  const [ring, setRing] = useState<TargetArea["ring"]>("triple");
-  const needsNumber =
-    ring === "outer_single" || ring === "double" || ring === "triple";
-  const areaLabel = (a: TargetArea) =>
-    a.ring === "inner_bull"
-      ? s.target.innerBull
-      : a.ring === "outer_bull"
-        ? s.target.outerBull
-        : `${a.ring === "double" ? "D" : a.ring === "triple" ? "T" : "S"}${a.number}`;
-  return (
-    <div>
-      <fieldset>
-        <legend>{s.target.customAreas}</legend>
-        <div className="choice-row">
-          {(
-            [
-              ["outer_single", s.target.single],
-              ["double", s.target.double],
-              ["triple", s.target.triple],
-              ["outer_bull", s.target.outerBull],
-              ["inner_bull", s.target.innerBull],
-            ] as const
-          ).map(([key, label]) => (
-            <button
-              key={key}
-              className={`choice${ring === key ? " selected" : ""}`}
-              onClick={() => {
-                setRing(key);
-                if (key === "outer_bull" || key === "inner_bull") {
-                  onChange([...areas, { ring: key }]);
-                }
-              }}
-              aria-pressed={ring === key}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </fieldset>
-      {needsNumber && (
-        <div className="number-grid">
-          {NUMBERS.map((n) => (
-            <button key={n} onClick={() => onChange([...areas, { ring, number: n }])}>
-              {n}
-            </button>
-          ))}
-        </div>
-      )}
-      <div className="choice-row" style={{ marginTop: "0.5rem" }}>
-        {areas.map((a, i) => (
-          <button
-            key={i}
-            className="choice"
-            onClick={() => onChange(areas.filter((_, j) => j !== i))}
-            aria-label={`${areaLabel(a)} を削除`}
-          >
-            {areaLabel(a)} ✕
-          </button>
-        ))}
       </div>
     </div>
   );
