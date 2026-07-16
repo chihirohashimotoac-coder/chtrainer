@@ -2,13 +2,13 @@ import type { BoardProfile } from "../config/boardProfiles";
 import type { TargetDefinition } from "../types/models";
 import {
   makeBullAnyTarget,
-  makeNumberSectorTarget,
+  makeCustomTarget,
   makeSegmentTarget,
 } from "./targets";
 
 /**
  * スキル診断: 4ラウンド構成の技能測定メニュー。
- *  R1 グルーピング: 20エリア全体を狙い、3本のまとまりを測定
+ *  R1 グルーピング: 1投目は自由、2投目以降は1投目の着弾点を狙い、3本のまとまりを測定
  *  R2 ブル: Bull狙いの精度
  *  R3 ナンバー: T20同一3投セット、T20→T16→T15、T12→T18→T3 の3パターンを循環
  *              (三角形を1投ずつなぞる切替セット2種を含む)
@@ -26,7 +26,7 @@ export const SKILL_ROUND_LABELS = [
 /** 投擲画面に表示するラウンド別の指示文 */
 export const SKILL_INSTRUCTIONS = {
   grouping:
-    "20エリアのどこでもOK。3本をできるだけ狭くまとめて投げてください。測定するのは3投のまとまり(着弾間の距離)で、命中率は問いません。",
+    "1投目は狙いやすい場所へ投げてください。2投目・3投目は、1投目に刺さった場所を続けて狙ってください。測定するのは3投のまとまり(着弾間の距離)で、命中率は問いません。",
   bull: "Bullを狙って3本投げてください。ブルへの命中精度を測定します。",
   numberSame:
     "T20に3本連続で投げてください。同じターゲットを狙い続ける精度を測定します。",
@@ -43,10 +43,15 @@ function withInstruction(
   return { ...target, instruction };
 }
 
+/**
+ * グルーピングラウンドのターゲット。
+ * 狙う場所は自由(1投目の着弾点に残り2本を集める)ため、
+ * 固定エリアを持たない「フリーターゲット」(areas空のcustom_selection)とする。
+ * 命中判定・誤差は記録せず、AIは3投の座標からまとまりを評価する。
+ */
 function groupingTarget(profile: BoardProfile): TargetDefinition {
   return {
-    ...makeNumberSectorTarget(20, profile),
-    label: "20エリア",
+    ...makeCustomTarget("1投目の着弾点", [], profile),
     instruction: SKILL_INSTRUCTIONS.grouping,
   };
 }

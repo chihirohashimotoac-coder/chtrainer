@@ -9,7 +9,7 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     expect(plan).toHaveLength(20);
     // R1: グルーピング
     for (let i = 0; i < 5; i++) {
-      expect(plan[i]?.every((x) => x.label === "20エリア")).toBe(true);
+      expect(plan[i]?.every((x) => x.label === "1投目の着弾点")).toBe(true);
     }
     // R2: ブル
     for (let i = 5; i < 10; i++) {
@@ -34,23 +34,23 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     expect(plan[16]?.map((x) => x.label)).toEqual(["D20", "D20", "D20"]);
   });
 
-  it("グルーピングターゲットは20エリア全体を命中とする", () => {
+  it("グルーピングターゲットは狙い自由のフリーターゲット", () => {
     const grouping = plan[0]?.[0];
-    expect(grouping?.type).toBe("number_sector");
-    expect(grouping?.number).toBe(20);
+    expect(grouping?.type).toBe("custom_selection");
+    expect(grouping?.areas).toEqual([]);
   });
 
   it("割り切れないセット数は先頭ラウンドから+1配分する", () => {
     const plan22 = buildSkillCheckPlan(STEEL_BOARD, 22);
     expect(plan22).toHaveLength(22);
     // 22 = 6,6,5,5
-    expect(plan22[5]?.[0]?.label).toBe("20エリア");
+    expect(plan22[5]?.[0]?.label).toBe("1投目の着弾点");
     expect(plan22[6]?.[0]?.label).toBe("Bull");
   });
 
   it("使用ターゲット一覧は10種", () => {
     expect(skillCheckUniqueTargets(STEEL_BOARD).map((x) => x.label)).toEqual([
-      "20エリア",
+      "1投目の着弾点",
       "Bull",
       "T20",
       "T16",
