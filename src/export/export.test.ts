@@ -134,6 +134,13 @@ describe("Markdown生成", () => {
     expect(build({ trainingMode: "random" })).toContain(
       "分析焦点(全体診断)"
     );
+    const skillMd = build({
+      trainingMode: "skill_check",
+      arrangement: "blocks",
+    });
+    expect(skillMd).toContain("分析焦点(スキル診断)");
+    expect(skillMd).toContain("ブル精度");
+    expect(skillMd).toContain("チェックアウト力");
     expect(
       build({ trainingMode: "zero_one", arrangement: "fixed_three" })
     ).toContain("分析焦点(フィニッシュ3投指定)");

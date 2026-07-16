@@ -51,6 +51,7 @@ export type TrainingMode =
   | "cricket"
   | "bull"
   | "random"
+  | "skill_check"
   // 以下は旧バージョンで記録されたセッションとの互換用
   | "same_target"
   | "per_dart_targets"

@@ -43,6 +43,9 @@ export default function SetCountPage() {
       {setup.mode === "random" && (
         <div className="info-box">{s.target.diagnosticSetHint}</div>
       )}
+      {setup.mode === "skill_check" && (
+        <div className="info-box">{s.target.skillSetHint}</div>
+      )}
       <div className="choice-row">
         {SET_PRESETS.map((preset) => (
           <button
