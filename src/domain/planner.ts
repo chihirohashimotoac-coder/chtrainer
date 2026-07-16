@@ -8,13 +8,16 @@ import type { TargetDefinition } from "../types/models";
  *  - cycle: 登録順に1投ずつ出題(リストを繰り返す)
  *  - balanced: 出題数が可能な限り均等になるようにし、順番だけランダム化
  *  - pure: 毎投完全ランダム
+ *  - blocks: 1ターゲットを連続セットでまとめて出題し、リスト順に切り替える
+ *            (例: 20セット×[T20,T19] → T20を10セット→T19を10セット)
  */
 export type Arrangement =
   | "same_per_set"
   | "fixed_three"
   | "cycle"
   | "balanced"
-  | "pure";
+  | "pure"
+  | "blocks";
 
 export type Rng = () => number;
 
@@ -89,6 +92,20 @@ export function generatePlannedTargets(
         flat.push(pool[Math.floor(rng() * pool.length)] as TargetDefinition);
       }
       return chunkIntoSets(flat);
+    }
+    case "blocks": {
+      // 各ターゲットへ連続セットを割り当てる。余りは先頭のターゲットから+1
+      const sets: TargetDefinition[][] = [];
+      const n = pool.length;
+      const base = Math.floor(setCount / n);
+      const extra = setCount % n;
+      pool.forEach((target, i) => {
+        const count = base + (i < extra ? 1 : 0);
+        for (let k = 0; k < count; k++) {
+          sets.push([target, target, target]);
+        }
+      });
+      return sets;
     }
   }
 }

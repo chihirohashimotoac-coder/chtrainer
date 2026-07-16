@@ -68,6 +68,27 @@ describe("generatePlannedTargets", () => {
     }
   });
 
+  it("blocks: ターゲットごとに連続セットでまとめて出題する", () => {
+    const sets = generatePlannedTargets("blocks", [T20, D16], 20);
+    expect(sets).toHaveLength(20);
+    // 前半10セットはT20、後半10セットはD16
+    expect(sets[0]?.every((x) => x.label === "T20")).toBe(true);
+    expect(sets[9]?.every((x) => x.label === "T20")).toBe(true);
+    expect(sets[10]?.every((x) => x.label === "D16")).toBe(true);
+    expect(sets[19]?.every((x) => x.label === "D16")).toBe(true);
+  });
+
+  it("blocks: 割り切れない場合は先頭ターゲットに余りを配分", () => {
+    const pool = [1, 2, 3].map((n) => makeSegmentTarget("triple", STEEL_BOARD, n));
+    const sets = generatePlannedTargets("blocks", pool, 20);
+    expect(sets).toHaveLength(20);
+    const counts = countByLabel(sets);
+    // 20セット / 3ターゲット → 7,7,6セット (投数では21,21,18)
+    expect(counts["T1"]).toBe(21);
+    expect(counts["T2"]).toBe(21);
+    expect(counts["T3"]).toBe(18);
+  });
+
   it("空プールはエラー", () => {
     expect(() => generatePlannedTargets("cycle", [], 20)).toThrow();
   });
