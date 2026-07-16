@@ -451,7 +451,7 @@ function DiagnosticPicker({ profile, proceed, error }: PickerProps) {
           <div className="card">
             <span className="muted small">{s.target.selected}: </span>
             <strong>
-              R1 グルーピング(20全体) → R2 Bull → R3 ナンバー(T20 / T20→T16→T15) → R4 ダブル(D16 / D20)
+              R1 グルーピング(20全体) → R2 Bull → R3 ナンバー(T20同一3投 / T20→T16→T15 / T12→T18→T3) → R4 ダブル(D16 / D20)
             </strong>
           </div>
         </>
