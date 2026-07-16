@@ -21,10 +21,12 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     }
   });
 
-  it("R3ナンバーは同一3投と1投ずつ切替を交互に出題する", () => {
+  it("R3ナンバーは同一3投→三角形1→三角形2を循環出題する", () => {
     expect(plan[10]?.map((x) => x.label)).toEqual(["T20", "T20", "T20"]);
     expect(plan[11]?.map((x) => x.label)).toEqual(["T20", "T16", "T15"]);
-    expect(plan[12]?.map((x) => x.label)).toEqual(["T20", "T20", "T20"]);
+    expect(plan[12]?.map((x) => x.label)).toEqual(["T12", "T18", "T3"]);
+    expect(plan[13]?.map((x) => x.label)).toEqual(["T20", "T20", "T20"]);
+    expect(plan[14]?.map((x) => x.label)).toEqual(["T20", "T16", "T15"]);
   });
 
   it("R4ダブルはD16とD20を交互に出題する", () => {
@@ -46,13 +48,16 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     expect(plan22[6]?.[0]?.label).toBe("Bull");
   });
 
-  it("使用ターゲット一覧は7種", () => {
+  it("使用ターゲット一覧は10種", () => {
     expect(skillCheckUniqueTargets(STEEL_BOARD).map((x) => x.label)).toEqual([
       "グルーピング(20全体)",
       "Bull",
       "T20",
       "T16",
       "T15",
+      "T12",
+      "T18",
+      "T3",
       "D16",
       "D20",
     ]);
