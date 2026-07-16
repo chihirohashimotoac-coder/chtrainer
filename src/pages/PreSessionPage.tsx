@@ -5,6 +5,7 @@ import { defaultBoardProfileFor } from "../config/boardProfiles";
 import { DARTS_PER_SET } from "../config/constants";
 import { saveSession } from "../db/db";
 import { generatePlannedTargets } from "../domain/planner";
+import { buildSkillCheckPlan } from "../domain/skillCheck";
 import { useApp } from "../state/AppContext";
 import { useSetup } from "../state/SetupContext";
 import { modeLabel } from "../export/markdown";
@@ -69,11 +70,19 @@ export default function PreSessionPage() {
         : {}),
       ...(ocheNote ? { ocheNote } : {}),
     };
-    const plannedTargets = generatePlannedTargets(
-      setup.arrangement ?? "same_per_set",
-      setup.targets,
-      setup.setCount
-    );
+    const plannedTargets =
+      setup.mode === "skill_check"
+        ? buildSkillCheckPlan(
+            defaultBoardProfileFor(boardType),
+            setup.setCount
+          )
+        : generatePlannedTargets(
+            setup.arrangement === "skill_rounds" || setup.arrangement == null
+              ? "same_per_set"
+              : setup.arrangement,
+            setup.targets,
+            setup.setCount
+          );
     const session: TrainingSession = {
       schemaVersion: SCHEMA_VERSION,
       id: newId(),

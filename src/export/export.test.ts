@@ -139,7 +139,9 @@ describe("Markdown生成", () => {
       arrangement: "blocks",
     });
     expect(skillMd).toContain("分析焦点(スキル診断)");
+    expect(skillMd).toContain("グルーピング力");
     expect(skillMd).toContain("ブル精度");
+    expect(skillMd).toContain("ナンバー精度");
     expect(skillMd).toContain("チェックアウト力");
     expect(
       build({ trainingMode: "zero_one", arrangement: "fixed_three" })
