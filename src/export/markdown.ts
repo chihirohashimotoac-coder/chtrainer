@@ -54,6 +54,7 @@ const ARRANGEMENT_LABELS: Record<string, string> = {
   same_per_set: "同一ターゲット3投",
   fixed_three: "3投別ターゲット",
   cycle: "登録順",
+  blocks: "ナンバー順に集中(ブロック出題)",
 };
 
 const EYE_LABELS: Record<string, string> = {
