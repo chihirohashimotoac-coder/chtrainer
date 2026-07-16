@@ -82,6 +82,12 @@ export function deriveThrow(
     sessionProgress,
   };
 
+  // フリーターゲット(狙う場所が自由なグルーピングラウンド等): 代表点が
+  // 存在しないため、固定点への誤差・ズレ方向は記録しない(座標は残る)
+  const isFreeTarget =
+    target.type === "custom_selection" && (target.areas?.length ?? 0) === 0;
+  if (isFreeTarget) return base;
+
   if (landing.x != null && landing.y != null) {
     const errorX = landing.x - target.representativePoint.x;
     const errorY = landing.y - target.representativePoint.y;

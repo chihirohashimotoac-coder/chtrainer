@@ -111,6 +111,24 @@ describe("deriveThrow (誤差の派生データ)", () => {
     expect(derived.errorDistance).toBeUndefined();
   });
 
+  it("フリーターゲット(グルーピング)では誤差・命中を記録しない", () => {
+    const free = {
+      id: "free",
+      label: "1投目の着弾点",
+      type: "custom_selection" as const,
+      areas: [],
+      representativePoint: { x: 0, y: 0 },
+    };
+    const landing = landingFromCoordinate(0.3, 0.5, STEEL_BOARD);
+    const derived = deriveThrow(free, landing, ctx);
+    expect(derived.exactHit).toBe(false);
+    expect(derived.errorX).toBeUndefined();
+    expect(derived.errorDistance).toBeUndefined();
+    expect(derived.missDirection).toBeUndefined();
+    // 座標自体はlanding側に残る(まとまり計算用)
+    expect(landing.x).toBeCloseTo(0.3);
+  });
+
   it("ターゲット変更と前投命中を記録する", () => {
     const d16 = makeSegmentTarget("double", STEEL_BOARD, 16);
     const landing = landingFromCoordinate(0, 0, STEEL_BOARD);
