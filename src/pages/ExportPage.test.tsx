@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -40,6 +40,35 @@ describe("ExportPage (AI出力設定)", () => {
       screen.getByRole("button", { name: ".mdファイルを保存" })
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "CSVを保存" })).toBeInTheDocument();
+  });
+
+  it("Markdown全文が1回のコピー操作でクリップボードへ渡される", async () => {
+    const user = userEvent.setup();
+    // userEvent.setup() がクリップボードを差し替えるため、その後に上書きする
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(window, "isSecureContext", {
+      value: true,
+      configurable: true,
+    });
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    renderPage();
+    await user.click(
+      await screen.findByRole("button", { name: "Markdownを生成" })
+    );
+    await screen.findByText(/# ダーツ投擲データ分析依頼/);
+    await user.click(screen.getByRole("button", { name: "Markdownをコピー" }));
+
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const copied = writeText.mock.calls[0]?.[0] as string;
+    // 先頭から末尾まで全文が1回で渡されている
+    expect(copied.startsWith("# ダーツ投擲データ分析依頼")).toBe(true);
+    expect(copied).toContain("## AIへの分析指示");
+    expect(copied).toContain("## 全投擲データ");
+    expect(copied).toContain("## データ利用上の注意");
+    expect((await screen.findAllByText("コピーしました")).length).toBeGreaterThan(0);
   });
 
   it("集計+CSV別添方式へ切り替えられる", async () => {
