@@ -71,6 +71,92 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
         </div>
       ))}
 
+      {stats.cricket && (
+        <>
+          <h2>{s.result.cricketStats}</h2>
+          <div className="card">
+            <div className="list-row">
+              <span className="muted">{s.result.totalMarks}</span>
+              <strong>{stats.cricket.totalMarks}</strong>
+            </div>
+            <div className="list-row">
+              <span className="muted">{s.result.marksPerThree}</span>
+              <strong>{fmtNum(stats.cricket.marksPerThreeDarts, 2)}</strong>
+            </div>
+            <div className="list-row">
+              <span className="muted">{s.result.effectiveMarkRate}</span>
+              <strong>{fmtRate(stats.cricket.effectiveMarkRate)}</strong>
+            </div>
+            <div className="list-row">
+              <span className="muted">{s.result.noMarkRate}</span>
+              <strong>{fmtRate(stats.cricket.noMarkRate)}</strong>
+            </div>
+          </div>
+          <div className="table-wrap">
+            <table className="stats">
+              <thead>
+                <tr>
+                  <th>{s.throws.target}</th>
+                  <th>{s.result.throwCount}</th>
+                  <th>{s.result.totalMarks}</th>
+                  <th>{s.result.marksPerThree}</th>
+                  <th>{s.result.noMarkRate}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.keys(stats.cricket.byTarget)
+                  .sort()
+                  .map((label) => {
+                    const g = stats.cricket?.byTarget[label];
+                    if (!g) return null;
+                    return (
+                      <tr key={label}>
+                        <td>{label}</td>
+                        <td>{g.throwCount}</td>
+                        <td>{g.totalMarks}</td>
+                        <td>{fmtNum(g.marksPerThreeDarts, 2)}</td>
+                        <td>{fmtRate(g.noMarkRate)}</td>
+                      </tr>
+                    );
+                  })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+
+      {stats.zeroOne && (
+        <>
+          <h2>{s.result.zeroOneStats}</h2>
+          <div className="card">
+            {stats.zeroOne.bullThrowCount > 0 && (
+              <div className="list-row">
+                <span className="muted">{s.result.bullHitRate}</span>
+                <strong>{fmtRate(stats.zeroOne.bullHitRate)}</strong>
+              </div>
+            )}
+            {stats.zeroOne.tripleThrowCount > 0 && (
+              <div className="list-row">
+                <span className="muted">{s.result.tripleHitRate}</span>
+                <strong>{fmtRate(stats.zeroOne.tripleHitRate)}</strong>
+              </div>
+            )}
+            {stats.zeroOne.doubleThrowCount > 0 && (
+              <div className="list-row">
+                <span className="muted">{s.result.doubleHitRate}</span>
+                <strong>{fmtRate(stats.zeroOne.doubleHitRate)}</strong>
+              </div>
+            )}
+            {stats.zeroOne.allHitSetRate != null && (
+              <div className="list-row">
+                <span className="muted">{s.result.allHitSetRate}</span>
+                <strong>{fmtRate(stats.zeroOne.allHitSetRate)}</strong>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
       <h2>{s.result.byDartOrder}</h2>
       <div className="table-wrap">
         <table className="stats">

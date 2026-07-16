@@ -1,6 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { calculateStatistics, mean, median } from "./stats";
-import { handComputedThrows, mixedPrecisionThrows } from "../test/fixtures";
+import {
+  calculateCricketStats,
+  calculateStatistics,
+  calculateZeroOneStats,
+  markValue,
+  mean,
+  median,
+} from "./stats";
+import { buildThrows, handComputedThrows, mixedPrecisionThrows, T20, D16 } from "../test/fixtures";
+import { STEEL_BOARD } from "../config/boardProfiles";
+import { landingFromCoordinate, landingFromSegment } from "../domain/landing";
+import { makeBullAnyTarget } from "../domain/targets";
 
 describe("mean / median (平均値・中央値)", () => {
   it("空配列はundefined", () => {
@@ -98,6 +108,78 @@ describe("座標入力と簡易入力の分離", () => {
     expect(stats.approximateInputCount).toBe(2);
     expect(stats.coordinateError.sampleCount).toBe(1);
     expect(stats.combinedError.sampleCount).toBe(3);
+  });
+});
+
+describe("クリケット統計 (マーク換算)", () => {
+  const bull = makeBullAnyTarget();
+  // T20狙い: T20(3), S20(1), S5(0=別ナンバー) / Bull狙い: IB(2), OB(1), S20(0)
+  const throws = buildThrows(
+    [
+      { target: T20, landing: landingFromSegment("triple", STEEL_BOARD, 20) },
+      { target: T20, landing: landingFromSegment("outer_single", STEEL_BOARD, 20) },
+      { target: T20, landing: landingFromSegment("outer_single", STEEL_BOARD, 5) },
+      { target: bull, landing: landingFromSegment("inner_bull", STEEL_BOARD) },
+      { target: bull, landing: landingFromSegment("outer_bull", STEEL_BOARD) },
+      { target: bull, landing: landingFromSegment("outer_single", STEEL_BOARD, 20) },
+    ],
+    6
+  );
+
+  it("markValue: T=3, S=1, 別ナンバー=0, IB=2, OB=1", () => {
+    expect(throws.map((t) => markValue(t))).toEqual([3, 1, 0, 2, 1, 0]);
+  });
+
+  it("MPR相当・有効マーク率・ノーマーク率", () => {
+    const c = calculateCricketStats(throws);
+    expect(c.totalMarks).toBe(7);
+    // 7マーク / 6投 × 3 = 3.5
+    expect(c.marksPerThreeDarts).toBeCloseTo(3.5);
+    expect(c.effectiveMarkRate).toBeCloseTo(4 / 6);
+    expect(c.noMarkRate).toBeCloseTo(2 / 6);
+    expect(c.byTarget["T20"]?.totalMarks).toBe(4);
+    expect(c.byTarget["T20"]?.marksPerThreeDarts).toBeCloseTo(4);
+    expect(c.byTarget["Bull"]?.totalMarks).toBe(3);
+  });
+
+  it("mode=cricket でセッション統計に付与される", () => {
+    const stats = calculateStatistics("s", 6, throws, "cricket");
+    expect(stats.cricket).toBeDefined();
+    const statsNoMode = calculateStatistics("s", 6, throws);
+    expect(statsNoMode.cricket).toBeUndefined();
+  });
+});
+
+describe("01統計", () => {
+  // セット1: T20全命中 / セット2: D16へ2命中1外し
+  const rep20 = T20.representativePoint;
+  const rep16 = D16.representativePoint;
+  const throws = buildThrows(
+    [
+      { target: T20, landing: landingFromCoordinate(rep20.x, rep20.y, STEEL_BOARD) },
+      { target: T20, landing: landingFromCoordinate(rep20.x, rep20.y, STEEL_BOARD) },
+      { target: T20, landing: landingFromCoordinate(rep20.x, rep20.y, STEEL_BOARD) },
+      { target: D16, landing: landingFromCoordinate(rep16.x, rep16.y, STEEL_BOARD) },
+      { target: D16, landing: landingFromCoordinate(rep16.x, rep16.y, STEEL_BOARD) },
+      { target: D16, landing: landingFromCoordinate(0, 0, STEEL_BOARD) },
+    ],
+    6
+  );
+
+  it("トリプル/ダブル命中率とフィニッシュ成立率", () => {
+    const z = calculateZeroOneStats(throws);
+    expect(z.tripleThrowCount).toBe(3);
+    expect(z.tripleHitRate).toBeCloseTo(1);
+    expect(z.doubleThrowCount).toBe(3);
+    expect(z.doubleHitRate).toBeCloseTo(2 / 3);
+    // セット1は3投全命中、セット2は2/3 → 成立率 1/2
+    expect(z.allHitSetRate).toBeCloseTo(0.5);
+  });
+
+  it("mode=zero_one でセッション統計に付与される", () => {
+    const stats = calculateStatistics("s", 6, throws, "zero_one");
+    expect(stats.zeroOne).toBeDefined();
+    expect(stats.zeroOne?.doubleHitRate).toBeCloseTo(2 / 3);
   });
 });
 

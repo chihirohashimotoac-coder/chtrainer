@@ -188,6 +188,113 @@ describe("Markdown生成", () => {
   });
 });
 
+describe("目的プロファイル・メンタル評価・長期トレンドの出力", () => {
+  const player = {
+    schemaVersion: 1,
+    id: "player-1",
+    displayName: "テスト",
+    dominantHand: "right" as const,
+    goal: "recovery" as const,
+    currentLevel: "レーティング8相当",
+    targetLevel: "レーティング12",
+    concern: "3投目で失速する",
+    defaultBoardType: "soft" as const,
+    dartColors: ["#111", "#222", "#333"] as [string, string, string],
+    defaultInputMethod: "simple" as const,
+    vibrationEnabled: false,
+    soundEnabled: false,
+    autoAdvanceEnabled: false,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+
+  it("ユーザーの目的・背景セクションを出力する", () => {
+    const md = buildAnalysisMarkdown({
+      session,
+      player,
+      equipment: undefined,
+      stats,
+      throws,
+      setNumberOf,
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    expect(md).toContain("## ユーザーの目的・背景");
+    expect(md).toContain("復調(以前の実力に戻る)");
+    expect(md).toContain("レーティング8相当");
+    expect(md).toContain("3投目で失速する");
+    expect(md).toContain("この目的と悩みに直接応える形で");
+  });
+
+  it("目的未設定なら目的セクションを出力しない", () => {
+    const md = buildAnalysisMarkdown({
+      session,
+      player: undefined,
+      equipment: undefined,
+      stats,
+      throws,
+      setNumberOf,
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    expect(md).not.toContain("## ユーザーの目的・背景");
+  });
+
+  it("メンタル評価があると自己評価表に列が追加される", () => {
+    const md = buildAnalysisMarkdown({
+      session: fixtureSession({
+        assessments: [
+          {
+            timing: "before",
+            recordedAt: "2026-01-01T09:59:00.000Z",
+            fatigue: 3,
+            concentration: 7,
+            pain: 0,
+            confidence: 6,
+            anxiety: 8,
+            releaseFear: 6,
+            routineAdherence: 4,
+          },
+        ],
+      }),
+      player: undefined,
+      equipment: undefined,
+      stats,
+      throws,
+      setNumberOf,
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    expect(md).toContain("投げる前の不安");
+    expect(md).toContain("リリースの怖さ");
+    expect(md).toContain("| 8 | 6 | 4 |");
+    expect(md).toContain("心理的・医学的診断ではない");
+  });
+
+  it("長期トレンドセクションを出力する", () => {
+    const past = fixtureSession({
+      id: "session-past",
+      startedAt: "2025-12-01T10:00:00.000Z",
+    });
+    const pastStats = calculateStatistics("session-past", 6, throws);
+    const md = buildAnalysisMarkdown({
+      session,
+      player: undefined,
+      equipment: undefined,
+      stats,
+      throws,
+      setNumberOf,
+      comparisons: [],
+      recentSessions: [{ session: past, stats: pastStats }],
+      embedAllThrows: false,
+    });
+    expect(md).toContain("## 長期トレンド");
+    expect(md).toContain("2025/12/01");
+    expect(md).toContain("| 今回");
+    expect(md).toContain("改善中/停滞/悪化");
+  });
+});
+
 describe("60投セッションの通し検証 (統計→Markdown→CSV)", () => {
   // 20セット×3投=60投。T20狙いで規則的な着弾を生成
   const specs = Array.from({ length: 60 }, (_, i) => {

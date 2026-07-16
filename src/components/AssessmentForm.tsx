@@ -25,6 +25,10 @@ export function AssessmentForm({
     "better" | "same" | "worse"
   >("same");
   const [note, setNote] = useState("");
+  const [showMental, setShowMental] = useState(false);
+  const [anxiety, setAnxiety] = useState(0);
+  const [releaseFear, setReleaseFear] = useState(0);
+  const [routineAdherence, setRoutineAdherence] = useState(10);
 
   const submit = () => {
     const assessment: SelfAssessment = {
@@ -35,6 +39,10 @@ export function AssessmentForm({
       pain,
       confidence,
       ...(timing !== "before" ? { conditionChange } : {}),
+      // メンタル評価はセクションを開いて記録した場合のみ保存する
+      ...(showMental
+        ? { anxiety, releaseFear, routineAdherence }
+        : {}),
       ...(note.trim() ? { note: note.trim() } : {}),
     };
     onSubmit(assessment);
@@ -83,6 +91,34 @@ export function AssessmentForm({
             ))}
           </div>
         </fieldset>
+      )}
+
+      <button
+        className="btn small block"
+        onClick={() => setShowMental((v) => !v)}
+        aria-expanded={showMental}
+      >
+        {s.assessment.mentalSection}
+      </button>
+      {showMental && (
+        <div className="card">
+          <p className="muted small">{s.assessment.mentalHint}</p>
+          <Scale11
+            label={s.assessment.anxiety}
+            value={anxiety}
+            onChange={setAnxiety}
+          />
+          <Scale11
+            label={s.assessment.releaseFear}
+            value={releaseFear}
+            onChange={setReleaseFear}
+          />
+          <Scale11
+            label={s.assessment.routineAdherence}
+            value={routineAdherence}
+            onChange={setRoutineAdherence}
+          />
+        </div>
       )}
 
       <label className="field">

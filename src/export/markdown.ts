@@ -65,6 +65,15 @@ const EYE_LABELS: Record<string, string> = {
   unknown: "不明",
 };
 
+const GOAL_LABELS: Record<string, string> = {
+  recovery: "復調(以前の実力に戻る)",
+  zero_one: "01ゲームの強化",
+  cricket: "クリケットの強化",
+  pro: "プロ志望(競技力向上)",
+  form_check: "フォーム確認",
+  bull: "ブル精度の向上",
+};
+
 const STANCE_LABELS: Record<string, string> = {
   closed: "クローズド",
   middle: "ミドル",
@@ -307,17 +316,32 @@ function equipmentSummary(equipment: EquipmentProfile | undefined): string {
 
 function assessmentSection(assessments: readonly SelfAssessment[]): string {
   if (assessments.length === 0) return "記録なし\n";
-  const lines: string[] = [
-    "| タイミング | 疲労度 | 集中度 | 痛み | 自信度 | 調子の変化 | メモ |",
-    "|---|---:|---:|---:|---:|---|---|",
-  ];
+  const hasMental = assessments.some(
+    (a) =>
+      a.anxiety != null || a.releaseFear != null || a.routineAdherence != null
+  );
+  const lines: string[] = hasMental
+    ? [
+        "| タイミング | 疲労度 | 集中度 | 痛み | 自信度 | 投げる前の不安 | リリースの怖さ | ルーティン達成度 | 調子の変化 | メモ |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---|---|",
+      ]
+    : [
+        "| タイミング | 疲労度 | 集中度 | 痛み | 自信度 | 調子の変化 | メモ |",
+        "|---|---:|---:|---:|---:|---|---|",
+      ];
   for (const a of assessments) {
+    const mental = hasMental
+      ? ` ${a.anxiety ?? NA} | ${a.releaseFear ?? NA} | ${a.routineAdherence ?? NA} |`
+      : "";
     lines.push(
-      `| ${TIMING_LABELS[a.timing] ?? a.timing} | ${a.fatigue} | ${a.concentration} | ${a.pain} | ${a.confidence} | ${a.conditionChange ? CHANGE_LABELS[a.conditionChange] : NA} | ${a.note ?? ""} |`
+      `| ${TIMING_LABELS[a.timing] ?? a.timing} | ${a.fatigue} | ${a.concentration} | ${a.pain} | ${a.confidence} |${mental} ${a.conditionChange ? CHANGE_LABELS[a.conditionChange] : NA} | ${a.note ?? ""} |`
     );
   }
   lines.push("");
   lines.push("(各項目は0〜10の自己評価。0=まったくない/非常に低い、10=非常に強い/非常に高い。医学的評価ではない)");
+  if (hasMental) {
+    lines.push("(メンタル評価はイップス等の主観記録であり、心理的・医学的診断ではない。分析時は投擲データとの関連を仮説として扱うこと)");
+  }
   return lines.join("\n") + "\n";
 }
 
@@ -397,6 +421,40 @@ function statsSection(stats: SessionStatistics): string {
     `| 後半 | ${s.secondHalf.throwCount} | ${fmtRate(s.secondHalf.hitRate)} | ${fmtNum(s.secondHalf.averageErrorDistance)} | ${fmtRate(s.secondHalf.outboardRate)} |`
   );
   out.push("");
+  if (s.cricket) {
+    const c = s.cricket;
+    out.push("### クリケット統計(マーク換算: T=3, D=2, S=1, インナーブル=2, アウターブル=1)");
+    out.push("");
+    out.push(`- 総マーク数: ${c.totalMarks}`);
+    out.push(`- 3投あたり平均マーク: ${fmtNum(c.marksPerThreeDarts, 2)}`);
+    out.push(`- 有効マーク率(1マーク以上の投擲): ${fmtRate(c.effectiveMarkRate)}`);
+    out.push(`- ノーマーク率: ${fmtRate(c.noMarkRate)}`);
+    out.push("");
+    out.push("| ターゲット | 投擲数 | 総マーク | 3投あたり平均マーク | ノーマーク率 |");
+    out.push("|---|---:|---:|---:|---:|");
+    for (const label of Object.keys(c.byTarget).sort()) {
+      const g = c.byTarget[label];
+      if (!g) continue;
+      out.push(
+        `| ${label} | ${g.throwCount} | ${g.totalMarks} | ${fmtNum(g.marksPerThreeDarts, 2)} | ${fmtRate(g.noMarkRate)} |`
+      );
+    }
+    out.push("");
+  }
+  if (s.zeroOne) {
+    const z = s.zeroOne;
+    out.push("### 01統計");
+    out.push("");
+    if (z.bullThrowCount > 0)
+      out.push(`- Bull命中率: ${fmtRate(z.bullHitRate)} (${z.bullThrowCount}投)`);
+    if (z.tripleThrowCount > 0)
+      out.push(`- トリプル命中率: ${fmtRate(z.tripleHitRate)} (${z.tripleThrowCount}投)`);
+    if (z.doubleThrowCount > 0)
+      out.push(`- ダブル命中率: ${fmtRate(z.doubleHitRate)} (${z.doubleThrowCount}投)`);
+    if (z.allHitSetRate != null)
+      out.push(`- 3投すべて命中したセット率(フィニッシュ成立率): ${fmtRate(z.allHitSetRate)}`);
+    out.push("");
+  }
   out.push("### アウトボードとバウンスアウト");
   out.push("");
   out.push(`- アウトボード: ${s.outboardCount}回 (${fmtRate(s.outboardRate)})`);
@@ -473,6 +531,11 @@ export interface MarkdownInput {
   throws: readonly ThrowRecord[];
   setNumberOf: (setId: string) => number | undefined;
   comparisons: {
+    session: TrainingSession;
+    stats: SessionStatistics;
+  }[];
+  /** 長期トレンド用: 同モードの過去セッション(古い順) */
+  recentSessions?: {
     session: TrainingSession;
     stats: SessionStatistics;
   }[];
@@ -557,6 +620,21 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   out.push(`- 今日の調子: ${CONDITION_LABELS[session.dailyCondition] ?? session.dailyCondition}${session.dailyConditionNote ? ` (${session.dailyConditionNote})` : ""}`);
   if (player) out.push(`- プレイヤー: ${player.displayName}`);
   out.push("");
+  if (
+    player &&
+    (player.goal || player.currentLevel || player.targetLevel || player.concern)
+  ) {
+    out.push("## ユーザーの目的・背景");
+    out.push("");
+    if (player.goal)
+      out.push(`- 目的: ${GOAL_LABELS[player.goal] ?? player.goal}`);
+    if (player.currentLevel) out.push(`- 現在のレベル(自己申告): ${player.currentLevel}`);
+    if (player.targetLevel) out.push(`- 目標レベル: ${player.targetLevel}`);
+    if (player.concern) out.push(`- 主な悩み・重点課題: ${player.concern}`);
+    out.push("");
+    out.push("回答は、この目的と悩みに直接応える形で優先順位をつけてください。一般論よりも、この目的に対する具体的な示唆を優先してください。");
+    out.push("");
+  }
   out.push("## 環境情報");
   out.push("");
   const env = session.environment;
@@ -587,6 +665,23 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   out.push("## 過去セッションとの比較");
   out.push("");
   out.push(comparisonSection(input));
+  if (input.recentSessions && input.recentSessions.length > 0) {
+    out.push("## 長期トレンド(同モードの直近セッション・古い順)");
+    out.push("");
+    out.push("| 日時 | 完了投擲数 | 完全命中率 | 平均誤差距離 | 3投あたり平均マーク |");
+    out.push("|---|---:|---:|---:|---:|");
+    for (const r of input.recentSessions) {
+      out.push(
+        `| ${fmtDateTime(r.session.startedAt)} | ${r.stats.completedThrows} | ${fmtRate(r.stats.exactHitRate)} | ${fmtNum(r.stats.combinedError.averageErrorDistance)} | ${r.stats.cricket ? fmtNum(r.stats.cricket.marksPerThreeDarts, 2) : NA} |`
+      );
+    }
+    out.push(
+      `| 今回 (${fmtDateTime(session.startedAt)}) | ${stats.completedThrows} | ${fmtRate(stats.exactHitRate)} | ${fmtNum(stats.combinedError.averageErrorDistance)} | ${stats.cricket ? fmtNum(stats.cricket.marksPerThreeDarts, 2) : NA} |`
+    );
+    out.push("");
+    out.push("このトレンドから、改善中/停滞/悪化している指標を特定し、時系列の傾向として分析してください。");
+    out.push("");
+  }
   out.push("## 全投擲データ");
   out.push("");
   if (input.embedAllThrows) {

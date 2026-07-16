@@ -98,6 +98,14 @@ export interface EquipmentProfile {
 }
 
 export type DominantEye = "right" | "left" | "unknown";
+
+export type PlayerGoal =
+  | "recovery"
+  | "zero_one"
+  | "cricket"
+  | "pro"
+  | "form_check"
+  | "bull";
 export type Stance = "closed" | "middle" | "open";
 
 export interface PlayerProfile {
@@ -109,6 +117,14 @@ export interface PlayerProfile {
   dominantEye?: DominantEye;
   /** スタンス(任意・後から追加されたフィールド) */
   stance?: Stance;
+  /** 練習の目的(任意) */
+  goal?: PlayerGoal;
+  /** 現在のレベル(自由記述・自己申告) */
+  currentLevel?: string;
+  /** 目標レベル(自由記述) */
+  targetLevel?: string;
+  /** 直近の悩み・重点課題(自由記述) */
+  concern?: string;
   defaultBoardType: BoardType;
   defaultEquipmentProfileId?: UUID;
   /** 1投目・2投目・3投目の識別用フライト色 */
@@ -158,6 +174,12 @@ export interface SelfAssessment {
   pain: number;
   confidence: number;
   conditionChange?: "better" | "same" | "worse";
+  /** メンタル評価(任意): 投げる前の不安 0-10 */
+  anxiety?: number;
+  /** メンタル評価(任意): リリースの怖さ・違和感 0-10 */
+  releaseFear?: number;
+  /** メンタル評価(任意): ルーティンを守れた度 0-10 */
+  routineAdherence?: number;
   note?: string;
 }
 
@@ -310,6 +332,38 @@ export interface ErrorStats {
   byDirection: Record<MissDirection, number>;
 }
 
+/** クリケット専用統計 (マーク換算: T=3, D=2, S=1, IB=2, OB=1) */
+export interface CricketStats {
+  totalMarks: number;
+  /** 3投あたり平均マーク (MPR相当) */
+  marksPerThreeDarts: number;
+  /** 1マーク以上を得た投擲の割合 (有効マーク率) */
+  effectiveMarkRate: number;
+  /** マーク0の投擲の割合 */
+  noMarkRate: number;
+  byTarget: Record<
+    string,
+    {
+      throwCount: number;
+      totalMarks: number;
+      marksPerThreeDarts: number;
+      noMarkRate: number;
+    }
+  >;
+}
+
+/** 01練習専用統計 */
+export interface ZeroOneStats {
+  bullThrowCount: number;
+  bullHitRate?: number;
+  tripleThrowCount: number;
+  tripleHitRate?: number;
+  doubleThrowCount: number;
+  doubleHitRate?: number;
+  /** 3投すべて命中したセットの割合 (フィニッシュ成立率) */
+  allHitSetRate?: number;
+}
+
 export interface SessionStatistics {
   schemaVersion: number;
   sessionId: UUID;
@@ -331,6 +385,10 @@ export interface SessionStatistics {
   byDirection: Record<MissDirection, number>;
   firstHalf: HalfStats;
   secondHalf: HalfStats;
+  /** クリケット練習セッションのみ */
+  cricket?: CricketStats;
+  /** 01練習セッションのみ */
+  zeroOne?: ZeroOneStats;
   calculatedAt: ISODateTime;
 }
 

@@ -134,13 +134,115 @@ function computeHalfStats(throws: readonly ThrowRecord[]): HalfStats {
 }
 
 /**
+ * クリケット換算のマーク数 (T=3, D=2, S=1, インナーブル=2, アウターブル=1)。
+ * 狙いのナンバーと異なるナンバーへの着弾は0マーク。
+ */
+export function markValue(t: ThrowRecord): number {
+  const target = t.target;
+  const landing = t.landing;
+  if (target.type === "bull_any") {
+    if (landing.ring === "inner_bull") return 2;
+    if (landing.ring === "outer_bull") return 1;
+    return 0;
+  }
+  if (target.number == null || landing.number !== target.number) return 0;
+  switch (landing.ring) {
+    case "triple":
+      return 3;
+    case "double":
+      return 2;
+    case "inner_single":
+    case "outer_single":
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+/** クリケット専用統計を計算する */
+export function calculateCricketStats(
+  throws: readonly ThrowRecord[]
+): import("../types/models").CricketStats {
+  const marks = throws.map((t) => ({ t, m: markValue(t) }));
+  const totalMarks = marks.reduce((a, x) => a + x.m, 0);
+  const count = throws.length;
+  const byTarget: import("../types/models").CricketStats["byTarget"] = {};
+  for (const { t } of marks) {
+    if (!byTarget[t.target.label]) {
+      byTarget[t.target.label] = {
+        throwCount: 0,
+        totalMarks: 0,
+        marksPerThreeDarts: 0,
+        noMarkRate: 0,
+      };
+    }
+  }
+  for (const label of Object.keys(byTarget)) {
+    const group = marks.filter((x) => x.t.target.label === label);
+    const groupMarks = group.reduce((a, x) => a + x.m, 0);
+    const noMarks = group.filter((x) => x.m === 0).length;
+    byTarget[label] = {
+      throwCount: group.length,
+      totalMarks: groupMarks,
+      marksPerThreeDarts:
+        group.length > 0 ? (groupMarks / group.length) * 3 : 0,
+      noMarkRate: group.length > 0 ? noMarks / group.length : 0,
+    };
+  }
+  const noMarkCount = marks.filter((x) => x.m === 0).length;
+  return {
+    totalMarks,
+    marksPerThreeDarts: count > 0 ? (totalMarks / count) * 3 : 0,
+    effectiveMarkRate: count > 0 ? (count - noMarkCount) / count : 0,
+    noMarkRate: count > 0 ? noMarkCount / count : 0,
+    byTarget,
+  };
+}
+
+/** 01練習専用統計を計算する */
+export function calculateZeroOneStats(
+  throws: readonly ThrowRecord[]
+): import("../types/models").ZeroOneStats {
+  const bulls = throws.filter((t) => t.target.type === "bull_any");
+  const triples = throws.filter((t) => t.target.ring === "triple");
+  const doubles = throws.filter((t) => t.target.ring === "double");
+  const rate = (group: readonly ThrowRecord[]) =>
+    group.length > 0
+      ? group.filter((t) => t.derived.exactHit).length / group.length
+      : undefined;
+  // セット単位: 3投すべて命中したセットの割合(フィニッシュ成立率)
+  const bySet = new Map<string, ThrowRecord[]>();
+  for (const t of throws) {
+    const list = bySet.get(t.setId) ?? [];
+    list.push(t);
+    bySet.set(t.setId, list);
+  }
+  const fullSets = [...bySet.values()].filter((set) => set.length === 3);
+  const allHitSets = fullSets.filter((set) =>
+    set.every((t) => t.derived.exactHit)
+  );
+  return {
+    bullThrowCount: bulls.length,
+    bullHitRate: rate(bulls),
+    tripleThrowCount: triples.length,
+    tripleHitRate: rate(triples),
+    doubleThrowCount: doubles.length,
+    doubleHitRate: rate(doubles),
+    allHitSetRate:
+      fullSets.length > 0 ? allHitSets.length / fullSets.length : undefined,
+  };
+}
+
+/**
  * セッションの基本統計を計算する。
  * 内部値は丸めない(表示時にのみ丸める)。
+ * mode を渡すとモード専用統計(クリケット/01)も付与する。
  */
 export function calculateStatistics(
   sessionId: UUID,
   plannedThrowCount: number,
-  throws: readonly ThrowRecord[]
+  throws: readonly ThrowRecord[],
+  mode?: string
 ): SessionStatistics {
   const sorted = throws
     .slice()
@@ -219,6 +321,8 @@ export function calculateStatistics(
     byDirection,
     firstHalf,
     secondHalf,
+    ...(mode === "cricket" ? { cricket: calculateCricketStats(sorted) } : {}),
+    ...(mode === "zero_one" ? { zeroOne: calculateZeroOneStats(sorted) } : {}),
     calculatedAt: nowIso(),
   };
 }
