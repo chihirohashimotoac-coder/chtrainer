@@ -46,7 +46,7 @@ function withInstruction(
 function groupingTarget(profile: BoardProfile): TargetDefinition {
   return {
     ...makeNumberSectorTarget(20, profile),
-    label: "グルーピング",
+    label: "20エリア",
     instruction: SKILL_INSTRUCTIONS.grouping,
   };
 }
