@@ -106,6 +106,42 @@ describe("Markdown生成", () => {
     expect(markdown).toContain("平均誤差距離: 0.150");
   });
 
+  it("モード別の分析焦点セクションを含む (同一ターゲット系)", () => {
+    // fixtureSession は same_target → 反復練習の焦点
+    expect(markdown).toContain("このセッションの分析焦点(同一ターゲット反復練習)");
+    expect(markdown).toContain("該当なし");
+  });
+
+  it("モードごとに分析焦点が切り替わる", () => {
+    const build = (overrides: Parameters<typeof fixtureSession>[0]) =>
+      buildAnalysisMarkdown({
+        session: fixtureSession(overrides),
+        player: undefined,
+        equipment: undefined,
+        stats,
+        throws,
+        setNumberOf,
+        comparisons: [],
+        embedAllThrows: false,
+      });
+    expect(build({ trainingMode: "bull" })).toContain(
+      "分析焦点(ブル反復練習)"
+    );
+    expect(build({ trainingMode: "cricket" })).toContain(
+      "分析焦点(クリケット練習)"
+    );
+    expect(build({ trainingMode: "cricket" })).toContain("平均マーク数");
+    expect(build({ trainingMode: "random" })).toContain(
+      "分析焦点(全体診断)"
+    );
+    expect(
+      build({ trainingMode: "zero_one", arrangement: "fixed_three" })
+    ).toContain("分析焦点(フィニッシュ3投指定)");
+    expect(
+      build({ trainingMode: "zero_one", arrangement: "same_per_set" })
+    ).toContain("分析焦点(同一ターゲット反復練習)");
+  });
+
   it("CSV別添方式では表を含めない", () => {
     const summary = buildAnalysisMarkdown({
       session,
