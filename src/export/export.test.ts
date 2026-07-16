@@ -4,9 +4,13 @@ import { buildAnalysisMarkdown } from "./markdown";
 import { buildBackup, parseBackup, serializeBackup, validateBackup } from "./backup";
 import { calculateStatistics } from "../domain/stats";
 import {
+  buildThrows,
   fixtureSession,
   handComputedThrows,
+  T20,
 } from "../test/fixtures";
+import { landingFromCoordinate } from "../domain/landing";
+import { STEEL_BOARD } from "../config/boardProfiles";
 import { BACKUP_VERSION } from "../config/constants";
 
 const session = fixtureSession();
@@ -181,6 +185,60 @@ describe("Markdown生成", () => {
     });
     expect(withCompare).toContain("### 比較対象:");
     expect(withCompare).toContain("差 0.0pt");
+  });
+});
+
+describe("60投セッションの通し検証 (統計→Markdown→CSV)", () => {
+  // 20セット×3投=60投。T20狙いで規則的な着弾を生成
+  const specs = Array.from({ length: 60 }, (_, i) => {
+    const rep = T20.representativePoint;
+    const dx = ((i % 5) - 2) * 0.03;
+    const dy = ((i % 7) - 3) * 0.02;
+    return {
+      target: T20,
+      landing: landingFromCoordinate(rep.x + dx, rep.y + dy, STEEL_BOARD),
+    };
+  });
+  const throws60 = buildThrows(specs, 60);
+  const session60 = fixtureSession({
+    setCount: 20,
+    plannedThrowCount: 60,
+  });
+  const stats60 = calculateStatistics(session60.id, 60, throws60);
+
+  it("60投すべてが統計に反映される", () => {
+    expect(stats60.completedThrows).toBe(60);
+    expect(
+      stats60.byDartInSet["1"].throwCount +
+        stats60.byDartInSet["2"].throwCount +
+        stats60.byDartInSet["3"].throwCount
+    ).toBe(60);
+    expect(stats60.firstHalf.throwCount + stats60.secondHalf.throwCount).toBe(60);
+    expect(stats60.combinedError.sampleCount).toBe(60);
+  });
+
+  it("Markdownに60投分の行が含まれる", () => {
+    const md = buildAnalysisMarkdown({
+      session: session60,
+      player: undefined,
+      equipment: undefined,
+      stats: stats60,
+      throws: throws60,
+      setNumberOf,
+      comparisons: [],
+      embedAllThrows: true,
+    });
+    const rows = md
+      .split("\n")
+      .filter((line) => /^ \| \d+ \| \d+ \|/.test(line) || /^\| \d+ \|/.test(line.trim()));
+    expect(rows.length).toBeGreaterThanOrEqual(60);
+    expect(md).toContain("- 完了投擲数: 60");
+  });
+
+  it("CSVに60行のデータが含まれる", () => {
+    const csv = buildSessionCsv(session60, throws60, setNumberOf);
+    const lines = csv.trim().split("\r\n");
+    expect(lines).toHaveLength(1 + 60);
   });
 });
 
