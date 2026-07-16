@@ -138,6 +138,8 @@ export interface TargetDefinition {
   type: TargetType;
   number?: number;
   ring?: Ring;
+  /** 投擲画面に表示する、狙い方と測定内容の説明(スキル診断等で使用) */
+  instruction?: string;
   /** custom_selection 用: 命中と見なす複数エリア */
   areas?: TargetArea[];
   /** 誤差計算用の代表点(正規化座標) */

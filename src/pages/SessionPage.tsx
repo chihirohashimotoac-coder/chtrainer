@@ -298,7 +298,11 @@ export default function SessionPage() {
           <div className="target-display">
             <div className="set-info">{s.throwing.currentTarget}</div>
             {allSameTarget ? (
-              <div className="target-label">{targets[0]?.label}</div>
+              <div
+                className={`target-label${(targets[0]?.label.length ?? 0) > 4 ? " long" : ""}`}
+              >
+                {targets[0]?.label}
+              </div>
             ) : (
               <div className="per-dart-targets">
                 {targets.map((target, i) => (
@@ -324,6 +328,11 @@ export default function SessionPage() {
               </div>
             )}
           </div>
+          {targets[0]?.instruction && (
+            <div className="info-box" style={{ maxWidth: 480 }}>
+              {targets[0].instruction}
+            </div>
+          )}
           <p className="muted small">{s.throwing.threwAll}</p>
           <div className="action-bar" style={{ width: "100%" }}>
             <button
