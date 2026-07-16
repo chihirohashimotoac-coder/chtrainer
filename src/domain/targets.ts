@@ -87,6 +87,21 @@ export function makeCustomTarget(
   };
 }
 
+/**
+ * ランダムターゲット用の全ボードプール:
+ * S1〜S20・D1〜D20・T1〜T20・Bull全体 (計61ターゲット)。
+ */
+export function buildFullRandomPool(profile: BoardProfile): TargetDefinition[] {
+  const pool: TargetDefinition[] = [];
+  for (let n = 1; n <= 20; n++) {
+    pool.push(makeSegmentTarget("outer_single", profile, n));
+    pool.push(makeSegmentTarget("double", profile, n));
+    pool.push(makeSegmentTarget("triple", profile, n));
+  }
+  pool.push(makeBullAnyTarget());
+  return pool;
+}
+
 function isSingleRing(ring: Ring): boolean {
   return ring === "inner_single" || ring === "outer_single";
 }
