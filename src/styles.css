@@ -164,9 +164,12 @@ button {
   display: flex;
   gap: 0.6rem;
   margin: 0.75rem 0;
+  flex-wrap: wrap;
 }
 .btn-row > .btn {
-  flex: 1;
+  /* 狭い画面ではボタン文字が縦割れしないよう折り返して積む */
+  flex: 1 1 auto;
+  min-width: 8.5rem;
 }
 
 /* 画面下部の主要操作エリア */
