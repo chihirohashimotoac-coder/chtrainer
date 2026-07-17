@@ -132,22 +132,47 @@ function landingLabel(throwRecord: ThrowRecord): string {
 }
 
 /** AI分析依頼文(分析指示ブロック) */
-export const ANALYSIS_INSTRUCTIONS = `以下のルールで、ユーザーの目的に直接答える短く実用的な分析を作成してください。
+export const ANALYSIS_INSTRUCTIONS = `以下の順序とルールで、統計の言い換えではなく、ユーザーが次に何を確認し何を試すべきかまで具体診断してください。
 
-## 共通ルール
-- 【事実】・【統計的傾向】・【仮説】・【分析不能】を区別し、サンプル不足を断定しない。
-- 着弾だけからフォーム原因を断定せず、医学的・心理的診断を行わない。
-- アプリ統計と原始データの矛盾を指摘し、不要な一般論を避ける。
+## 判定ラベルと安全ルール
+- すべての重要な指摘を【事実】【統計的傾向】【原因仮説】【分析不能】【追加確認が必要】のいずれかで明確に区別してください。
+- 着弾データだけからグリップ、スタンス、肘、肩、手首、リリース等を真因として断定してはいけません。フォーム情報も自己申告の背景であり、原因確定には使えません。
+- 原因はデータと関係するものだけを、優先順位付きの「原因候補・仮説」として示してください。候補の大量列挙は禁止です。
+- 医学的診断、心理的診断、性格診断は禁止です。復調・イップス傾向でも症状名や人格を診断しないでください。
+- 重要な指摘には「確からしさ：高 / 中 / 低 / 分析不能」を表示してください。複数セット・複数指標で再現=高、1指標で一定傾向=中、少数または間接推測=低、必要データなし=分析不能を目安にしてください。
+- 統計的有意差を計算していないため「有意」という表現は禁止です。1投しかない個別ターゲットを得意・不得意と断定しないでください。
+- same_set_as_previous=false の投擲はセットの1投目です。前投命中・ターゲット変更をN/Aとして、切替直後、命中後の再現性、ミス後の修正の集計から除外してください。previous_throw_was_hit_in_same_set と same_target_as_previous を優先してください。
 
-## 出力形式
-1. 最重要結論3点
-2. ユーザーの悩みへの直接回答
-3. データから確認できる事実
-4. 優先課題トップ3
-5. 次回優先して練習すべき課題と、具体的な30〜60投メニュー
-6. 追加で必要なデータ
-7. 分析不能・注意点
-8. 詳細統計（付録）`;
+## 用語を混同しない
+- 問題点: 観測された結果（例「3投目の右方向ミスが多い」）
+- 原因候補: 問題を生む可能性のある未確定要因（例「3投目にグリップ圧が上がる可能性」）
+- 改善項目: 変えたい状態（例「3投目も同じテンポとグリップ圧を維持」）
+- 改善方法: 仮説を検証する具体的実験（例「グリップ圧の自己評価と左右ミス率を15投ずつ比較」）
+
+## 回答構成
+### 1. 最重要結論
+最大3点。各点に、何が問題か、根拠データ、目標への影響、確からしさ、現時点で断定できないことを含めてください。
+
+### 2. ユーザーの問題点
+優先順の表にし、列は「優先度 / 問題点 / 根拠 / ユーザーへの影響 / 確からしさ / 不足している情報」としてください。単なる「命中率が低い」で終わらせず、1〜3投目差、命中後の再現性、ミス後の修正・過剰修正、同一ターゲット継続、セット内切替直後、方向偏り、前後半、疲労・集中・不安・リリースの怖さ、固定と切替の差をデータがある範囲で調べ、ない項目は分析不能としてください。
+
+### 3. 優先して改善すべき項目
+最大3項目。改善目標、優先理由、改善できたと判断する基準、先に確認すべき条件、今は優先しなくてよい項目を示してください。一度に複数のフォーム要素を変更させないでください。
+
+### 4. 原因候補・仮説
+問題点ごとに最大3件の表とし、列は「原因候補 / 根拠 / 確からしさ / 仮説と矛盾する点 / 不足データ / 正しい場合に出やすい感覚・現象 / 確認方法 / 正しかった場合の改善方法」としてください。着弾、投順、切替、自己評価と関係する候補だけを選び、「着弾だけでは判定できない」ことを明記してください。
+
+### 5. ユーザーが気付いていない可能性がある傾向
+最大3件。「あなたは〇〇の傾向にある可能性があります」の形式で、推測される傾向、根拠データ、本人が確認すべき感覚・動作、誤っている可能性、確認質問を含めてください。根拠のない性格診断は禁止です。
+
+### 6. 改善方法（原因仮説を確認するための実験）
+各メニューに「目的 / 検証する原因仮説 / 実施方法 / 投擲数 / 意識すること / 意識してはいけないこと / 記録項目 / 成功判定 / 中止・変更基準 / 次に行う判断」を含めてください。Bullを60投、苦手ナンバーを投げ込む等だけで終わらせず、原因候補が複数なら1要因ずつ条件を変えて比較してください。
+
+### 7. 原因を絞り込む追加質問
+今回の問題点と原因候補に合わせ、情報価値の高い質問を3〜7問選んでください。毎回同じ質問にせず、可能ならA/B/C/D等の選択肢形式にしてください。投げ方を直接観察できない項目、ミス時の感覚、修正対象、ターゲット切替時の身体の動かし方、3投目のテンポ、命中後の力み、ダブル時の力み・テンポ、リリースが止まるタイミング、試合と練習の差から必要なものを選んでください。
+
+### 8. ユーザー回答後の再診断
+ユーザーが追加質問へ回答した場合は、最初の分析を繰り返さず、回答内容を使って原因候補の順位を更新してください。再診断は「原因候補の順位変更 / 可能性が上がった原因 / 可能性が下がった原因 / 否定できた原因 / まだ不足している情報 / 最初に試すべき改善実験 / 改善実験後に記録すべき内容」を出力してください。`;
 
 type FocusCategory =
   | "repeat"
@@ -205,11 +230,12 @@ function skillFocusSection(style: ScoringStyle | undefined): string {
 
 このセッションは4ラウンド構成の技能測定です。${styleNote}01の削りの主役ターゲットは${main}です。round_id・round_kind・evaluation_kindを優先してラウンドを判別し、これらがない旧データだけターゲット構造を補助的に使ってください。
 
-- R1 グルーピング(grouping_only): 詳細座標入力の有効な3投セットだけで、平均・最大・中央値ペア距離と有効セット数を扱ってください。簡易入力のセグメント代表点は実着弾座標ではないため、R1が簡易入力なら「分析不能」と明記してください。R1を完全命中率や誤差距離の分母へ含めないでください
+- R1 グルーピング(grouping_only): 詳細座標入力の有効な3投セットだけで、平均・最大・中央値ペア距離と有効セット数を扱ってください。命中数・命中率・投擲一覧の命中はN/Aです。分析不能理由は、有効な詳細座標3投セットなし、バウンスアウト、アウトボード、位置不明、3投未満、segment_approximationを区別してください
 - R2 スコアリング(scoring): 主役ターゲット${main}の${mainDetail}を、命中判定対象投擲数とともに示してください
 - R3 ナンバー(number): 副ターゲット${sub}の同一3投セットと、T20→T16→T15 / T12→T18→T3の切替セットを、命中率・平均誤差・切替直後の変化で比較してください
-- R4 チェックアウト(checkout): D16・D20の命中率、内外・上下ミス、アウトボード率を対象投擲数とともに示してください
+- R4 チェックアウト(checkout): pattern_id・pattern_kind・analysis_categoryを使い、D20固定、D16固定、固定全体、切替全体、20系、16系、位置分散、切替直後、ボード上側/下側/左側/右側、内側/外側/上下ミス、D16・D20以外、特定ダブル依存、1投目ミス後のセット内修正を比較してください。個別1投のダブルを得意・不得意とせず、少数なら固定/切替/20系/16系/位置分散/位置/ミス方向でまとめてください
 - 根拠のない100点満点評価や採点基準の創作は禁止です。4ラウンドの強弱は実測値・分母・入力精度・信頼度を併記し、サンプル不足は参考値または分析不能としてください
+- R3・R4の切替直後は同一セット内の2投目・3投目だけです。前セットとターゲットが異なるだけの1投目を含めないでください
 - 過去のスキル診断セッションが比較対象にある場合は、カテゴリ別の伸びを比較してください。ただしスコアリング形式が異なる過去診断はR2/R3の主役・副が入れ替わっているため、カテゴリ単位ではなく同一ターゲット(Bull・T20)単位で比較し、形式が異なることを明記してください
 - ラウンドの出題順と自己評価の時間変化は関連の仮説として扱い、因果関係を断定しないでください
 - 最も優先度の高い課題と、その根拠に対応する具体的な練習提案を示してください`;
@@ -244,14 +270,16 @@ const FOCUS_SECTIONS: Record<Exclude<FocusCategory, "skill">, string> = {
 - 投擲順ごとのターゲット切替: ターゲットが変わる投擲(特に3投目のダブル等)で精度がどう変化するか
 - ダブル狙いの外れ方向: 内側(シングル側)か外側(アウトボード側)か、上下どちらへ外すか。チェックアウト成功率への影響を推定してください(推定方法を明示)
 - 同一ターゲットが続く投擲間(例: 1投目と2投目が同じ)のグルーピングと修正傾向
+- BullまたはT20の削り、1〜3投目の変化、命中後の再現性、ミス後の修正・過剰修正、ダブル、フィニッシュ時のセット内ターゲット切替を分けて評価してください
 - 3投連続でこのフィニッシュが成立する確率の概算(各投の成功率から計算し、計算方法を明示)`,
   cricket: `### このセッションの分析焦点(クリケット練習)
 
 このセッションはクリケットナンバー(20〜15・Bull)の練習です。以下を最優先で分析してください。
 
-- ナンバーごとの精度比較と得意・不得意の序列
+- ナンバーごとの精度比較は投擲数を併記し、少数サンプルを得意・不得意と断定しないでください
 - 各ナンバーの平均マーク数: トリプル=3、ダブル=2、シングル=1、インナーブル=2、アウターブル=1マークとして3投あたりの期待マーク数を計算してください(計算方法を明示)
 - 出題ブロックの切り替わり直後(新しいナンバーの最初のセット)に精度低下があるか
+- 同一ナンバーを狙い続ける能力と、セット内でナンバーを切り替えた直後の変化を分けてください。苦手ナンバーを投げ込むだけで終わらず、原因候補を比較する練習実験を示してください
 - ナンバーによる外れ方向の違い(ボード上の位置=狙う角度による癖)
 - Bullとナンバーで精度傾向に差があるか`,
   diagnostic: `### このセッションの分析焦点(全体診断)
@@ -267,14 +295,48 @@ const FOCUS_SECTIONS: Record<Exclude<FocusCategory, "skill">, string> = {
 const GOAL_SECTIONS: Partial<Record<NonNullable<PlayerProfile["goal"]>, string>> = {
   recovery: `### 目的別の注意（復調）
 
-- 着弾結果と、止まらず投げられた等のプロセスを分けて扱ってください。
-- 症状と成績の時間変化を確認し、リリース動作を過度に意識させる断定的助言は避けてください。
+- 命中結果と、止まらず投げられた割合・ルーティン達成度等の投擲プロセスを分けて扱ってください。
+- 投げる前の不安、リリースの怖さ、セッション中の変化、投げ急ぎ、結果を意識した力みを確認してください。データがなければ追加質問にしてください。
+- 症状と成績の時間変化を確認し、リリース動作を過度に意識させる助言は避けてください。
 - 主観症状が悪化した場合は休憩・終了を選択肢として示し、医学的・心理的診断はしないでください。`,
+  zero_one: `### 目的別の注意（01）
+
+- BullまたはT20の削り、1〜3投目差、命中後の再現性、ミス後の修正・過剰修正、ダブル、フィニッシュ時のターゲット切替を優先してください。`,
+  cricket: `### 目的別の注意（クリケット）
+
+- ナンバー別MPR相当、ノーマーク率、有効マーク率、同一ナンバー継続、セット内切替直後を分けてください。
+- 苦手ナンバーを投げ込むだけの提案は禁止し、原因仮説を1つずつ比較する実験を提示してください。`,
   pro: `### 目的別の注意（プロ志望）
 
-- ユーザーが入力した目標値とのギャップだけを扱ってください。
-- 出典付きベンチマークが記録されていない場合、プロテストの合否を断定しないでください。
+- 精度だけでなく再現性、安定性、試合適応性、ダブル、切替能力を重視してください。
+- 練習データだけで競技レベルやプロテストの合否を断定しないでください。試合データがなければ、試合と練習で変わるグリップ・呼吸・テンポ・視線を追加質問にしてください。
 - 現行のJAPANプロテスト基準を推測・創作しないでください。`,
+};
+
+const GRIP_FINGER_LABELS: Record<string, string> = {
+  "2": "2フィンガー",
+  "3": "3フィンガー",
+  "4": "4フィンガー",
+  other: "その他",
+  unknown: "不明",
+};
+const GRIP_POSITION_LABELS: Record<string, string> = {
+  front: "前方",
+  center: "中央",
+  rear: "後方",
+  unknown: "不明",
+};
+const TAKEBACK_LABELS: Record<string, string> = {
+  shallow: "浅い",
+  standard: "標準",
+  deep: "深い",
+  unknown: "不明",
+};
+const TEMPO_LABELS: Record<string, string> = {
+  slow: "遅い",
+  standard: "標準",
+  fast: "速い",
+  unknown: "不明",
 };
 
 function equipmentSummary(equipment: EquipmentProfile | EquipmentSnapshot | undefined): string {
@@ -350,14 +412,15 @@ function errorStatsBlock(
 function statsSection(stats: SessionStatistics): string {
   const s = stats;
   const out: string[] = [];
+  const overallScorable = s.scorableThrows ?? s.completedThrows;
   out.push("### 全体");
   out.push("");
   out.push(`- 総投擲数(予定): ${s.totalThrows}`);
   out.push(`- 完了投擲数: ${s.completedThrows}`);
   out.push(`- 命中判定対象投擲数: ${s.scorableThrows ?? s.completedThrows}`);
   out.push(`- グルーピング専用投擲数: ${s.groupingOnlyThrows ?? 0}`);
-  out.push(`- 完全命中数: ${s.exactHits}`);
-  out.push(`- 命中判定対象の完全命中率: ${fmtRate(s.scorableExactHitRate ?? s.exactHitRate)}`);
+  out.push(`- 完全命中数: ${overallScorable > 0 ? s.exactHits : NA}`);
+  out.push(`- 命中判定対象の完全命中率: ${overallScorable > 0 ? fmtRate(s.scorableExactHitRate ?? s.exactHitRate) : NA}`);
   out.push(`- 誤差距離サンプル数: ${s.errorSampleCount ?? s.combinedError.sampleCount}`);
   out.push(`- アウトボード数: ${s.outboardCount} (${fmtRate(s.outboardRate)})`);
   out.push(`- バウンスアウト数: ${s.bounceOutCount}`);
@@ -367,7 +430,7 @@ function statsSection(stats: SessionStatistics): string {
     out.push("### グルーピング実測値");
     out.push("");
     if (s.grouping.status === "unavailable_non_coordinate") {
-      out.push("- 分析不能: 簡易入力はセグメント代表点のため、精密なグルーピング距離を算出しません。");
+      out.push("- 分析不能: 有効な詳細座標3投セットがありません。");
     } else if (s.grouping.status === "insufficient_data") {
       out.push("- 分析不能: 詳細座標の有効な3投セットが不足しています。");
     } else {
@@ -375,6 +438,17 @@ function statsSection(stats: SessionStatistics): string {
       out.push(`- 平均ペア距離: ${fmtNum(s.grouping.averagePairDistance)}`);
       out.push(`- 最大ペア距離: ${fmtNum(s.grouping.maximumPairDistance)}`);
       out.push(`- 中央値ペア距離: ${fmtNum(s.grouping.medianPairDistance)}`);
+    }
+    const reasonLabels: Record<string, string> = {
+      no_valid_three_dart_coordinate_set: "有効な詳細座標3投セットがない",
+      bounce_out: "バウンスアウト",
+      outboard: "アウトボード",
+      unknown_position: "位置不明",
+      fewer_than_three_throws: "3投未満",
+      segment_approximation: "segment_approximationを含む",
+    };
+    for (const reason of s.grouping.unavailableReasons ?? []) {
+      out.push(`- 分析不能理由: ${reasonLabels[reason] ?? reason}`);
     }
     out.push("");
   }
@@ -388,8 +462,9 @@ function statsSection(stats: SessionStatistics): string {
   out.push("|---|---:|---:|---:|---:|---:|");
   for (const order of ["1", "2", "3"] as const) {
     const d = s.byDartInSet[order];
+    const scorable = d.scorableThrows ?? d.throwCount;
     out.push(
-      `| ${order}投目 | ${d.throwCount} | ${d.hitCount} | ${fmtRate(d.hitRate)} | ${fmtNum(d.averageErrorDistance)} | ${fmtRate(d.outboardRate)} |`
+      `| ${order}投目 | ${d.throwCount} | ${scorable > 0 ? d.hitCount : NA} | ${scorable > 0 ? fmtRate(d.hitRate) : NA} | ${fmtNum(d.averageErrorDistance)} | ${fmtRate(d.outboardRate)} |`
     );
   }
   out.push("");
@@ -400,8 +475,9 @@ function statsSection(stats: SessionStatistics): string {
   for (const label of Object.keys(s.byTarget).sort()) {
     const g = s.byTarget[label];
     if (!g) continue;
+    const scorable = g.scorableThrows ?? g.throwCount;
     out.push(
-      `| ${label} | ${g.throwCount} | ${g.hitCount} | ${fmtRate(g.hitRate)} | ${fmtNum(g.averageErrorDistance)} | ${directionLabel(g.mainMissDirection)} | ${g.outboardCount} |`
+      `| ${label} | ${g.throwCount} | ${scorable > 0 ? g.hitCount : NA} | ${scorable > 0 ? fmtRate(g.hitRate) : NA} | ${fmtNum(g.averageErrorDistance)} | ${directionLabel(g.mainMissDirection)} | ${g.outboardCount} |`
     );
   }
   out.push("");
@@ -418,10 +494,10 @@ function statsSection(stats: SessionStatistics): string {
   out.push("| 区間 | 投擲数 | 命中率 | 平均誤差距離 | アウトボード率 |");
   out.push("|---|---:|---:|---:|---:|");
   out.push(
-    `| 前半 | ${s.firstHalf.throwCount} | ${fmtRate(s.firstHalf.hitRate)} | ${fmtNum(s.firstHalf.averageErrorDistance)} | ${fmtRate(s.firstHalf.outboardRate)} |`
+    `| 前半 | ${s.firstHalf.throwCount} | ${(s.firstHalf.scorableThrows ?? s.firstHalf.throwCount) > 0 ? fmtRate(s.firstHalf.hitRate) : NA} | ${fmtNum(s.firstHalf.averageErrorDistance)} | ${fmtRate(s.firstHalf.outboardRate)} |`
   );
   out.push(
-    `| 後半 | ${s.secondHalf.throwCount} | ${fmtRate(s.secondHalf.hitRate)} | ${fmtNum(s.secondHalf.averageErrorDistance)} | ${fmtRate(s.secondHalf.outboardRate)} |`
+    `| 後半 | ${s.secondHalf.throwCount} | ${(s.secondHalf.scorableThrows ?? s.secondHalf.throwCount) > 0 ? fmtRate(s.secondHalf.hitRate) : NA} | ${fmtNum(s.secondHalf.averageErrorDistance)} | ${fmtRate(s.secondHalf.outboardRate)} |`
   );
   out.push("");
   if (s.cricket) {
@@ -466,16 +542,66 @@ function statsSection(stats: SessionStatistics): string {
   return out.join("\n");
 }
 
+function skillDoubleStatsSection(throws: readonly ThrowRecord[]): string {
+  const r4 = throws.filter(
+    (record) =>
+      record.target.roundId === "skill-r4" ||
+      record.target.roundKind === "checkout"
+  );
+  if (r4.length === 0) return "";
+  const out = [
+    "### R4ダブル・パターン集計",
+    "",
+    "| 集計単位 | 種別 | 投擲数 | 命中数 | 命中率 | セット内切替直後投擲数 |",
+    "|---|---|---:|---:|---:|---:|",
+  ];
+  const groups = new Map<string, ThrowRecord[]>();
+  for (const record of r4) {
+    const key = record.target.patternId ?? "legacy-r4";
+    const group = groups.get(key) ?? [];
+    group.push(record);
+    groups.set(key, group);
+  }
+  const append = (label: string, records: ThrowRecord[]) => {
+    const hits = records.filter((record) => record.derived.exactHit).length;
+    const switched = records.filter(
+      (record) =>
+        record.derived.sameSetAsPrevious === true &&
+        record.derived.targetChangedFromPrevious
+    ).length;
+    out.push(
+      `| ${label} | ${records[0]?.target.patternKind ?? NA} | ${records.length} | ${hits} | ${fmtRate(hits / records.length)} | ${switched} |`
+    );
+  };
+  for (const [patternId, records] of groups) append(patternId, records);
+  for (const kind of ["fixed", "switch"] as const) {
+    const records = r4.filter((record) => record.target.patternKind === kind);
+    if (records.length > 0) append(`${kind}全体`, records);
+  }
+  const categories = new Map<string, ThrowRecord[]>();
+  for (const record of r4) {
+    if (!record.target.analysisCategory) continue;
+    const group = categories.get(record.target.analysisCategory) ?? [];
+    group.push(record);
+    categories.set(record.target.analysisCategory, group);
+  }
+  for (const [category, records] of categories) append(`category:${category}`, records);
+  out.push("");
+  out.push("個別ダブルの投擲数が少ない場合は得意・不得意と断定せず、fixed/switch、20系、16系、位置分散、ボード位置、ミス方向でまとめてください。");
+  out.push("");
+  return out.join("\n");
+}
+
 function throwTable(
   throws: readonly ThrowRecord[],
   setNumberOf: (setId: string) => number | undefined
 ): string {
   const out: string[] = [];
   out.push(
-    "| No. | セット | 投順 | 狙い | 着弾 | 命中 | X | Y | 誤差X | 誤差Y | 誤差距離 | ズレ方向 | 入力精度 | 前投命中 | ターゲット変更 | 経過時間 | メモ |"
+    "| No. | セット | 投順 | 狙い | 着弾 | 命中 | X | Y | 誤差X | 誤差Y | 誤差距離 | ズレ方向 | 入力精度 | evaluation_kind | round_id | round_kind | pattern_id | pattern_kind | analysis_category | same_set_as_previous | previous_throw_was_hit_in_same_set | same_target_as_previous | ターゲット変更 | 経過時間 | メモ |"
   );
   out.push(
-    "|---:|---:|---:|---|---|---|---:|---:|---:|---:|---:|---|---|---|---|---:|---|"
+    "|---:|---:|---:|---|---|---|---:|---:|---:|---:|---:|---|---|---|---|---|---|---|---|---|---|---|---|---:|---|"
   );
   const sorted = throws
     .slice()
@@ -493,15 +619,19 @@ function throwTable(
           : th.landing.positionPrecision === "direction_only"
             ? "方向のみ"
             : "不明";
-    out.push(
-      [
-        "",
+    const groupingOnly = th.target.evaluationKind === "grouping_only" ||
+      (th.target.type === "custom_selection" &&
+        (th.target.areas?.length ?? 0) === 0);
+    const sameSet = th.derived.sameSetAsPrevious === true;
+    const boolMark = (value: boolean | undefined) =>
+      value == null ? NA : value ? "○" : "×";
+    const cells = [
         th.globalThrowNumber,
         setNumberOf(th.setId) ?? NA,
         th.dartInSet,
         th.target.label,
         landingLabel(th),
-        th.derived.exactHit ? "○" : "×",
+        groupingOnly ? NA : th.derived.exactHit ? "○" : "×",
         num(th.landing.x),
         num(th.landing.y),
         num(th.derived.errorX),
@@ -509,17 +639,24 @@ function throwTable(
         num(th.derived.errorDistance),
         directionLabel(th.derived.missDirection),
         precisionLabel,
-        th.derived.previousThrowWasHit == null
-          ? NA
-          : th.derived.previousThrowWasHit
-            ? "○"
-            : "×",
-        th.derived.targetChangedFromPrevious ? "あり" : "なし",
+        th.target.evaluationKind ?? NA,
+        th.target.roundId ?? NA,
+        th.target.roundKind ?? NA,
+        th.target.patternId ?? NA,
+        th.target.patternKind ?? NA,
+        th.target.analysisCategory ?? NA,
+        sameSet ? "true" : "false",
+        sameSet ? boolMark(th.derived.previousThrowWasHitInSameSet) : NA,
+        sameSet ? boolMark(th.derived.sameTargetAsPrevious) : NA,
+        sameSet
+          ? th.derived.targetChangedFromPrevious
+            ? "あり"
+            : "なし"
+          : NA,
         fmtElapsed(th.elapsedMs),
         th.note ?? "",
-        "",
-      ].join(" | ")
-    );
+      ];
+    out.push(`| ${cells.join(" | ")} |`);
   }
   out.push("");
   out.push("(座標は外側ダブル半径=1.0の正規化値。≈は簡易入力による概算値。X:右が正 / Y:上が正)");
@@ -595,6 +732,7 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
         displayName: snapshot.displayName,
         dominantEye: snapshot.dominantEye,
         stance: snapshot.stance,
+        form: snapshot.form,
         goal: snapshot.goal,
         currentLevel: snapshot.currentLevel,
         targetLevel: snapshot.targetLevel,
@@ -649,6 +787,18 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   if (player?.stance) {
     out.push(`- スタンス: ${STANCE_LABELS[player.stance] ?? player.stance}`);
   }
+  if (player?.form) {
+    out.push("- フォーム情報（任意・自己申告。原因確定には使用しない）:");
+    if (player.form.gripFingerCount)
+      out.push(`  - グリップ本数: ${GRIP_FINGER_LABELS[player.form.gripFingerCount] ?? player.form.gripFingerCount}`);
+    if (player.form.gripPosition)
+      out.push(`  - グリップ位置: ${GRIP_POSITION_LABELS[player.form.gripPosition] ?? player.form.gripPosition}`);
+    if (player.form.takeback)
+      out.push(`  - テイクバック: ${TAKEBACK_LABELS[player.form.takeback] ?? player.form.takeback}`);
+    if (player.form.throwingTempo)
+      out.push(`  - 投擲テンポ: ${TEMPO_LABELS[player.form.throwingTempo] ?? player.form.throwingTempo}`);
+    if (player.form.concern) out.push(`  - 主なフォーム上の悩み: ${player.form.concern}`);
+  }
   const inputMethod = snapshot?.inputMethod ?? session.inputMethod;
   out.push(`- 入力方式: ${INPUT_LABELS[inputMethod] ?? inputMethod}`);
   out.push(`- 今日の調子: ${CONDITION_LABELS[session.dailyCondition] ?? session.dailyCondition}${session.dailyConditionNote ? ` (${session.dailyConditionNote})` : ""}`);
@@ -696,6 +846,7 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   out.push("## アプリ算出の基本統計");
   out.push("");
   out.push(statsSection(stats));
+  out.push(skillDoubleStatsSection(input.throws));
   out.push("## 過去セッションとの比較");
   out.push("");
   out.push(comparisonSection(input));
@@ -723,7 +874,7 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   } else {
     out.push("全投擲データは添付のCSVファイルを参照してください。");
     out.push("");
-    out.push("CSVの列: session_id, session_date, training_mode, board_type, scoring_style, set_number, global_throw_number, dart_in_set, dart_color, target_label, target_number, target_ring, landing_number, landing_ring, exact_hit, landing_x, landing_y, error_x, error_y, error_distance, miss_direction, position_precision, evaluation_kind, round_id, previous_throw_was_hit, same_set_as_previous, previous_throw_was_hit_in_same_set, same_target_as_previous, target_changed, elapsed_ms, session_progress, throw_note");
+    out.push("CSVの列: session_id, session_date, training_mode, board_type, scoring_style, set_number, global_throw_number, dart_in_set, dart_color, target_label, target_number, target_ring, landing_number, landing_ring, exact_hit, landing_x, landing_y, error_x, error_y, error_distance, miss_direction, position_precision, evaluation_kind, round_id, round_kind, pattern_id, pattern_kind, analysis_category, previous_throw_was_hit, same_set_as_previous, previous_throw_was_hit_in_same_set, same_target_as_previous, target_changed, elapsed_ms, session_progress, throw_note");
   }
   out.push("");
   out.push("## セッションメモ");

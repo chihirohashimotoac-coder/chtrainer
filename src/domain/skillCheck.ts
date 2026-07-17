@@ -14,7 +14,7 @@ import {
  *  R3 ナンバー: 副ターゲット(主役がBullならT20、T20ならBull)の同一3投セット、
  *              T20→T16→T15、T12→T18→T3 の3パターンを循環
  *              (三角形を1投ずつなぞる切替セット2種を含む)
- *  R4 ダブル: D16固定セットとD20固定セットを交互に(チェックアウト力)
+ *  R4 ダブル: 固定精度とセット内切替精度をデータ駆動パターンで比較
  * セット数は4ラウンドへ均等配分。余りはスコアリングラウンド(R2)を最優先に
  * R2→R1→R3→R4の順で+1配分し、主役ターゲットのサンプル密度を確保する。
  * 各ターゲットの instruction に「狙い方と測定内容」を持たせ、投擲画面に表示する。
@@ -43,9 +43,70 @@ export const SKILL_INSTRUCTIONS = {
     "表示のターゲットに3本連続で投げてください。同じターゲットを狙い続ける精度を測定します。",
   triangle:
     "表示の順に1投ずつ狙いを変えて投げてください。ターゲットを切り替えたときの精度を測定します。",
-  double:
-    "表示のダブルを狙って3本投げてください。チェックアウト(ダブル)の精度を測定します。",
 } as const;
+
+export interface DoubleRoundPattern {
+  id: string;
+  label: string;
+  kind: "fixed" | "switch";
+  targets: readonly [number, number, number];
+  instruction: string;
+  analysisCategory: string;
+}
+
+function fixedDoublePattern(
+  id: string,
+  number: number,
+  analysisCategory: string
+): DoubleRoundPattern {
+  return {
+    id,
+    label: `D${number}固定`,
+    kind: "fixed",
+    targets: [number, number, number],
+    instruction: `D${number}を3本続けて狙ってください。同じダブルを繰り返す精度を測定します`,
+    analysisCategory,
+  };
+}
+
+function switchDoublePattern(
+  id: string,
+  targets: readonly [number, number, number],
+  label: string,
+  analysisCategory: string
+): DoubleRoundPattern {
+  const route = targets.map((number) => `D${number}`).join(" → ");
+  return {
+    id,
+    label,
+    kind: "switch",
+    targets,
+    instruction: `${route}の順に、1本ずつ狙いを変更してください。ダブルを切り替えたときの精度を測定します`,
+    analysisCategory,
+  };
+}
+
+/**
+ * R4の決定論的パターン列。先頭5件が標準20セット時の構成。
+ * 全15件では fixed 8 / switch 7 となり、使い切った後は先頭から循環する。
+ */
+export const DOUBLE_ROUND_PATTERNS: readonly DoubleRoundPattern[] = [
+  fixedDoublePattern("r4-d20-fixed", 20, "d20_fixed"),
+  fixedDoublePattern("r4-d16-fixed", 16, "d16_fixed"),
+  switchDoublePattern("r4-route-20", [20, 10, 5], "20系切替", "route20"),
+  switchDoublePattern("r4-route-16", [16, 8, 4], "16系切替", "route16"),
+  switchDoublePattern("r4-position-spread", [12, 18, 6], "位置分散", "position_spread"),
+  fixedDoublePattern("r4-d10-fixed", 10, "fixed_other"),
+  fixedDoublePattern("r4-d8-fixed", 8, "fixed_other"),
+  fixedDoublePattern("r4-d18-fixed", 18, "fixed_other"),
+  fixedDoublePattern("r4-d12-fixed", 12, "fixed_other"),
+  fixedDoublePattern("r4-d6-fixed", 6, "fixed_other"),
+  fixedDoublePattern("r4-d4-fixed", 4, "fixed_other"),
+  switchDoublePattern("r4-switch-20-16-10", [20, 16, 10], "D20→D16→D10", "mixed_switch"),
+  switchDoublePattern("r4-switch-16-20-8", [16, 20, 8], "D16→D20→D8", "mixed_switch"),
+  switchDoublePattern("r4-switch-18-12-4", [18, 12, 4], "D18→D12→D4", "mixed_switch"),
+  switchDoublePattern("r4-switch-10-6-2", [10, 6, 2], "D10→D6→D2", "mixed_switch"),
+] as const;
 
 function withInstruction(
   target: TargetDefinition,
@@ -128,11 +189,20 @@ export function buildSkillCheckPlan(
       makeSegmentTarget("triple", profile, n),
       SKILL_INSTRUCTIONS.triangle
     ), "skill-r3", "number");
-  const dbl = (n: number) =>
-    skillTarget(withInstruction(
-      makeSegmentTarget("double", profile, n),
-      SKILL_INSTRUCTIONS.double
-    ), "skill-r4", "checkout");
+  const doublePatternSet = (pattern: DoubleRoundPattern) =>
+    pattern.targets.map((number) => ({
+      ...skillTarget(
+        withInstruction(
+          makeSegmentTarget("double", profile, number),
+          pattern.instruction
+        ),
+        "skill-r4",
+        "checkout"
+      ),
+      patternId: pattern.id,
+      patternKind: pattern.kind,
+      analysisCategory: pattern.analysisCategory,
+    }));
 
   const base = Math.floor(setCount / 4);
   const extra = setCount % 4;
@@ -161,8 +231,8 @@ export function buildSkillCheckPlan(
     sets.push((numberPatterns[k % 3] ?? numberPatterns[0]) as TargetDefinition[]);
   }
   for (let k = 0; k < (counts[3] ?? 0); k++) {
-    const d = k % 2 === 0 ? dbl(16) : dbl(20);
-    sets.push([d, d, d]);
+    const pattern = DOUBLE_ROUND_PATTERNS[k % DOUBLE_ROUND_PATTERNS.length];
+    if (pattern) sets.push(doublePatternSet(pattern));
   }
   return sets;
 }
@@ -185,7 +255,8 @@ export function skillCheckUniqueTargets(
     makeSegmentTarget("triple", profile, 12),
     makeSegmentTarget("triple", profile, 18),
     makeSegmentTarget("triple", profile, 3),
-    makeSegmentTarget("double", profile, 16),
-    makeSegmentTarget("double", profile, 20),
+    ...[20, 16, 10, 5, 8, 4, 12, 18, 6, 2].map((number) =>
+      makeSegmentTarget("double", profile, number)
+    ),
   ];
 }

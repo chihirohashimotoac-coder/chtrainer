@@ -1,7 +1,7 @@
 {
   "name": "darts-training-analyzer",
   "private": true,
-  "version": "1.18.0",
+  "version": "1.19.0",
   "type": "module",
   "description": "ダーツ投擲記録・AI分析プロンプト生成PWA",
   "license": "MIT",

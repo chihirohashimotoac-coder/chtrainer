@@ -61,6 +61,9 @@ export async function commitSet(
     completedAt: now,
     roundId: darts[0]?.target.roundId,
     roundKind: darts[0]?.target.roundKind,
+    patternId: darts[0]?.target.patternId,
+    patternKind: darts[0]?.target.patternKind,
+    analysisCategory: darts[0]?.target.analysisCategory,
     evaluationKind: darts[0]?.target.evaluationKind,
     requiredInputPrecision: darts[0]?.target.requiredInputPrecision,
     inputMethod:
@@ -157,8 +160,8 @@ export async function updateThrowLanding(
   if (next) {
     const sameSet = next.setId === record.setId;
     const needsUpdate =
-      next.derived.previousThrowWasHit !== derived.exactHit ||
-      (sameSet &&
+      sameSet &&
+      (next.derived.previousThrowWasHit !== derived.exactHit ||
         next.derived.previousThrowWasHitInSameSet !== derived.exactHit);
     if (needsUpdate) {
       await saveThrow({
@@ -166,9 +169,7 @@ export async function updateThrowLanding(
         derived: {
           ...next.derived,
           previousThrowWasHit: derived.exactHit,
-          ...(sameSet
-            ? { previousThrowWasHitInSameSet: derived.exactHit }
-            : {}),
+          previousThrowWasHitInSameSet: derived.exactHit,
         },
       });
     }

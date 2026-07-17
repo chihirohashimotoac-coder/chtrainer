@@ -26,6 +26,12 @@ function landingLabelOf(landing: LandingRecord): string {
   return segmentLabel(landing.ring, landing.number);
 }
 
+function isGroupingOnly(record: ThrowRecord): boolean {
+  return record.target.evaluationKind === "grouping_only" ||
+    (record.target.type === "custom_selection" &&
+      (record.target.areas?.length ?? 0) === 0);
+}
+
 export default function ThrowsPage() {
   const s = t();
   const { id } = useParams();
@@ -154,7 +160,7 @@ export default function ThrowsPage() {
                     ? " ≈"
                     : ""}
                 </td>
-                <td>{th.derived.exactHit ? "○" : "×"}</td>
+                <td>{isGroupingOnly(th) ? "N/A" : th.derived.exactHit ? "○" : "×"}</td>
                 <td>{th.landing.x != null ? fmtNum(th.landing.x) : "N/A"}</td>
                 <td>{th.landing.y != null ? fmtNum(th.landing.y) : "N/A"}</td>
                 <td>

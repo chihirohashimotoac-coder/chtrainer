@@ -29,9 +29,14 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     expect(plan[14]?.map((x) => x.label)).toEqual(["T20", "T16", "T15"]);
   });
 
-  it("R4ダブルはD16とD20を交互に出題する", () => {
-    expect(plan[15]?.map((x) => x.label)).toEqual(["D16", "D16", "D16"]);
-    expect(plan[16]?.map((x) => x.label)).toEqual(["D20", "D20", "D20"]);
+  it("R4標準5セットは固定精度と切替能力を指定順で測る", () => {
+    expect(plan.slice(15, 20).map((set) => set.map((x) => x.label))).toEqual([
+      ["D20", "D20", "D20"],
+      ["D16", "D16", "D16"],
+      ["D20", "D10", "D5"],
+      ["D16", "D8", "D4"],
+      ["D12", "D18", "D6"],
+    ]);
   });
 
   it("グルーピングターゲットは狙い自由のフリーターゲット", () => {
@@ -62,7 +67,16 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
       evaluationKind: "exact_hit",
       roundId: "skill-r4",
       roundKind: "checkout",
+      patternId: "r4-d20-fixed",
+      patternKind: "fixed",
     });
+    for (const target of plan.slice(15).flat()) {
+      expect(target.evaluationKind).toBe("exact_hit");
+      expect(target.roundKind).toBe("checkout");
+      expect(target.roundId).toBe("skill-r4");
+      expect(target.patternId).toBeTruthy();
+      expect(["fixed", "switch"]).toContain(target.patternKind);
+    }
   });
 
   it("scoringStyle省略時はフィットブル配列(旧バージョン互換)", () => {
@@ -91,10 +105,21 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     // R3は12〜17の6セット(同一→三角形1→三角形2を2巡)
     expect(plan23[15]?.map((x) => x.label)).toEqual(["T20", "T20", "T20"]);
     expect(plan23[17]?.map((x) => x.label)).toEqual(["T12", "T18", "T3"]);
-    expect(plan23[18]?.[0]?.label).toBe("D16");
+    expect(plan23[18]?.[0]?.label).toBe("D20");
   });
 
-  it("使用ターゲット一覧は10種", () => {
+  it("R4が6セット以上なら追加パターンを決定論的に使用して循環する", () => {
+    const plan44 = buildSkillCheckPlan(SOFT_BOARD, 44, "fit_bull");
+    const r4 = plan44.filter((set) => set[0]?.roundId === "skill-r4");
+    expect(r4).toHaveLength(11);
+    expect(r4[5]?.map((x) => x.label)).toEqual(["D10", "D10", "D10"]);
+    expect(r4[10]?.map((x) => x.label)).toEqual(["D4", "D4", "D4"]);
+    const plan64 = buildSkillCheckPlan(SOFT_BOARD, 64, "fit_bull");
+    const r4Cycle = plan64.filter((set) => set[0]?.roundId === "skill-r4");
+    expect(r4Cycle[15]?.map((x) => x.label)).toEqual(["D20", "D20", "D20"]);
+  });
+
+  it("使用ターゲット一覧は追加ダブルを含む", () => {
     expect(
       skillCheckUniqueTargets(SOFT_BOARD, "fit_bull").map((x) => x.label)
     ).toEqual([
@@ -106,8 +131,16 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
       "T12",
       "T18",
       "T3",
-      "D16",
       "D20",
+      "D16",
+      "D10",
+      "D5",
+      "D8",
+      "D4",
+      "D12",
+      "D18",
+      "D6",
+      "D2",
     ]);
   });
 });
@@ -128,7 +161,7 @@ describe("buildSkillCheckPlan (T20主体のスコアリング形式)", () => {
       expect(plan[12]?.map((x) => x.label)).toEqual(["T12", "T18", "T3"]);
       // R1・R4は形式によらず共通
       expect(plan[0]?.[0]?.label).toBe("1投目の着弾点");
-      expect(plan[15]?.map((x) => x.label)).toEqual(["D16", "D16", "D16"]);
+      expect(plan[15]?.map((x) => x.label)).toEqual(["D20", "D20", "D20"]);
     });
   }
 
@@ -144,7 +177,7 @@ describe("buildSkillCheckPlan (T20主体のスコアリング形式)", () => {
     const labels = skillCheckUniqueTargets(STEEL_BOARD, "steel").map(
       (x) => x.label
     );
-    expect(labels).toHaveLength(10);
+    expect(labels).toHaveLength(18);
     expect(labels.slice(0, 3)).toEqual(["1投目の着弾点", "T20", "Bull"]);
   });
 });
