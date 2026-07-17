@@ -11,6 +11,12 @@ export interface VersionEntry {
 
 export const VERSION_HISTORY: VersionEntry[] = [
   {
+    version: "1.20.0",
+    date: "2026-07-17",
+    summary:
+      "投順別・ターゲット別・前後半の統計表で総投擲数と命中率の分母を分離表示。旧セッションのR4は実際のターゲット順からfixed/switch等を観測ベースで補完し、メタデータ由来と未測定パターンをAI出力へ明示",
+  },
+  {
     version: "1.19.0",
     date: "2026-07-17",
     summary:

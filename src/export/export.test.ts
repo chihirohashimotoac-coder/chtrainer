@@ -83,6 +83,7 @@ describe("CSV生成", () => {
     expect(first[CSV_COLUMNS.indexOf("pattern_id")]).toBe("r4-route-20");
     expect(first[CSV_COLUMNS.indexOf("pattern_kind")]).toBe("switch");
     expect(first[CSV_COLUMNS.indexOf("analysis_category")]).toBe("route20");
+    expect(first[CSV_COLUMNS.indexOf("pattern_metadata_source")]).toBe("recorded");
     expect(first[CSV_COLUMNS.indexOf("previous_throw_was_hit")]).toBe("");
     expect(first[CSV_COLUMNS.indexOf("same_target_as_previous")]).toBe("");
     expect(first[CSV_COLUMNS.indexOf("target_changed")]).toBe("");
@@ -175,7 +176,7 @@ describe("Markdown生成", () => {
       comparisons: [],
       embedAllThrows: true,
     });
-    expect(md).toContain("| 1投目の着弾点 | 3 | N/A | N/A |");
+    expect(md).toContain("| 1投目の着弾点 | 3 | 0 | N/A | N/A |");
     expect(md).toContain("| 1投目の着弾点 |");
     expect(md).not.toContain("| 1投目の着弾点 | 3 | 0 | 0.0% |");
     const csv = buildSessionCsv(session, groupingThrows, () => 1);
@@ -183,6 +184,92 @@ describe("Markdown生成", () => {
       CSV_COLUMNS.indexOf("exact_hit")
     ];
     expect(exactHit).toBe("");
+  });
+
+  it("投順別表は総投擲数と命中率の分母を分けて表示する", () => {
+    const plan = buildSkillCheckPlan(SOFT_BOARD, 20, "fit_bull");
+    const skillThrows = buildThrows(
+      plan.flatMap((targets, setIndex) =>
+        targets.map((target) => ({
+          target,
+          setId: `skill-set-${setIndex + 1}`,
+          landing: landingFromCoordinate(
+            target.representativePoint.x,
+            target.representativePoint.y,
+            SOFT_BOARD
+          ),
+        }))
+      ),
+      60
+    );
+    const skillStats = calculateStatistics("skill-denominator", 60, skillThrows, "skill_check");
+    const md = buildAnalysisMarkdown({
+      session: fixtureSession({
+        id: "skill-denominator",
+        trainingMode: "skill_check",
+        scoringStyle: "fit_bull",
+        plannedThrowCount: 60,
+        setCount: 20,
+      }),
+      player: undefined,
+      equipment: undefined,
+      stats: skillStats,
+      throws: skillThrows,
+      setNumberOf: (setId) => Number(setId.replace("skill-set-", "")),
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    expect(md).toContain("| 投順 | 総投擲数 | 命中判定対象数(命中率の分母) |");
+    expect(md).toContain("| 1投目 | 20 | 15 | 15 | 100.0% |");
+  });
+
+  it("旧R4は観測ターゲット列から安全に補完し未測定パターンを明示する", () => {
+    const current = buildSkillCheckPlan(SOFT_BOARD, 20, "fit_bull")[15]!;
+    const legacyTargets = current.map((target) => ({
+      ...target,
+      patternId: undefined,
+      patternKind: undefined,
+      analysisCategory: undefined,
+    }));
+    const legacyThrows = buildThrows(
+      legacyTargets.map((target) => ({
+        target,
+        setId: "legacy-r4-set",
+        landing: landingFromCoordinate(
+          target.representativePoint.x,
+          target.representativePoint.y,
+          SOFT_BOARD
+        ),
+      })),
+      3
+    );
+    const legacySession = fixtureSession({
+      id: "legacy-r4",
+      trainingMode: "skill_check",
+      plannedThrowCount: 3,
+      setCount: 1,
+    });
+    const legacyStats = calculateStatistics("legacy-r4", 3, legacyThrows, "skill_check");
+    const md = buildAnalysisMarkdown({
+      session: legacySession,
+      player: undefined,
+      equipment: undefined,
+      stats: legacyStats,
+      throws: legacyThrows,
+      setNumberOf: () => 1,
+      comparisons: [],
+      embedAllThrows: true,
+    });
+    expect(md).toContain("legacy-observed-fixed-d20-d20-d20");
+    expect(md).toContain("inferred_from_observed_targets");
+    expect(md).toContain("switchパターン: 未測定（分析不能）");
+    const csv = buildSessionCsv(legacySession, legacyThrows, () => 1);
+    const first = (csv.trim().split("\r\n")[1] ?? "").split(",");
+    expect(first[CSV_COLUMNS.indexOf("pattern_kind")]).toBe("fixed");
+    expect(first[CSV_COLUMNS.indexOf("analysis_category")]).toBe("d20_fixed");
+    expect(first[CSV_COLUMNS.indexOf("pattern_metadata_source")]).toBe(
+      "inferred_from_observed_targets"
+    );
   });
 
   it("座標なしはN/A、バウンスアウトを明示", () => {
