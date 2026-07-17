@@ -71,6 +71,7 @@ export default function PreSessionPage() {
 
   const start = async (finalAssessment: SelfAssessment) => {
     const now = nowIso();
+    const selectedEquipment = equipmentProfiles.find((item) => item.id === equipmentId);
     const environment: SessionEnvironment = {
       ...(location ? { location } : {}),
       ...(boardName ? { boardName } : {}),
@@ -105,6 +106,30 @@ export default function PreSessionPage() {
       ...(setup.arrangement ? { arrangement: setup.arrangement } : {}),
       inputMethod,
       dominantHand: player?.dominantHand ?? "right",
+      contextSnapshot: {
+        capturedAt: now,
+        displayName: player?.displayName ?? "ゲスト",
+        dominantHand: player?.dominantHand ?? "right",
+        ...(player?.dominantEye ? { dominantEye: player.dominantEye } : {}),
+        ...(player?.stance ? { stance: player.stance } : {}),
+        ...(player?.goal ? { goal: player.goal } : {}),
+        ...(player?.currentLevel ? { currentLevel: player.currentLevel } : {}),
+        ...(player?.targetLevel ? { targetLevel: player.targetLevel } : {}),
+        ...(player?.concern ? { concern: player.concern } : {}),
+        dartColors: player?.dartColors ?? ["#ef4444", "#3b82f6", "#22c55e"],
+        boardType,
+        inputMethod,
+        ...(selectedEquipment
+          ? { equipmentSnapshot: {
+              name: selectedEquipment.name,
+              barrel: selectedEquipment.barrel,
+              shaft: selectedEquipment.shaft,
+              flight: selectedEquipment.flight,
+              point: selectedEquipment.point,
+              notes: selectedEquipment.notes,
+            } }
+          : {}),
+      },
       setCount: setup.setCount,
       plannedThrowCount: setup.setCount * DARTS_PER_SET,
       plannedTargets,

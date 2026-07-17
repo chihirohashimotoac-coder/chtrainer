@@ -13,6 +13,8 @@ import { rankComparisonCandidates } from "../domain/compare";
 import { buildSessionCsv, csvToBlob } from "../export/csv";
 import { copyToClipboard, downloadBlob, downloadText, timestampForFilename } from "../export/download";
 import { buildAnalysisMarkdown, modeLabel } from "../export/markdown";
+import { buildAnalysisZip } from "../export/zip";
+import { MAX_EMBEDDED_MARKDOWN_CHARS } from "../config/constants";
 import { recalcAndSaveStatistics } from "../services/sessionService";
 import type {
   EquipmentProfile,
@@ -188,6 +190,10 @@ export default function ExportPage() {
 
       {markdown && (
         <>
+          <p className="muted small">
+            {markdown.length.toLocaleString()}文字 / 概算トークン数（参考値）: {Math.ceil(markdown.length / 4).toLocaleString()}
+            {markdown.length > MAX_EMBEDDED_MARKDOWN_CHARS && " — 集計＋CSV別添を推奨します。"}
+          </p>
           <div className="btn-row">
             <button
               className="btn"
@@ -222,6 +228,20 @@ export default function ExportPage() {
               }}
             >
               {s.export.saveCsv}
+            </button>
+            <button
+              className="btn"
+              onClick={async () => {
+                try {
+                  const csv = buildSessionCsv(session, throws, setNumberOf);
+                  const zip = await buildAnalysisZip(markdown, csv, session);
+                  downloadBlob(zip, `${baseName}.zip`);
+                } catch {
+                  setMessage(s.errors.downloadFailed);
+                }
+              }}
+            >
+              Markdown＋CSVをZIP保存
             </button>
           </div>
           {message && <p className="ok-text small">{message}</p>}

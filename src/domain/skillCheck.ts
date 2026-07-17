@@ -53,6 +53,24 @@ function groupingTarget(profile: BoardProfile): TargetDefinition {
   return {
     ...makeCustomTarget("1投目の着弾点", [], profile),
     instruction: SKILL_INSTRUCTIONS.grouping,
+    evaluationKind: "grouping_only",
+    roundId: "skill-r1",
+    roundKind: "grouping",
+    requiredInputPrecision: "coordinate",
+  };
+}
+
+function skillTarget(
+  target: TargetDefinition,
+  roundId: string,
+  roundKind: "bull" | "number" | "checkout"
+): TargetDefinition {
+  return {
+    ...target,
+    evaluationKind: "exact_hit",
+    roundId,
+    roundKind,
+    requiredInputPrecision: "any",
   };
 }
 
@@ -61,21 +79,21 @@ export function buildSkillCheckPlan(
   setCount: number
 ): TargetDefinition[][] {
   const grouping = groupingTarget(profile);
-  const bull = withInstruction(makeBullAnyTarget(), SKILL_INSTRUCTIONS.bull);
-  const t20Same = withInstruction(
+  const bull = skillTarget(withInstruction(makeBullAnyTarget(), SKILL_INSTRUCTIONS.bull), "skill-r2", "bull");
+  const t20Same = skillTarget(withInstruction(
     makeSegmentTarget("triple", profile, 20),
     SKILL_INSTRUCTIONS.numberSame
-  );
+  ), "skill-r3", "number");
   const tri = (n: number) =>
-    withInstruction(
+    skillTarget(withInstruction(
       makeSegmentTarget("triple", profile, n),
       SKILL_INSTRUCTIONS.triangle
-    );
+    ), "skill-r3", "number");
   const dbl = (n: number) =>
-    withInstruction(
+    skillTarget(withInstruction(
       makeSegmentTarget("double", profile, n),
       SKILL_INSTRUCTIONS.double
-    );
+    ), "skill-r4", "checkout");
 
   const base = Math.floor(setCount / 4);
   const extra = setCount % 4;
