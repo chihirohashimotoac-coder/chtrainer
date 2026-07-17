@@ -159,10 +159,12 @@ def main() -> None:
         capture(page, "cricket-within-set-switch-1024", report)
 
         seed_active_session(page)
+        page.set_viewport_size({"width": 375, "height": 900})
         page.goto(f"{BASE_URL}/#/train/session", wait_until="networkidle")
         page.get_by_text("T20").first.wait_for()
         capture(page, "throw-input-375", report, full_page=False)
 
+        page.set_viewport_size({"width": 1024, "height": 900})
         page.goto(f"{BASE_URL}/#/session/qa-session/result", wait_until="networkidle")
         page.get_by_text("セット内のターゲット継続・切替比較").wait_for()
         capture(page, "statistics-1024", report)

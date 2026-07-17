@@ -606,6 +606,7 @@ table.stats tbody tr:nth-child(even) { background: #ffffff05; }
 
 @media (min-width: 800px) {
   .app-main { padding-top: 1.4rem; padding-bottom: 6.3rem; }
+  .wide-layout .action-bar { position: static; }
   .bottom-nav {
     left: 50%; right: auto; width: min(720px, calc(100% - 2rem));
     transform: translateX(-50%); bottom: 0.75rem;
