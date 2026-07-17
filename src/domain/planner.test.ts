@@ -37,6 +37,21 @@ describe("generatePlannedTargets", () => {
     expect(flat).toEqual(["T20", "D16", "T20", "D16", "T20", "D16"]);
   });
 
+  it.each([2, 3, 7])("within_set_switch: %i種類を決定論的かつ均等に循環する", (targetCount) => {
+    const pool = Array.from({ length: targetCount }, (_, i) =>
+      makeSegmentTarget("triple", STEEL_BOARD, 20 - i)
+    );
+    const sets = generatePlannedTargets("within_set_switch", pool, 20);
+    const counts = Object.values(countByLabel(sets));
+    expect(Math.max(...counts) - Math.min(...counts)).toBeLessThanOrEqual(1);
+    if (targetCount >= 3) {
+      expect(sets.every((set) => new Set(set.map((target) => target.label)).size === 3)).toBe(true);
+    } else {
+      expect(sets[0]?.map((target) => target.label)).toEqual(["T20", "T19", "T20"]);
+      expect(sets[1]?.map((target) => target.label)).toEqual(["T19", "T20", "T19"]);
+    }
+  });
+
   it("balanced: 出題数が可能な限り均等", () => {
     const pool = [1, 2, 3, 4, 5].map((n) =>
       makeSegmentTarget("triple", STEEL_BOARD, n)

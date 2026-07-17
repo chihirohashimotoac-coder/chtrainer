@@ -130,7 +130,11 @@ export default function ThrowsPage() {
     <div>
       <h1>{s.throws.title}</h1>
       {savedMsg && <p className="ok-text small">{s.throws.savedEdit}</p>}
+      <div className="info-box na-legend">
+        <strong>N/A：</strong>このラウンドでは命中・誤差を評価しない、または判定に必要なデータがない項目です。R1グルーピングの命中は、命中率を測定しないためN/Aです。
+      </div>
       <div className="table-wrap">
+        <p className="scroll-hint">横にスクロールして詳細を確認できます →</p>
         <table className="stats">
           <thead>
             <tr>

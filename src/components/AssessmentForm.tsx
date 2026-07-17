@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { SelfAssessment } from "../types/models";
+import type { ReleaseStopTiming, SelfAssessment } from "../types/models";
 import { nowIso } from "../utils/id";
 import { Scale11 } from "./Scale11";
 import { t } from "../i18n/ja";
@@ -29,6 +29,8 @@ export function AssessmentForm({
   const [anxiety, setAnxiety] = useState(0);
   const [releaseFear, setReleaseFear] = useState(0);
   const [routineAdherence, setRoutineAdherence] = useState(10);
+  const [uninterruptedThrowRate, setUninterruptedThrowRate] = useState<number | "">("");
+  const [releaseStopTiming, setReleaseStopTiming] = useState<ReleaseStopTiming | "">("");
 
   const submit = () => {
     const assessment: SelfAssessment = {
@@ -41,7 +43,13 @@ export function AssessmentForm({
       ...(timing !== "before" ? { conditionChange } : {}),
       // メンタル評価はセクションを開いて記録した場合のみ保存する
       ...(showMental
-        ? { anxiety, releaseFear, routineAdherence }
+        ? {
+            anxiety,
+            releaseFear,
+            routineAdherence,
+            ...(uninterruptedThrowRate !== "" ? { uninterruptedThrowRate } : {}),
+            ...(releaseStopTiming ? { releaseStopTiming } : {}),
+          }
         : {}),
       ...(note.trim() ? { note: note.trim() } : {}),
     };
@@ -118,6 +126,41 @@ export function AssessmentForm({
             value={routineAdherence}
             onChange={setRoutineAdherence}
           />
+          <label className="field" htmlFor={`uninterrupted-${timing}`}>
+            <span>{s.assessment.uninterruptedThrowRate} (任意)</span>
+          </label>
+          <p id={`uninterrupted-hint-${timing}`} className="muted small">
+            {s.assessment.uninterruptedThrowRateHint}
+          </p>
+          <select
+            id={`uninterrupted-${timing}`}
+            aria-describedby={`uninterrupted-hint-${timing}`}
+            value={uninterruptedThrowRate}
+            onChange={(e) => setUninterruptedThrowRate(e.target.value === "" ? "" : Number(e.target.value))}
+          >
+            <option value="">未入力</option>
+            {Array.from({ length: 21 }, (_, i) => i * 5).map((value) => (
+              <option key={value} value={value}>{value}%</option>
+            ))}
+          </select>
+          <label className="field" htmlFor={`release-stop-${timing}`}>
+            <span>{s.assessment.releaseStopTiming} (任意)</span>
+          </label>
+          <select
+            id={`release-stop-${timing}`}
+            value={releaseStopTiming}
+            onChange={(e) => setReleaseStopTiming(e.target.value as ReleaseStopTiming | "")}
+          >
+            <option value="">未入力</option>
+            <option value="none">なし</option>
+            <option value="during_setup">セットアップ中</option>
+            <option value="before_takeback">テイクバック開始前</option>
+            <option value="after_takeback">テイクバック後／前へ出す直前</option>
+            <option value="during_forward">フォワード動作中</option>
+            <option value="before_release">リリース直前</option>
+            <option value="unknown">わからない</option>
+            <option value="other">その他</option>
+          </select>
         </div>
       )}
 

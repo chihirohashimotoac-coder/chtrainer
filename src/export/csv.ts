@@ -7,6 +7,12 @@ export const CSV_COLUMNS = [
   "training_mode",
   "board_type",
   "scoring_style",
+  "assessment_before_uninterrupted_throw_rate_percent",
+  "assessment_before_release_stop_timing",
+  "assessment_middle_uninterrupted_throw_rate_percent",
+  "assessment_middle_release_stop_timing",
+  "assessment_after_uninterrupted_throw_rate_percent",
+  "assessment_after_release_stop_timing",
   "set_number",
   "global_throw_number",
   "dart_in_set",
@@ -77,6 +83,11 @@ export function buildSessionCsv(
     .slice()
     .sort((a, b) => a.globalThrowNumber - b.globalThrowNumber);
   const effectivePatterns = effectiveR4PatternMetadata(sorted);
+  const assessment = (timing: "before" | "middle" | "after") =>
+    session.assessments.find((item) => item.timing === timing);
+  const before = assessment("before");
+  const middle = assessment("middle");
+  const after = assessment("after");
   for (const t of sorted) {
     const pattern = effectivePatterns.get(t.setId);
     const row = [
@@ -85,6 +96,12 @@ export function buildSessionCsv(
       cell(session.trainingMode),
       cell(session.boardType),
       cell(session.scoringStyle),
+      cell(before?.uninterruptedThrowRate),
+      cell(before?.releaseStopTiming),
+      cell(middle?.uninterruptedThrowRate),
+      cell(middle?.releaseStopTiming),
+      cell(after?.uninterruptedThrowRate),
+      cell(after?.releaseStopTiming),
       cell(setNumberOf(t.setId)),
       cell(t.globalThrowNumber),
       cell(t.dartInSet),
