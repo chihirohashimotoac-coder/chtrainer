@@ -59,6 +59,14 @@ export async function commitSet(
     setNumber,
     startedAt: setStartedAt ?? now,
     completedAt: now,
+    roundId: darts[0]?.target.roundId,
+    roundKind: darts[0]?.target.roundKind,
+    evaluationKind: darts[0]?.target.evaluationKind,
+    requiredInputPrecision: darts[0]?.target.requiredInputPrecision,
+    inputMethod:
+      darts.every((d) => d.landing.positionPrecision === "coordinate")
+        ? "coordinate"
+        : "simple",
   };
 
   const records: ThrowRecord[] = [];
@@ -71,6 +79,7 @@ export async function commitSet(
       previousWasHit: prevHit,
       globalThrowNumber,
       plannedThrowCount: session.plannedThrowCount,
+      sameSetAsPrevious: i > 0,
     });
     const record: ThrowRecord = {
       schemaVersion: SCHEMA_VERSION,
@@ -134,6 +143,7 @@ export async function updateThrowLanding(
     previousWasHit: prev?.derived.exactHit,
     globalThrowNumber: record.globalThrowNumber,
     plannedThrowCount: session.plannedThrowCount,
+    sameSetAsPrevious: prev?.setId === record.setId,
   });
   const updated: ThrowRecord = {
     ...record,
@@ -143,10 +153,10 @@ export async function updateThrowLanding(
   };
   await saveThrow(updated);
   const next = index >= 0 ? all[index + 1] : undefined;
-  if (next && next.derived.previousThrowWasHit !== derived.exactHit) {
+  if (next && next.setId === record.setId && next.derived.previousThrowWasHitInSameSet !== derived.exactHit) {
     await saveThrow({
       ...next,
-      derived: { ...next.derived, previousThrowWasHit: derived.exactHit },
+      derived: { ...next.derived, previousThrowWasHit: derived.exactHit, previousThrowWasHitInSameSet: derived.exactHit },
     });
   }
   await recalcAndSaveStatistics(record.sessionId);

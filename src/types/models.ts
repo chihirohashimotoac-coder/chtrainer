@@ -63,7 +63,11 @@ export type TrainingMode =
 export type RandomVariant = "balanced" | "pure";
 
 /** 永続データ共通のスキーマバージョン */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
+
+export type EvaluationKind = "exact_hit" | "grouping_only" | "cricket_marks" | "score_only";
+export type RequiredInputPrecision = "coordinate" | "any";
+export type SkillRoundKind = "grouping" | "bull" | "number" | "checkout";
 
 export interface EquipmentProfile {
   schemaVersion: number;
@@ -156,6 +160,11 @@ export interface TargetDefinition {
   ring?: Ring;
   /** 投擲画面に表示する、狙い方と測定内容の説明(スキル診断等で使用) */
   instruction?: string;
+  /** Machine-readable semantics. Optional only for records created before schema v2. */
+  evaluationKind?: EvaluationKind;
+  roundId?: string;
+  roundKind?: SkillRoundKind;
+  requiredInputPrecision?: RequiredInputPrecision;
   /** custom_selection 用: 命中と見なす複数エリア */
   areas?: TargetArea[];
   /** 誤差計算用の代表点(正規化座標) */
@@ -163,6 +172,32 @@ export interface TargetDefinition {
     x: number;
     y: number;
   };
+}
+
+export interface EquipmentSnapshot {
+  name: string;
+  barrel?: EquipmentProfile["barrel"];
+  shaft?: EquipmentProfile["shaft"];
+  flight?: EquipmentProfile["flight"];
+  point?: EquipmentProfile["point"];
+  notes?: string;
+}
+
+/** Immutable analysis context captured before the first throw. */
+export interface SessionContextSnapshot {
+  capturedAt: ISODateTime;
+  displayName: string;
+  dominantHand: PlayerProfile["dominantHand"];
+  dominantEye?: DominantEye;
+  stance?: Stance;
+  goal?: PlayerGoal;
+  currentLevel?: string;
+  targetLevel?: string;
+  concern?: string;
+  dartColors: [string, string, string];
+  boardType: BoardType;
+  inputMethod: InputMethod;
+  equipmentSnapshot?: EquipmentSnapshot;
 }
 
 export interface SelfAssessment {
@@ -221,6 +256,8 @@ export interface TrainingSession {
   arrangement?: string;
   inputMethod: InputMethod;
   dominantHand: "right" | "left" | "ambidextrous";
+  /** Absent on legacy sessions; exports then explicitly use the current profile. */
+  contextSnapshot?: SessionContextSnapshot;
   setCount: number;
   plannedThrowCount: number;
   /** セットごとの出題ターゲット3件 x setCount (開始時に確定) */
@@ -249,6 +286,11 @@ export interface ThrowSet {
   setNumber: number;
   startedAt?: ISODateTime;
   completedAt?: ISODateTime;
+  roundId?: string;
+  roundKind?: SkillRoundKind;
+  evaluationKind?: EvaluationKind;
+  requiredInputPrecision?: RequiredInputPrecision;
+  inputMethod?: InputMethod;
 }
 
 export interface LandingRecord {
@@ -272,6 +314,9 @@ export interface DerivedRecord {
   missDirection?: MissDirection;
   targetChangedFromPrevious: boolean;
   previousThrowWasHit?: boolean;
+  sameSetAsPrevious?: boolean;
+  previousThrowWasHitInSameSet?: boolean;
+  sameTargetAsPrevious?: boolean;
   /** 0-1 */
   sessionProgress: number;
 }
@@ -297,6 +342,7 @@ export interface ThrowRecord {
 
 export interface DartOrderStats {
   throwCount: number;
+  scorableThrows?: number;
   hitCount: number;
   hitRate: number;
   averageErrorDistance?: number;
@@ -316,6 +362,7 @@ export interface TargetStats {
 
 export interface HalfStats {
   throwCount: number;
+  scorableThrows?: number;
   hitCount: number;
   hitRate: number;
   averageErrorDistance?: number;
@@ -370,6 +417,10 @@ export interface SessionStatistics {
   totalThrows: number;
   completedThrows: number;
   exactHits: number;
+  scorableThrows: number;
+  scorableExactHitRate: number;
+  groupingOnlyThrows: number;
+  errorSampleCount: number;
   exactHitRate: number;
   outboardCount: number;
   outboardRate: number;
@@ -389,6 +440,13 @@ export interface SessionStatistics {
   cricket?: CricketStats;
   /** 01練習セッションのみ */
   zeroOne?: ZeroOneStats;
+  grouping?: {
+    status: "available" | "insufficient_data" | "unavailable_non_coordinate";
+    validSetCount: number;
+    averagePairDistance?: number;
+    maximumPairDistance?: number;
+    medianPairDistance?: number;
+  };
   calculatedAt: ISODateTime;
 }
 

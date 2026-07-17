@@ -1,8 +1,8 @@
 {
   "format": "darts-training-analyzer-backup",
-  "backupVersion": 1,
-  "createdAt": "2026-07-16T16:19:17.941Z",
-  "appVersion": "1.16.0",
+  "backupVersion": 2,
+  "createdAt": "2026-07-17T06:47:11.412Z",
+  "appVersion": "1.18.0",
   "counts": {
     "settings": 1,
     "players": 1,
@@ -16,7 +16,7 @@
   "data": {
     "settings": [
       {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "id": "app",
         "onboardingCompleted": true,
         "activePlayerId": "player-1",
@@ -25,7 +25,7 @@
     ],
     "players": [
       {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "id": "player-1",
         "displayName": "サンプルプレイヤー",
         "dominantHand": "right",
@@ -47,7 +47,7 @@
     "trainingPlans": [],
     "sessions": [
       {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "id": "session-1",
         "playerId": "player-1",
         "boardType": "steel",
@@ -60,7 +60,7 @@
         "plannedTargets": [
           [
             {
-              "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+              "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -71,7 +71,7 @@
               }
             },
             {
-              "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+              "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -82,7 +82,7 @@
               }
             },
             {
-              "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+              "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -95,7 +95,7 @@
           ],
           [
             {
-              "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+              "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -106,7 +106,7 @@
               }
             },
             {
-              "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+              "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -117,7 +117,7 @@
               }
             },
             {
-              "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+              "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
               "label": "T20",
               "type": "exact_segment",
               "number": 20,
@@ -173,14 +173,14 @@
     "throwSets": [],
     "throws": [
       {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "id": "throw-1",
         "sessionId": "session-1",
         "setId": "set-1",
         "globalThrowNumber": 1,
         "dartInSet": 1,
         "target": {
-          "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+          "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -205,6 +205,8 @@
         "derived": {
           "exactHit": true,
           "targetChangedFromPrevious": false,
+          "sameSetAsPrevious": false,
+          "sameTargetAsPrevious": false,
           "sessionProgress": 0.16666666666666666,
           "errorX": 0,
           "errorY": 0,
@@ -216,14 +218,14 @@
         "updatedAt": "2026-01-01T10:00:00.000Z"
       },
       {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "id": "throw-2",
         "sessionId": "session-1",
         "setId": "set-1",
         "globalThrowNumber": 2,
         "dartInSet": 2,
         "target": {
-          "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+          "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -249,6 +251,8 @@
           "exactHit": false,
           "targetChangedFromPrevious": false,
           "previousThrowWasHit": true,
+          "sameSetAsPrevious": false,
+          "sameTargetAsPrevious": true,
           "sessionProgress": 0.3333333333333333,
           "errorX": 0.1,
           "errorY": 0,
@@ -260,14 +264,14 @@
         "updatedAt": "2026-01-01T10:00:00.000Z"
       },
       {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "id": "throw-3",
         "sessionId": "session-1",
         "setId": "set-1",
         "globalThrowNumber": 3,
         "dartInSet": 3,
         "target": {
-          "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+          "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -293,6 +297,8 @@
           "exactHit": false,
           "targetChangedFromPrevious": false,
           "previousThrowWasHit": false,
+          "sameSetAsPrevious": false,
+          "sameTargetAsPrevious": true,
           "sessionProgress": 0.5,
           "errorX": 0,
           "errorY": 0.19999999999999996,
@@ -304,14 +310,14 @@
         "updatedAt": "2026-01-01T10:00:00.000Z"
       },
       {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "id": "throw-4",
         "sessionId": "session-1",
         "setId": "set-2",
         "globalThrowNumber": 4,
         "dartInSet": 1,
         "target": {
-          "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+          "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -337,6 +343,8 @@
           "exactHit": false,
           "targetChangedFromPrevious": false,
           "previousThrowWasHit": false,
+          "sameSetAsPrevious": false,
+          "sameTargetAsPrevious": true,
           "sessionProgress": 0.6666666666666666,
           "errorX": -0.3,
           "errorY": 0,
@@ -348,14 +356,14 @@
         "updatedAt": "2026-01-01T10:00:00.000Z"
       },
       {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "id": "throw-5",
         "sessionId": "session-1",
         "setId": "set-2",
         "globalThrowNumber": 5,
         "dartInSet": 2,
         "target": {
-          "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+          "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -376,20 +384,22 @@
           "exactHit": false,
           "targetChangedFromPrevious": false,
           "previousThrowWasHit": false,
+          "sameSetAsPrevious": false,
+          "sameTargetAsPrevious": true,
           "sessionProgress": 0.8333333333333334
         },
         "createdAt": "2026-01-01T10:00:00.000Z",
         "updatedAt": "2026-01-01T10:00:00.000Z"
       },
       {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "id": "throw-6",
         "sessionId": "session-1",
         "setId": "set-2",
         "globalThrowNumber": 6,
         "dartInSet": 3,
         "target": {
-          "id": "df5dfef8-238b-474b-acee-8b07a9c33892",
+          "id": "dc9c2491-4383-479c-a3eb-59e10668e490",
           "label": "T20",
           "type": "exact_segment",
           "number": 20,
@@ -411,6 +421,8 @@
           "exactHit": false,
           "targetChangedFromPrevious": false,
           "previousThrowWasHit": false,
+          "sameSetAsPrevious": false,
+          "sameTargetAsPrevious": true,
           "sessionProgress": 1,
           "missDirection": "up"
         },
@@ -420,11 +432,15 @@
     ],
     "sessionStatistics": [
       {
-        "schemaVersion": 1,
+        "schemaVersion": 2,
         "sessionId": "session-1",
         "totalThrows": 6,
         "completedThrows": 6,
         "exactHits": 1,
+        "scorableThrows": 6,
+        "scorableExactHitRate": 0.16666666666666666,
+        "groupingOnlyThrows": 0,
+        "errorSampleCount": 4,
         "exactHitRate": 0.16666666666666666,
         "outboardCount": 1,
         "outboardRate": 0.16666666666666666,
@@ -470,6 +486,7 @@
         "byDartInSet": {
           "1": {
             "throwCount": 2,
+            "scorableThrows": 2,
             "hitCount": 1,
             "hitRate": 0.5,
             "averageErrorDistance": 0.15,
@@ -478,6 +495,7 @@
           },
           "2": {
             "throwCount": 2,
+            "scorableThrows": 2,
             "hitCount": 0,
             "hitRate": 0,
             "averageErrorDistance": 0.1,
@@ -486,6 +504,7 @@
           },
           "3": {
             "throwCount": 2,
+            "scorableThrows": 2,
             "hitCount": 0,
             "hitRate": 0,
             "averageErrorDistance": 0.19999999999999996,
@@ -517,6 +536,7 @@
         },
         "firstHalf": {
           "throwCount": 3,
+          "scorableThrows": 3,
           "hitCount": 1,
           "hitRate": 0.3333333333333333,
           "averageErrorDistance": 0.09999999999999998,
@@ -525,13 +545,14 @@
         },
         "secondHalf": {
           "throwCount": 3,
+          "scorableThrows": 3,
           "hitCount": 0,
           "hitRate": 0,
           "averageErrorDistance": 0.3,
           "outboardCount": 1,
           "outboardRate": 0.3333333333333333
         },
-        "calculatedAt": "2026-07-16T16:19:17.941Z"
+        "calculatedAt": "2026-07-17T06:47:11.411Z"
       }
     ]
   }

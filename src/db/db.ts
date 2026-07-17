@@ -15,7 +15,7 @@ import type { BackupData } from "../export/backup";
 import { nowIso } from "../utils/id";
 
 /** IndexedDBのスキーマバージョン(データ移行用) */
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const DB_NAME = "darts-training-analyzer";
 
 interface DtaDb extends DBSchema {
@@ -47,7 +47,8 @@ let dbPromise: Promise<IDBPDatabase<DtaDb>> | undefined;
 export function getDb(): Promise<IDBPDatabase<DtaDb>> {
   if (!dbPromise) {
     dbPromise = openDB<DtaDb>(DB_NAME, DB_VERSION, {
-      upgrade(db) {
+      upgrade(db, oldVersion) {
+        if (oldVersion >= 1) return;
         db.createObjectStore("settings", { keyPath: "id" });
         db.createObjectStore("players", { keyPath: "id" });
         db.createObjectStore("equipmentProfiles", { keyPath: "id" });

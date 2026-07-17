@@ -1,7 +1,7 @@
 /** アプリ全体の上限・閾値を一元管理する定数 */
 
 export const APP_NAME = "CH Darts Training Analyzer";
-export const APP_VERSION = "1.17.0";
+export const APP_VERSION = "1.18.0";
 
 /** セット数の制約 */
 export const MIN_SETS = 20;
@@ -26,8 +26,11 @@ export const CENTER_NEAR_THRESHOLD = 0.05;
 export const INPUT_AREA_FACTOR = 1.3;
 
 /** バックアップ形式バージョン */
-export const BACKUP_VERSION = 1;
+export const BACKUP_VERSION = 2;
 
 /** 表示時の小数点以下桁数(内部計算は丸めない) */
 export const DISPLAY_DECIMALS = 3;
 export const RATE_DECIMALS = 1;
+
+/** Above this size, summary + CSV is recommended (token count remains an estimate). */
+export const MAX_EMBEDDED_MARKDOWN_CHARS = 10_000;

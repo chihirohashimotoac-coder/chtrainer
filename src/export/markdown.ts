@@ -1,5 +1,6 @@
 import type {
   EquipmentProfile,
+  EquipmentSnapshot,
   MissDirection,
   PlayerProfile,
   SelfAssessment,
@@ -120,78 +121,22 @@ function landingLabel(throwRecord: ThrowRecord): string {
 }
 
 /** AI分析依頼文(分析指示ブロック) */
-export const ANALYSIS_INSTRUCTIONS = `あなたは、ダーツ競技、スポーツデータ分析、統計解析、運動学習に精通した分析者です。
-以下の投擲データを多角的に分析してください。
+export const ANALYSIS_INSTRUCTIONS = `以下のルールで、ユーザーの目的に直接答える短く実用的な分析を作成してください。
 
-## 分析上の重要ルール
-
-- データから直接確認できる事実と、推測または仮説を分けてください。
-- サンプル数が少ない項目は断定しないでください。
-- 投擲位置だけからフォームや身体動作の原因を断定しないでください。
-- フォームに言及する場合は、可能性のある仮説として説明してください。
-- 分析できない項目は「分析不能」と明記してください。
-- 数値を再計算した場合は、使用した値と計算方法を示してください。
-- アプリ算出値と原始データに矛盾がある場合は指摘してください。
-- 一般論だけで終わらせず、このデータの具体的な数値を引用してください。
-- 医学的診断を行わないでください。
-
-## 必ず分析する項目
-
-1. データ品質と分析上の制約
-2. 全体の命中精度
-3. 1投目、2投目、3投目の違い
-4. 1投目と2投目から調整し、3投目で精度が上がる傾向があるか
-5. 成功した次の投擲と失敗した次の投擲の違い
-6. 前投の外れ方向に対する次投の修正傾向
-7. 大きく外した後に反対方向へ修正しすぎる傾向があるか
-8. 同じターゲットを3本投げた場合のグルーピング
-9. 1投ごとにターゲットを変えた場合の精度
-10. ターゲット変更直後に精度が低下するか
-11. ターゲットごとの得意・不得意
-12. シングル、ダブル、トリプル、ブルごとの違い
-13. 上、下、左、右および斜め方向の外れ傾向
-14. 縦方向と横方向のどちらのばらつきが大きいか
-15. ターゲットによって外れ方向が変化するか
-16. セッション前半と後半の違い
-17. 疲労度、集中度、痛み、当日の調子との関係
-18. 過去セッションから改善または悪化した点
-19. データから考えられる投げ方や修正方法の仮説
-20. 次回優先して練習すべき課題
+## 共通ルール
+- 【事実】・【統計的傾向】・【仮説】・【分析不能】を区別し、サンプル不足を断定しない。
+- 着弾だけからフォーム原因を断定せず、医学的・心理的診断を行わない。
+- アプリ統計と原始データの矛盾を指摘し、不要な一般論を避ける。
 
 ## 出力形式
-
-以下の順に回答してください。
-
-1. 結論の要約
-2. データ品質と分析上の制約
+1. 最重要結論3点
+2. ユーザーの悩みへの直接回答
 3. データから確認できる事実
-4. 1投目、2投目、3投目の比較
-5. ターゲット別分析
-6. 外れ方向とグルーピング
-7. 前投から次投への修正傾向
-8. ターゲット切替の影響
-9. 時間経過、疲労、集中度との関係
-10. 過去セッションとの比較
-11. フォームや狙い方に関する仮説
-12. 優先課題トップ3
-13. 次回の具体的な練習メニュー
-14. 追加で必要なデータ
-15. 分析不能だった項目
-16. データの矛盾または注意点
-
-各記述には、可能な限り以下の分類を付けてください。
-
-- 【事実】
-- 【統計的傾向】
-- 【仮説】
-- 【分析不能】
-- 【追加検証】
-
-各項目の信頼度を以下で示してください。
-
-- 高
-- 中
-- 低`;
+4. 優先課題トップ3
+5. 次回優先して練習すべき課題と、具体的な30〜60投メニュー
+6. 追加で必要なデータ
+7. 分析不能・注意点
+8. 詳細統計（付録）`;
 
 type FocusCategory =
   | "repeat"
@@ -270,18 +215,12 @@ const FOCUS_SECTIONS: Record<FocusCategory, string> = {
 - Bullとナンバーで精度傾向に差があるか`,
   skill: `### このセッションの分析焦点(スキル診断)
 
-このセッションは4ラウンド構成の技能測定です。ターゲットのラベルからラウンドを判別できます:
-R1 グルーピング(ターゲットラベル「1投目の着弾点」: 1投目は自由な場所へ投げ、2投目・3投目は1投目の着弾点を狙って3本をまとめる。狙いが固定でないため命中・誤差は記録されない) / R2 ブル(Bull) / R3 ナンバー(T20同一3投セットと、T20→T16→T15 および T12→T18→T3 の三角形を1投ずつなぞる切替セット) / R4 ダブル(D16・D20)。
-
-- ラウンドごとに評価し、以下の4カテゴリを100点満点で採点してください(採点基準・計算方法を必ず明示すること):
-  - グルーピング力: R1の各セットについて、3投の座標から着弾間距離(例: 3投間の最大ペア距離・平均ペア距離)を計算して評価してください。R1は狙いが自由なため命中率・誤差列はN/Aです。座標(X・Y)から直接計算してください
-  - ブル精度: R2の命中率・平均誤差・インナー/アウター比率
-  - ナンバー精度: R3の命中率・平均誤差。同一3投セットと三角形切替セットの成績差(ターゲット切替耐性)、および2つの三角形(T20→T16→T15 / T12→T18→T3)間の精度差も評価してください
-  - チェックアウト力: R4のダブル命中率と外れ方向(内側/外側/上下)
-- 4カテゴリの強弱プロファイルを要約してください
-- 過去のスキル診断セッションが比較対象にある場合は、カテゴリ別の伸びを比較してください
-- ラウンドの出題順(後半ほど疲労の影響)を考慮して評価してください
-- 総合評価と、最も伸びしろが大きいカテゴリへの具体的な練習提案を示してください`,
+4ラウンドを実測値とサンプル数で比較してください。根拠のない絶対評価や採点基準の創作は禁止です。
+- R1 グルーピング力 (grouping_only): 詳細座標の有効セットだけで平均・最大・中央値ペア距離を扱う。簡易入力なら「分析不能」。
+- R2 ブル精度: 命中率、平均誤差、インナー/アウター比率。
+- R3 ナンバー精度: 命中率、同一ターゲット時と切替直後の誤差、切替ペナルティ。
+- R4 チェックアウト力: ダブル命中率、内外・上下ミス、アウトボード率。
+強弱は実測値と信頼度を併記し、サンプル不足は参考値または分析不能としてください。`,
   diagnostic: `### このセッションの分析焦点(全体診断)
 
 このセッションはボード全体からランダム出題した診断用データです。以下を最優先で分析してください。
@@ -292,7 +231,20 @@ R1 グルーピング(ターゲットラベル「1投目の着弾点」: 1投目
 - 次回どのターゲットを集中練習すべきかの優先順位を提案してください`,
 };
 
-function equipmentSummary(equipment: EquipmentProfile | undefined): string {
+const GOAL_SECTIONS: Partial<Record<NonNullable<PlayerProfile["goal"]>, string>> = {
+  recovery: `### 目的別の注意（復調）
+
+- 着弾結果と、止まらず投げられた等のプロセスを分けて扱ってください。
+- 症状と成績の時間変化を確認し、リリース動作を過度に意識させる断定的助言は避けてください。
+- 主観症状が悪化した場合は休憩・終了を選択肢として示し、医学的・心理的診断はしないでください。`,
+  pro: `### 目的別の注意（プロ志望）
+
+- ユーザーが入力した目標値とのギャップだけを扱ってください。
+- 出典付きベンチマークが記録されていない場合、プロテストの合否を断定しないでください。
+- 現行のJAPANプロテスト基準を推測・創作しないでください。`,
+};
+
+function equipmentSummary(equipment: EquipmentProfile | EquipmentSnapshot | undefined): string {
   if (!equipment) return NA;
   const parts: string[] = [equipment.name];
   if (equipment.barrel?.maker || equipment.barrel?.model) {
@@ -369,12 +321,30 @@ function statsSection(stats: SessionStatistics): string {
   out.push("");
   out.push(`- 総投擲数(予定): ${s.totalThrows}`);
   out.push(`- 完了投擲数: ${s.completedThrows}`);
+  out.push(`- 命中判定対象投擲数: ${s.scorableThrows ?? s.completedThrows}`);
+  out.push(`- グルーピング専用投擲数: ${s.groupingOnlyThrows ?? 0}`);
   out.push(`- 完全命中数: ${s.exactHits}`);
-  out.push(`- 完全命中率: ${fmtRate(s.exactHitRate)}`);
+  out.push(`- 命中判定対象の完全命中率: ${fmtRate(s.scorableExactHitRate ?? s.exactHitRate)}`);
+  out.push(`- 誤差距離サンプル数: ${s.errorSampleCount ?? s.combinedError.sampleCount}`);
   out.push(`- アウトボード数: ${s.outboardCount} (${fmtRate(s.outboardRate)})`);
   out.push(`- バウンスアウト数: ${s.bounceOutCount}`);
   out.push(`- 座標入力数: ${s.coordinateInputCount} / 簡易入力数: ${s.approximateInputCount}`);
   out.push("");
+  if (s.grouping) {
+    out.push("### グルーピング実測値");
+    out.push("");
+    if (s.grouping.status === "unavailable_non_coordinate") {
+      out.push("- 分析不能: 簡易入力はセグメント代表点のため、精密なグルーピング距離を算出しません。");
+    } else if (s.grouping.status === "insufficient_data") {
+      out.push("- 分析不能: 詳細座標の有効な3投セットが不足しています。");
+    } else {
+      out.push(`- 有効セット数: ${s.grouping.validSetCount}`);
+      out.push(`- 平均ペア距離: ${fmtNum(s.grouping.averagePairDistance)}`);
+      out.push(`- 最大ペア距離: ${fmtNum(s.grouping.maximumPairDistance)}`);
+      out.push(`- 中央値ペア距離: ${fmtNum(s.grouping.medianPairDistance)}`);
+    }
+    out.push("");
+  }
   out.push(errorStatsBlock("詳細座標入力による誤差統計", s.coordinateError));
   out.push(
     errorStatsBlock("簡易入力(概算)を含む誤差統計 ※簡易入力の座標はエリア代表点による概算値", s.combinedError)
@@ -585,7 +555,22 @@ function comparisonSection(input: MarkdownInput): string {
 
 /** AI分析依頼Markdown全体を生成する */
 export function buildAnalysisMarkdown(input: MarkdownInput): string {
-  const { session, player, equipment, stats } = input;
+  const { session, stats } = input;
+  const snapshot = session.contextSnapshot;
+  const player = snapshot
+    ? {
+        displayName: snapshot.displayName,
+        dominantEye: snapshot.dominantEye,
+        stance: snapshot.stance,
+        goal: snapshot.goal,
+        currentLevel: snapshot.currentLevel,
+        targetLevel: snapshot.targetLevel,
+        concern: snapshot.concern,
+      }
+    : input.player;
+  // A snapshot with no equipment means "none selected at session start";
+  // never substitute equipment edited/selected later.
+  const equipment = snapshot ? snapshot.equipmentSnapshot : input.equipment;
   const out: string[] = [];
   out.push("# ダーツ投擲データ分析依頼");
   out.push("");
@@ -598,8 +583,16 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
     out.push(FOCUS_SECTIONS[focusCategory]);
     out.push("");
   }
+  const goalSection = player?.goal ? GOAL_SECTIONS[player.goal] : undefined;
+  if (goalSection) {
+    out.push(goalSection);
+    out.push("");
+  }
   out.push("## セッション概要");
   out.push("");
+  if (!snapshot) {
+    out.push("- ⚠️ このセッションには開始時プロフィールのスナップショットがなく、現在プロフィールを参照している");
+  }
   out.push(`- セッションID: ${session.id}`);
   out.push(`- 実施日時: ${fmtDateTime(session.startedAt)}${session.endedAt ? ` 〜 ${fmtDateTime(session.endedAt)}` : ""}`);
   out.push(
@@ -609,14 +602,16 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   out.push(`- セット数: ${session.setCount} (1セット3投)`);
   out.push(`- 総投擲数(予定): ${session.plannedThrowCount}`);
   out.push(`- セッティング: ${equipmentSummary(equipment)}`);
-  out.push(`- 利き腕: ${HAND_LABELS[session.dominantHand] ?? session.dominantHand}`);
+  const dominantHand = snapshot?.dominantHand ?? session.dominantHand;
+  out.push(`- 利き腕: ${HAND_LABELS[dominantHand] ?? dominantHand}`);
   if (player?.dominantEye) {
     out.push(`- 利き目: ${EYE_LABELS[player.dominantEye] ?? player.dominantEye}`);
   }
   if (player?.stance) {
     out.push(`- スタンス: ${STANCE_LABELS[player.stance] ?? player.stance}`);
   }
-  out.push(`- 入力方式: ${INPUT_LABELS[session.inputMethod] ?? session.inputMethod}`);
+  const inputMethod = snapshot?.inputMethod ?? session.inputMethod;
+  out.push(`- 入力方式: ${INPUT_LABELS[inputMethod] ?? inputMethod}`);
   out.push(`- 今日の調子: ${CONDITION_LABELS[session.dailyCondition] ?? session.dailyCondition}${session.dailyConditionNote ? ` (${session.dailyConditionNote})` : ""}`);
   if (player) out.push(`- プレイヤー: ${player.displayName}`);
   out.push("");

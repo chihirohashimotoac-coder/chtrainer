@@ -361,6 +361,9 @@ export default function SessionPage() {
             </button>
           </div>
 
+          {currentTarget.requiredInputPrecision === "coordinate" && (
+            <div className="info-box">グルーピング測定には詳細座標が必要です。簡易入力の代表点から精密な距離は算出しません。</div>
+          )}
           <div className="choice-row" style={{ margin: "0.4rem 0" }}>
             <button
               className={`choice${inputMethod === "coordinate" ? " selected" : ""}`}
@@ -373,12 +376,13 @@ export default function SessionPage() {
               className={`choice${inputMethod === "simple" ? " selected" : ""}`}
               onClick={() => setInputMethod("simple")}
               aria-pressed={inputMethod === "simple"}
+              disabled={currentTarget.requiredInputPrecision === "coordinate"}
             >
               {s.player.inputSimple}
             </button>
           </div>
 
-          {inputMethod === "coordinate" ? (
+          {inputMethod === "coordinate" || currentTarget.requiredInputPrecision === "coordinate" ? (
             <CoordinateInput
               key={`${setNumber}-${dartIndex}`}
               profile={profile}
