@@ -166,6 +166,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
             <tr>
               <th>{s.throws.order}</th>
               <th>{s.result.throwCount}</th>
+              <th>{s.result.scorableThrowCount}</th>
               <th>{s.result.hitCount}</th>
               <th>{s.result.hitRate}</th>
               <th>{s.result.averageErrorDistance}</th>
@@ -179,6 +180,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
                 <tr key={order}>
                   <td>{order}投目</td>
                   <td>{d.throwCount}</td>
+                  <td>{d.scorableThrows ?? d.throwCount}</td>
                   <td>{(d.scorableThrows ?? d.throwCount) > 0 ? d.hitCount : "N/A"}</td>
                   <td>{(d.scorableThrows ?? d.throwCount) > 0 ? fmtRate(d.hitRate) : "N/A"}</td>
                   <td>{fmtNum(d.averageErrorDistance)}</td>
@@ -197,6 +199,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
             <tr>
               <th>{s.throws.target}</th>
               <th>{s.result.throwCount}</th>
+              <th>{s.result.scorableThrowCount}</th>
               <th>{s.result.hitCount}</th>
               <th>{s.result.hitRate}</th>
               <th>{s.result.averageErrorDistance}</th>
@@ -214,6 +217,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
                   <tr key={label}>
                     <td>{label}</td>
                     <td>{g.throwCount}</td>
+                    <td>{g.scorableThrows ?? g.throwCount}</td>
                     <td>{(g.scorableThrows ?? g.throwCount) > 0 ? g.hitCount : "N/A"}</td>
                     <td>{(g.scorableThrows ?? g.throwCount) > 0 ? fmtRate(g.hitRate) : "N/A"}</td>
                     <td>{fmtNum(g.averageErrorDistance)}</td>
@@ -253,6 +257,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
             <tr>
               <th></th>
               <th>{s.result.throwCount}</th>
+              <th>{s.result.scorableThrowCount}</th>
               <th>{s.result.hitRate}</th>
               <th>{s.result.averageErrorDistance}</th>
               <th>{s.result.outboardRate}</th>
@@ -268,6 +273,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
               <tr key={label}>
                 <td>{label}</td>
                 <td>{h.throwCount}</td>
+                <td>{h.scorableThrows ?? h.throwCount}</td>
                 <td>{(h.scorableThrows ?? h.throwCount) > 0 ? fmtRate(h.hitRate) : "N/A"}</td>
                 <td>{fmtNum(h.averageErrorDistance)}</td>
                 <td>{fmtRate(h.outboardRate)}</td>

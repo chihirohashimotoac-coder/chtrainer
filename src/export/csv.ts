@@ -1,4 +1,5 @@
 import type { ThrowRecord, TrainingSession } from "../types/models";
+import { effectiveR4PatternMetadata } from "./patternMetadata";
 
 export const CSV_COLUMNS = [
   "session_id",
@@ -29,6 +30,7 @@ export const CSV_COLUMNS = [
   "pattern_id",
   "pattern_kind",
   "analysis_category",
+  "pattern_metadata_source",
   "previous_throw_was_hit",
   "same_set_as_previous",
   "previous_throw_was_hit_in_same_set",
@@ -74,7 +76,9 @@ export function buildSessionCsv(
   const sorted = throws
     .slice()
     .sort((a, b) => a.globalThrowNumber - b.globalThrowNumber);
+  const effectivePatterns = effectiveR4PatternMetadata(sorted);
   for (const t of sorted) {
+    const pattern = effectivePatterns.get(t.setId);
     const row = [
       cell(session.id),
       cell(session.startedAt),
@@ -101,9 +105,10 @@ export function buildSessionCsv(
       cell(t.target.evaluationKind),
       cell(t.target.roundId),
       cell(t.target.roundKind),
-      cell(t.target.patternId),
-      cell(t.target.patternKind),
-      cell(t.target.analysisCategory),
+      cell(pattern?.patternId ?? t.target.patternId),
+      cell(pattern?.patternKind ?? t.target.patternKind),
+      cell(pattern?.analysisCategory ?? t.target.analysisCategory),
+      cell(pattern?.source),
       cell(t.derived.sameSetAsPrevious ? t.derived.previousThrowWasHitInSameSet : undefined),
       cell(t.derived.sameSetAsPrevious),
       cell(t.derived.sameSetAsPrevious ? t.derived.previousThrowWasHitInSameSet : undefined),

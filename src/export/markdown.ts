@@ -9,6 +9,10 @@ import type {
   ThrowRecord,
   TrainingSession,
 } from "../types/models";
+import {
+  effectiveR4PatternMetadata,
+  type EffectivePatternMetadata,
+} from "./patternMetadata";
 import { compareStatistics } from "../domain/compare";
 import { ALL_DIRECTIONS } from "../domain/stats";
 import { fmtNum, fmtNumDiff, fmtRate, fmtRateDiff, fmtDateTime, fmtElapsed } from "../utils/format";
@@ -233,7 +237,8 @@ function skillFocusSection(style: ScoringStyle | undefined): string {
 - R1 グルーピング(grouping_only): 詳細座標入力の有効な3投セットだけで、平均・最大・中央値ペア距離と有効セット数を扱ってください。命中数・命中率・投擲一覧の命中はN/Aです。分析不能理由は、有効な詳細座標3投セットなし、バウンスアウト、アウトボード、位置不明、3投未満、segment_approximationを区別してください
 - R2 スコアリング(scoring): 主役ターゲット${main}の${mainDetail}を、命中判定対象投擲数とともに示してください
 - R3 ナンバー(number): 副ターゲット${sub}の同一3投セットと、T20→T16→T15 / T12→T18→T3の切替セットを、命中率・平均誤差・切替直後の変化で比較してください
-- R4 チェックアウト(checkout): pattern_id・pattern_kind・analysis_categoryを使い、D20固定、D16固定、固定全体、切替全体、20系、16系、位置分散、切替直後、ボード上側/下側/左側/右側、内側/外側/上下ミス、D16・D20以外、特定ダブル依存、1投目ミス後のセット内修正を比較してください。個別1投のダブルを得意・不得意とせず、少数なら固定/切替/20系/16系/位置分散/位置/ミス方向でまとめてください
+- R4 チェックアウト(checkout): pattern_id・pattern_kind・analysis_categoryを使い、実際にサンプルが存在する分類だけを比較してください。D20固定、D16固定、固定全体、切替全体、20系、16系、位置分散、切替直後、ボード上側/下側/左側/右側、内側/外側/上下ミス、D16・D20以外、特定ダブル依存、1投目ミス後のセット内修正が候補です。サンプルがない分類は未測定として「分析不能」とし、測定済みであるかのように扱わないでください。個別1投のダブルを得意・不得意とせず、少数なら固定/切替/20系/16系/位置分散/位置/ミス方向でまとめてください
+- pattern_metadata_source が inferred_from_observed_targets の場合は旧セッションの実際のターゲット順からfixed/switch等を観測ベースで補完した値です。新しい標準R4パターンを実施した証拠ではないため、記録されていない切替・位置分散を推測で補わないでください
 - 根拠のない100点満点評価や採点基準の創作は禁止です。4ラウンドの強弱は実測値・分母・入力精度・信頼度を併記し、サンプル不足は参考値または分析不能としてください
 - R3・R4の切替直後は同一セット内の2投目・3投目だけです。前セットとターゲットが異なるだけの1投目を含めないでください
 - 過去のスキル診断セッションが比較対象にある場合は、カテゴリ別の伸びを比較してください。ただしスコアリング形式が異なる過去診断はR2/R3の主役・副が入れ替わっているため、カテゴリ単位ではなく同一ターゲット(Bull・T20)単位で比較し、形式が異なることを明記してください
@@ -458,26 +463,26 @@ function statsSection(stats: SessionStatistics): string {
   );
   out.push("### 1投目・2投目・3投目");
   out.push("");
-  out.push("| 投順 | 投擲数 | 命中数 | 命中率 | 平均誤差距離 | アウトボード率 |");
-  out.push("|---|---:|---:|---:|---:|---:|");
+  out.push("| 投順 | 総投擲数 | 命中判定対象数(命中率の分母) | 命中数 | 命中率 | 平均誤差距離 | アウトボード率 |");
+  out.push("|---|---:|---:|---:|---:|---:|---:|");
   for (const order of ["1", "2", "3"] as const) {
     const d = s.byDartInSet[order];
     const scorable = d.scorableThrows ?? d.throwCount;
     out.push(
-      `| ${order}投目 | ${d.throwCount} | ${scorable > 0 ? d.hitCount : NA} | ${scorable > 0 ? fmtRate(d.hitRate) : NA} | ${fmtNum(d.averageErrorDistance)} | ${fmtRate(d.outboardRate)} |`
+      `| ${order}投目 | ${d.throwCount} | ${scorable} | ${scorable > 0 ? d.hitCount : NA} | ${scorable > 0 ? fmtRate(d.hitRate) : NA} | ${fmtNum(d.averageErrorDistance)} | ${fmtRate(d.outboardRate)} |`
     );
   }
   out.push("");
   out.push("### ターゲット別");
   out.push("");
-  out.push("| ターゲット | 出題数 | 命中数 | 命中率 | 平均誤差距離 | 主な外れ方向 | アウトボード数 |");
-  out.push("|---|---:|---:|---:|---:|---|---:|");
+  out.push("| ターゲット | 総出題数 | 命中判定対象数(命中率の分母) | 命中数 | 命中率 | 平均誤差距離 | 主な外れ方向 | アウトボード数 |");
+  out.push("|---|---:|---:|---:|---:|---:|---|---:|");
   for (const label of Object.keys(s.byTarget).sort()) {
     const g = s.byTarget[label];
     if (!g) continue;
     const scorable = g.scorableThrows ?? g.throwCount;
     out.push(
-      `| ${label} | ${g.throwCount} | ${scorable > 0 ? g.hitCount : NA} | ${scorable > 0 ? fmtRate(g.hitRate) : NA} | ${fmtNum(g.averageErrorDistance)} | ${directionLabel(g.mainMissDirection)} | ${g.outboardCount} |`
+      `| ${label} | ${g.throwCount} | ${scorable} | ${scorable > 0 ? g.hitCount : NA} | ${scorable > 0 ? fmtRate(g.hitRate) : NA} | ${fmtNum(g.averageErrorDistance)} | ${directionLabel(g.mainMissDirection)} | ${g.outboardCount} |`
     );
   }
   out.push("");
@@ -491,13 +496,13 @@ function statsSection(stats: SessionStatistics): string {
   out.push("");
   out.push("### 前半・後半");
   out.push("");
-  out.push("| 区間 | 投擲数 | 命中率 | 平均誤差距離 | アウトボード率 |");
-  out.push("|---|---:|---:|---:|---:|");
+  out.push("| 区間 | 総投擲数 | 命中判定対象数(命中率の分母) | 命中率 | 平均誤差距離 | アウトボード率 |");
+  out.push("|---|---:|---:|---:|---:|---:|");
   out.push(
-    `| 前半 | ${s.firstHalf.throwCount} | ${(s.firstHalf.scorableThrows ?? s.firstHalf.throwCount) > 0 ? fmtRate(s.firstHalf.hitRate) : NA} | ${fmtNum(s.firstHalf.averageErrorDistance)} | ${fmtRate(s.firstHalf.outboardRate)} |`
+    `| 前半 | ${s.firstHalf.throwCount} | ${s.firstHalf.scorableThrows ?? s.firstHalf.throwCount} | ${(s.firstHalf.scorableThrows ?? s.firstHalf.throwCount) > 0 ? fmtRate(s.firstHalf.hitRate) : NA} | ${fmtNum(s.firstHalf.averageErrorDistance)} | ${fmtRate(s.firstHalf.outboardRate)} |`
   );
   out.push(
-    `| 後半 | ${s.secondHalf.throwCount} | ${(s.secondHalf.scorableThrows ?? s.secondHalf.throwCount) > 0 ? fmtRate(s.secondHalf.hitRate) : NA} | ${fmtNum(s.secondHalf.averageErrorDistance)} | ${fmtRate(s.secondHalf.outboardRate)} |`
+    `| 後半 | ${s.secondHalf.throwCount} | ${s.secondHalf.scorableThrows ?? s.secondHalf.throwCount} | ${(s.secondHalf.scorableThrows ?? s.secondHalf.throwCount) > 0 ? fmtRate(s.secondHalf.hitRate) : NA} | ${fmtNum(s.secondHalf.averageErrorDistance)} | ${fmtRate(s.secondHalf.outboardRate)} |`
   );
   out.push("");
   if (s.cricket) {
@@ -543,50 +548,69 @@ function statsSection(stats: SessionStatistics): string {
 }
 
 function skillDoubleStatsSection(throws: readonly ThrowRecord[]): string {
-  const r4 = throws.filter(
-    (record) =>
-      record.target.roundId === "skill-r4" ||
-      record.target.roundKind === "checkout"
-  );
+  const effectivePatterns = effectiveR4PatternMetadata(throws);
+  const r4 = throws.flatMap((record) => {
+    const pattern = effectivePatterns.get(record.setId);
+    return pattern ? [{ record, pattern }] : [];
+  });
   if (r4.length === 0) return "";
+  const recordedCount = r4.filter(({ pattern }) =>
+    pattern.source === "recorded"
+  ).length;
+  const inferredCount = r4.length - recordedCount;
   const out = [
     "### R4ダブル・パターン集計",
     "",
+    `- 記録済みパターンメタデータ: ${recordedCount}投`,
+    `- 観測ターゲット列からの旧データ補完: ${inferredCount}投`,
+  ];
+  if (inferredCount > 0) {
+    out.push(
+      "- ⚠️ inferred_from_observed_targets は実際のセット内ターゲット順だけからfixed/switch等を補完した値です。新標準R4の未実施パターンを測定済みとは扱わないでください。"
+    );
+  }
+  out.push(
+    "",
     "| 集計単位 | 種別 | 投擲数 | 命中数 | 命中率 | セット内切替直後投擲数 |",
     "|---|---|---:|---:|---:|---:|",
-  ];
-  const groups = new Map<string, ThrowRecord[]>();
-  for (const record of r4) {
-    const key = record.target.patternId ?? "legacy-r4";
+  );
+  type R4Entry = { record: ThrowRecord; pattern: EffectivePatternMetadata };
+  const groups = new Map<string, R4Entry[]>();
+  for (const entry of r4) {
+    const key = entry.pattern.patternId;
     const group = groups.get(key) ?? [];
-    group.push(record);
+    group.push(entry);
     groups.set(key, group);
   }
-  const append = (label: string, records: ThrowRecord[]) => {
-    const hits = records.filter((record) => record.derived.exactHit).length;
-    const switched = records.filter(
-      (record) =>
+  const append = (label: string, entries: R4Entry[]) => {
+    const hits = entries.filter(({ record }) => record.derived.exactHit).length;
+    const switched = entries.filter(
+      ({ record }) =>
         record.derived.sameSetAsPrevious === true &&
         record.derived.targetChangedFromPrevious
     ).length;
     out.push(
-      `| ${label} | ${records[0]?.target.patternKind ?? NA} | ${records.length} | ${hits} | ${fmtRate(hits / records.length)} | ${switched} |`
+      `| ${label} | ${entries[0]?.pattern.patternKind ?? NA} | ${entries.length} | ${hits} | ${fmtRate(hits / entries.length)} | ${switched} |`
     );
   };
-  for (const [patternId, records] of groups) append(patternId, records);
+  for (const [patternId, entries] of groups) append(patternId, entries);
   for (const kind of ["fixed", "switch"] as const) {
-    const records = r4.filter((record) => record.target.patternKind === kind);
-    if (records.length > 0) append(`${kind}全体`, records);
+    const entries = r4.filter(({ pattern }) => pattern.patternKind === kind);
+    if (entries.length > 0) append(`${kind}全体`, entries);
   }
-  const categories = new Map<string, ThrowRecord[]>();
-  for (const record of r4) {
-    if (!record.target.analysisCategory) continue;
-    const group = categories.get(record.target.analysisCategory) ?? [];
-    group.push(record);
-    categories.set(record.target.analysisCategory, group);
+  const categories = new Map<string, R4Entry[]>();
+  for (const entry of r4) {
+    const group = categories.get(entry.pattern.analysisCategory) ?? [];
+    group.push(entry);
+    categories.set(entry.pattern.analysisCategory, group);
   }
-  for (const [category, records] of categories) append(`category:${category}`, records);
+  for (const [category, entries] of categories) append(`category:${category}`, entries);
   out.push("");
+  for (const kind of ["fixed", "switch"] as const) {
+    if (!r4.some(({ pattern }) => pattern.patternKind === kind)) {
+      out.push(`- ${kind}パターン: 未測定（分析不能）`);
+    }
+  }
   out.push("個別ダブルの投擲数が少ない場合は得意・不得意と断定せず、fixed/switch、20系、16系、位置分散、ボード位置、ミス方向でまとめてください。");
   out.push("");
   return out.join("\n");
@@ -598,15 +622,17 @@ function throwTable(
 ): string {
   const out: string[] = [];
   out.push(
-    "| No. | セット | 投順 | 狙い | 着弾 | 命中 | X | Y | 誤差X | 誤差Y | 誤差距離 | ズレ方向 | 入力精度 | evaluation_kind | round_id | round_kind | pattern_id | pattern_kind | analysis_category | same_set_as_previous | previous_throw_was_hit_in_same_set | same_target_as_previous | ターゲット変更 | 経過時間 | メモ |"
+    "| No. | セット | 投順 | 狙い | 着弾 | 命中 | X | Y | 誤差X | 誤差Y | 誤差距離 | ズレ方向 | 入力精度 | evaluation_kind | round_id | round_kind | pattern_id | pattern_kind | analysis_category | pattern_metadata_source | same_set_as_previous | previous_throw_was_hit_in_same_set | same_target_as_previous | ターゲット変更 | 経過時間 | メモ |"
   );
   out.push(
-    "|---:|---:|---:|---|---|---|---:|---:|---:|---:|---:|---|---|---|---|---|---|---|---|---|---|---|---|---:|---|"
+    "|---:|---:|---:|---|---|---|---:|---:|---:|---:|---:|---|---|---|---|---|---|---|---|---|---|---|---|---|---:|---|"
   );
   const sorted = throws
     .slice()
     .sort((a, b) => a.globalThrowNumber - b.globalThrowNumber);
+  const effectivePatterns = effectiveR4PatternMetadata(sorted);
   for (const th of sorted) {
+    const pattern = effectivePatterns.get(th.setId);
     const approx =
       th.landing.positionPrecision === "segment_approximation" ? "≈" : "";
     const num = (v: number | undefined) =>
@@ -642,9 +668,10 @@ function throwTable(
         th.target.evaluationKind ?? NA,
         th.target.roundId ?? NA,
         th.target.roundKind ?? NA,
-        th.target.patternId ?? NA,
-        th.target.patternKind ?? NA,
-        th.target.analysisCategory ?? NA,
+        pattern?.patternId ?? th.target.patternId ?? NA,
+        pattern?.patternKind ?? th.target.patternKind ?? NA,
+        pattern?.analysisCategory ?? th.target.analysisCategory ?? NA,
+        pattern?.source ?? NA,
         sameSet ? "true" : "false",
         sameSet ? boolMark(th.derived.previousThrowWasHitInSameSet) : NA,
         sameSet ? boolMark(th.derived.sameTargetAsPrevious) : NA,
