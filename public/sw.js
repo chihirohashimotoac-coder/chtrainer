@@ -6,7 +6,7 @@
  *  - ナビゲーションはネットワーク失敗時に index.html へフォールバック
  *  - 新しい SW が waiting になったらクライアントへ更新可能を通知
  */
-const CACHE_VERSION = "dta-v1.19.0";
+const CACHE_VERSION = "dta-v1.20.0";
 const APP_SHELL = [
   "./",
   "./index.html",
