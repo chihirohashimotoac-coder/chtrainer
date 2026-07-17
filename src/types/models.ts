@@ -71,7 +71,7 @@ export type RandomVariant = "balanced" | "pure";
 export type ScoringStyle = "fit_bull" | "separate_bull" | "steel";
 
 /** 永続データ共通のスキーマバージョン */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export type EvaluationKind = "exact_hit" | "grouping_only" | "cricket_marks" | "score_only";
 export type RequiredInputPrecision = "coordinate" | "any";
@@ -126,6 +126,23 @@ export type PlayerGoal =
   | "bull";
 export type Stance = "closed" | "middle" | "open";
 
+export type GripFingerCount = "2" | "3" | "4" | "other" | "unknown";
+export type GripPosition = "front" | "center" | "rear" | "unknown";
+export type TakebackDepth = "shallow" | "standard" | "deep" | "unknown";
+export type ThrowingTempo = "slow" | "standard" | "fast" | "unknown";
+
+/**
+ * 任意のフォーム背景情報。着弾から原因を断定するためではなく、
+ * AIが原因仮説を絞る際の追加文脈としてのみ使用する。
+ */
+export interface FormInformation {
+  gripFingerCount?: GripFingerCount;
+  gripPosition?: GripPosition;
+  takeback?: TakebackDepth;
+  throwingTempo?: ThrowingTempo;
+  concern?: string;
+}
+
 export interface PlayerProfile {
   schemaVersion: number;
   id: UUID;
@@ -135,6 +152,8 @@ export interface PlayerProfile {
   dominantEye?: DominantEye;
   /** スタンス(任意・後から追加されたフィールド) */
   stance?: Stance;
+  /** フォーム背景情報(すべて任意・後から追加されたフィールド) */
+  form?: FormInformation;
   /** 練習の目的(任意) */
   goal?: PlayerGoal;
   /** 現在のレベル(自由記述・自己申告) */
@@ -178,6 +197,12 @@ export interface TargetDefinition {
   evaluationKind?: EvaluationKind;
   roundId?: string;
   roundKind?: SkillRoundKind;
+  /** スキル診断内のデータ駆動パターン識別子(旧データでは未設定) */
+  patternId?: string;
+  /** 同一ターゲット固定か、セット内ターゲット切替か */
+  patternKind?: "fixed" | "switch";
+  /** AI集計用カテゴリ(例: route20 / position_spread) */
+  analysisCategory?: string;
   requiredInputPrecision?: RequiredInputPrecision;
   /** custom_selection 用: 命中と見なす複数エリア */
   areas?: TargetArea[];
@@ -204,6 +229,7 @@ export interface SessionContextSnapshot {
   dominantHand: PlayerProfile["dominantHand"];
   dominantEye?: DominantEye;
   stance?: Stance;
+  form?: FormInformation;
   goal?: PlayerGoal;
   currentLevel?: string;
   targetLevel?: string;
@@ -304,6 +330,9 @@ export interface ThrowSet {
   completedAt?: ISODateTime;
   roundId?: string;
   roundKind?: SkillRoundKind;
+  patternId?: string;
+  patternKind?: "fixed" | "switch";
+  analysisCategory?: string;
   evaluationKind?: EvaluationKind;
   requiredInputPrecision?: RequiredInputPrecision;
   inputMethod?: InputMethod;
@@ -369,6 +398,7 @@ export interface DartOrderStats {
 export interface TargetStats {
   label: string;
   throwCount: number;
+  scorableThrows?: number;
   hitCount: number;
   hitRate: number;
   averageErrorDistance?: number;
@@ -459,6 +489,15 @@ export interface SessionStatistics {
   grouping?: {
     status: "available" | "insufficient_data" | "unavailable_non_coordinate";
     validSetCount: number;
+    /** 有効な3投座標セットにならなかった具体的な理由 */
+    unavailableReasons?: (
+      | "no_valid_three_dart_coordinate_set"
+      | "bounce_out"
+      | "outboard"
+      | "unknown_position"
+      | "fewer_than_three_throws"
+      | "segment_approximation"
+    )[];
     averagePairDistance?: number;
     maximumPairDistance?: number;
     medianPairDistance?: number;

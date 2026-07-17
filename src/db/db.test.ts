@@ -4,9 +4,10 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { getDb, getSession, importAllData } from "./db";
 import { parseBackup } from "../export/backup";
+import { SCHEMA_VERSION } from "../types/models";
 
 describe("IndexedDB schema upgrades", () => {
-  it("v1からv2への更新で派生統計を無効化する", async () => {
+  it("v1から現行DBへの更新で派生統計を無効化する", async () => {
     await new Promise<void>((resolve, reject) => {
       const request = indexedDB.deleteDatabase("darts-training-analyzer");
       request.onsuccess = () => resolve();
@@ -43,7 +44,7 @@ describe("IndexedDB schema upgrades", () => {
     );
     expect(sample.ok).toBe(true);
     await importAllData(sample.backup!.data, "replace");
-    expect((await getSession("session-1"))?.schemaVersion).toBe(2);
+    expect((await getSession("session-1"))?.schemaVersion).toBe(SCHEMA_VERSION);
     upgraded.close();
   });
 });

@@ -11,6 +11,12 @@ export interface VersionEntry {
 
 export const VERSION_HISTORY: VersionEntry[] = [
   {
+    version: "1.19.0",
+    date: "2026-07-17",
+    summary:
+      "AI分析を問題点・原因仮説・改善実験まで深掘りし、原因を絞り込む追加質問と回答後の再診断に対応。任意のフォーム情報を開始時スナップショットへ保存。ダブル診断を複数ターゲットの固定・切替パターンへ拡張し、セット境界分析とgrouping_onlyのN/A表示を修正",
+  },
+  {
     version: "1.18.0",
     date: "2026-07-17",
     summary:

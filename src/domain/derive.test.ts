@@ -129,13 +129,14 @@ describe("deriveThrow (誤差の派生データ)", () => {
     expect(landing.x).toBeCloseTo(0.3);
   });
 
-  it("ターゲット変更と前投命中を記録する", () => {
+  it("同一セット内のターゲット変更と前投命中を記録する", () => {
     const d16 = makeSegmentTarget("double", STEEL_BOARD, 16);
     const landing = landingFromCoordinate(0, 0, STEEL_BOARD);
     const derived = deriveThrow(d16, landing, {
       ...ctx,
       previousTarget: t20,
       previousWasHit: true,
+      sameSetAsPrevious: true,
     });
     expect(derived.targetChangedFromPrevious).toBe(true);
     expect(derived.previousThrowWasHit).toBe(true);
@@ -143,6 +144,7 @@ describe("deriveThrow (誤差の派生データ)", () => {
       ...ctx,
       previousTarget: makeSegmentTarget("double", STEEL_BOARD, 16),
       previousWasHit: false,
+      sameSetAsPrevious: true,
     });
     expect(derived2.targetChangedFromPrevious).toBe(false);
   });

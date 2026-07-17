@@ -307,6 +307,7 @@ export function calculateStatistics(
     byTarget[label] = {
       label,
       throwCount: group.length,
+      scorableThrows: targetScorable.length,
       hitCount,
       hitRate: targetScorable.length > 0 ? hitCount / targetScorable.length : 0,
       averageErrorDistance: mean(errorDistances(group)),
@@ -335,18 +336,61 @@ export function calculateStatistics(
   const pairDistances: number[] = [];
   let validSetCount = 0;
   let hasNonCoordinate = false;
+  const groupingReasons = new Set<NonNullable<NonNullable<SessionStatistics["grouping"]>["unavailableReasons"]>[number]>();
   for (const set of groupingSets.values()) {
-    if (set.some((dart) => dart.landing.positionPrecision !== "coordinate")) {
+    if (set.length < 3) groupingReasons.add("fewer_than_three_throws");
+    if (set.some((dart) => dart.landing.ring === "bounce_out")) {
+      groupingReasons.add("bounce_out");
+    }
+    if (set.some((dart) => dart.landing.ring === "outboard")) {
+      groupingReasons.add("outboard");
+    }
+    if (set.some((dart) => dart.landing.ring === "unknown")) {
+      groupingReasons.add("unknown_position");
+    }
+    if (set.some((dart) => dart.landing.positionPrecision === "segment_approximation")) {
+      groupingReasons.add("segment_approximation");
+    }
+    if (
+      set.some(
+        (dart) =>
+          dart.landing.ring === "bounce_out" ||
+          dart.landing.ring === "outboard" ||
+          dart.landing.ring === "unknown"
+      )
+    ) {
       hasNonCoordinate = true;
       continue;
     }
-    if (set.length < 3 || set.some((dart) => dart.landing.x == null || dart.landing.y == null)) continue;
+    if (set.some((dart) => dart.landing.positionPrecision !== "coordinate")) {
+      hasNonCoordinate = true;
+      if (
+        set.some(
+          (dart) =>
+            dart.landing.positionPrecision !== "segment_approximation" &&
+            dart.landing.ring !== "bounce_out" &&
+            dart.landing.ring !== "outboard"
+        )
+      ) {
+        groupingReasons.add("unknown_position");
+      }
+      continue;
+    }
+    if (set.length < 3 || set.some((dart) => dart.landing.x == null || dart.landing.y == null)) {
+      if (set.some((dart) => dart.landing.x == null || dart.landing.y == null)) {
+        groupingReasons.add("unknown_position");
+      }
+      continue;
+    }
     validSetCount += 1;
     for (let i = 0; i < set.length; i += 1) {
       for (let j = i + 1; j < set.length; j += 1) {
         pairDistances.push(Math.hypot((set[i]!.landing.x ?? 0) - (set[j]!.landing.x ?? 0), (set[i]!.landing.y ?? 0) - (set[j]!.landing.y ?? 0)));
       }
     }
+  }
+  if (validSetCount === 0) {
+    groupingReasons.add("no_valid_three_dart_coordinate_set");
   }
   const groupingStatus = validSetCount > 0 ? "available" : hasNonCoordinate ? "unavailable_non_coordinate" : "insufficient_data";
   return {
@@ -377,6 +421,7 @@ export function calculateStatistics(
     ...(groupingOnly.length > 0 ? { grouping: {
       status: groupingStatus,
       validSetCount,
+      unavailableReasons: [...groupingReasons],
       averagePairDistance: mean(pairDistances),
       maximumPairDistance: pairDistances.length > 0 ? Math.max(...pairDistances) : undefined,
       medianPairDistance: median(pairDistances),

@@ -1,8 +1,8 @@
 {
   "format": "darts-training-analyzer-backup",
-  "backupVersion": 2,
+  "backupVersion": 3,
   "createdAt": "2026-01-01T10:30:00.000Z",
-  "appVersion": "1.18.0",
+  "appVersion": "1.19.0",
   "counts": {
     "settings": 1,
     "players": 1,
@@ -16,7 +16,7 @@
   "data": {
     "settings": [
       {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "id": "app",
         "onboardingCompleted": true,
         "activePlayerId": "player-1",
@@ -25,7 +25,7 @@
     ],
     "players": [
       {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "id": "player-1",
         "displayName": "サンプルプレイヤー",
         "dominantHand": "right",
@@ -47,7 +47,7 @@
     "trainingPlans": [],
     "sessions": [
       {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "id": "session-1",
         "playerId": "player-1",
         "boardType": "steel",
@@ -173,7 +173,7 @@
     "throwSets": [],
     "throws": [
       {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "id": "throw-1",
         "sessionId": "session-1",
         "setId": "set-1",
@@ -206,7 +206,6 @@
           "exactHit": true,
           "targetChangedFromPrevious": false,
           "sameSetAsPrevious": false,
-          "sameTargetAsPrevious": false,
           "sessionProgress": 0.16666666666666666,
           "errorX": 0,
           "errorY": 0,
@@ -218,7 +217,7 @@
         "updatedAt": "2026-01-01T10:00:00.000Z"
       },
       {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "id": "throw-2",
         "sessionId": "session-1",
         "setId": "set-1",
@@ -251,7 +250,8 @@
           "exactHit": false,
           "targetChangedFromPrevious": false,
           "previousThrowWasHit": true,
-          "sameSetAsPrevious": false,
+          "sameSetAsPrevious": true,
+          "previousThrowWasHitInSameSet": true,
           "sameTargetAsPrevious": true,
           "sessionProgress": 0.3333333333333333,
           "errorX": 0.1,
@@ -264,7 +264,7 @@
         "updatedAt": "2026-01-01T10:00:00.000Z"
       },
       {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "id": "throw-3",
         "sessionId": "session-1",
         "setId": "set-1",
@@ -297,7 +297,8 @@
           "exactHit": false,
           "targetChangedFromPrevious": false,
           "previousThrowWasHit": false,
-          "sameSetAsPrevious": false,
+          "sameSetAsPrevious": true,
+          "previousThrowWasHitInSameSet": false,
           "sameTargetAsPrevious": true,
           "sessionProgress": 0.5,
           "errorX": 0,
@@ -310,7 +311,7 @@
         "updatedAt": "2026-01-01T10:00:00.000Z"
       },
       {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "id": "throw-4",
         "sessionId": "session-1",
         "setId": "set-2",
@@ -342,9 +343,7 @@
         "derived": {
           "exactHit": false,
           "targetChangedFromPrevious": false,
-          "previousThrowWasHit": false,
           "sameSetAsPrevious": false,
-          "sameTargetAsPrevious": true,
           "sessionProgress": 0.6666666666666666,
           "errorX": -0.3,
           "errorY": 0,
@@ -356,7 +355,7 @@
         "updatedAt": "2026-01-01T10:00:00.000Z"
       },
       {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "id": "throw-5",
         "sessionId": "session-1",
         "setId": "set-2",
@@ -384,7 +383,8 @@
           "exactHit": false,
           "targetChangedFromPrevious": false,
           "previousThrowWasHit": false,
-          "sameSetAsPrevious": false,
+          "sameSetAsPrevious": true,
+          "previousThrowWasHitInSameSet": false,
           "sameTargetAsPrevious": true,
           "sessionProgress": 0.8333333333333334
         },
@@ -392,7 +392,7 @@
         "updatedAt": "2026-01-01T10:00:00.000Z"
       },
       {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "id": "throw-6",
         "sessionId": "session-1",
         "setId": "set-2",
@@ -421,7 +421,8 @@
           "exactHit": false,
           "targetChangedFromPrevious": false,
           "previousThrowWasHit": false,
-          "sameSetAsPrevious": false,
+          "sameSetAsPrevious": true,
+          "previousThrowWasHitInSameSet": false,
           "sameTargetAsPrevious": true,
           "sessionProgress": 1,
           "missDirection": "up"
@@ -432,7 +433,7 @@
     ],
     "sessionStatistics": [
       {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "sessionId": "session-1",
         "totalThrows": 6,
         "completedThrows": 6,
@@ -516,6 +517,7 @@
           "T20": {
             "label": "T20",
             "throwCount": 6,
+            "scorableThrows": 6,
             "hitCount": 1,
             "hitRate": 0.16666666666666666,
             "averageErrorDistance": 0.14999999999999997,
