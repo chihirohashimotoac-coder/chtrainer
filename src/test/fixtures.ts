@@ -35,9 +35,15 @@ export function buildThrows(
   let prevHit: boolean | undefined;
   specs.forEach((spec, i) => {
     const globalThrowNumber = i + 1;
+    const setId = spec.setId ?? `set-${Math.ceil(globalThrowNumber / 3)}`;
+    const previousSpec = specs[i - 1];
+    const previousSetId = previousSpec
+      ? previousSpec.setId ?? `set-${Math.ceil(i / 3)}`
+      : undefined;
     const derived = deriveThrow(spec.target, spec.landing, {
       previousTarget: prevTarget,
       previousWasHit: prevHit,
+      sameSetAsPrevious: previousSetId === setId,
       globalThrowNumber,
       plannedThrowCount,
     });
@@ -45,7 +51,7 @@ export function buildThrows(
       schemaVersion: SCHEMA_VERSION,
       id: `throw-${globalThrowNumber}`,
       sessionId: "session-1",
-      setId: spec.setId ?? `set-${Math.ceil(globalThrowNumber / 3)}`,
+      setId,
       globalThrowNumber,
       dartInSet: (((globalThrowNumber - 1) % 3) + 1) as 1 | 2 | 3,
       target: spec.target,

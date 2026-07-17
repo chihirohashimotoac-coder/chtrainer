@@ -127,6 +127,9 @@ export default function SessionPage() {
     targets[2] != null &&
     isSameTarget(targets[0], targets[1]) &&
     isSameTarget(targets[1], targets[2]);
+  const showPerDartTargets = !allSameTarget || targets[0]?.patternId != null;
+  const sessionDartColors =
+    session?.contextSnapshot?.dartColors ?? player?.dartColors;
 
   const beginInput = () => {
     setStartedAt.current = setStartedAt.current ?? nowIso();
@@ -278,7 +281,7 @@ export default function SessionPage() {
     );
   }
 
-  const dartColor = player?.dartColors[dartIndex] ?? "#ccc";
+  const dartColor = sessionDartColors?.[dartIndex] ?? "#ccc";
   const currentTarget = targets[dartIndex];
 
   return (
@@ -297,7 +300,7 @@ export default function SessionPage() {
         <div className="throw-screen">
           <div className="target-display">
             <div className="set-info">{s.throwing.currentTarget}</div>
-            {allSameTarget ? (
+            {!showPerDartTargets ? (
               <div
                 className={`target-label${(targets[0]?.label.length ?? 0) > 4 ? " long" : ""}`}
               >
@@ -312,7 +315,7 @@ export default function SessionPage() {
                       <span
                         className="color-dot"
                         style={{
-                          background: player?.dartColors[i],
+                          background: sessionDartColors?.[i],
                           display: "inline-block",
                           width: 12,
                           height: 12,
@@ -414,7 +417,7 @@ export default function SessionPage() {
                   <span className="dart-chip">
                     <span
                       className="color-dot"
-                      style={{ background: player?.dartColors[i] }}
+                      style={{ background: sessionDartColors?.[i] }}
                     />
                     {s.throwing.dartN.replace("{n}", String(i + 1))}
                   </span>

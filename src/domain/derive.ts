@@ -69,8 +69,12 @@ export function deriveThrow(
   ctx: DeriveContext
 ): DerivedRecord {
   const exactHit = isExactHit(target, landing);
+  const sameSetAsPrevious = ctx.sameSetAsPrevious ?? false;
+  // セットの1投目は、前セットとのターゲット差を「切替直後」に数えない。
   const targetChangedFromPrevious =
-    ctx.previousTarget != null && !isSameTarget(ctx.previousTarget, target);
+    sameSetAsPrevious &&
+    ctx.previousTarget != null &&
+    !isSameTarget(ctx.previousTarget, target);
   const sessionProgress =
     ctx.plannedThrowCount > 0
       ? ctx.globalThrowNumber / ctx.plannedThrowCount
@@ -79,11 +83,12 @@ export function deriveThrow(
   const base: DerivedRecord = {
     exactHit,
     targetChangedFromPrevious,
-    previousThrowWasHit: ctx.previousWasHit,
-    sameSetAsPrevious: ctx.sameSetAsPrevious ?? false,
-    previousThrowWasHitInSameSet: ctx.sameSetAsPrevious ? ctx.previousWasHit : undefined,
-    sameTargetAsPrevious:
-      ctx.previousTarget != null && !targetChangedFromPrevious,
+    previousThrowWasHit: sameSetAsPrevious ? ctx.previousWasHit : undefined,
+    sameSetAsPrevious,
+    previousThrowWasHitInSameSet: sameSetAsPrevious ? ctx.previousWasHit : undefined,
+    sameTargetAsPrevious: sameSetAsPrevious && ctx.previousTarget != null
+      ? !targetChangedFromPrevious
+      : undefined,
     sessionProgress,
   };
 

@@ -15,7 +15,7 @@ import type { BackupData } from "../export/backup";
 import { nowIso } from "../utils/id";
 
 /** IndexedDBのスキーマバージョン(データ移行用) */
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const DB_NAME = "darts-training-analyzer";
 
 interface DtaDb extends DBSchema {
@@ -66,6 +66,11 @@ export function getDb(): Promise<IDBPDatabase<DtaDb>> {
         if (oldVersion < 2) {
           // Statistics are derived data. Schema v2 changes grouping-only and
           // scorable denominators, so stale v1 rows must be recalculated on use.
+          void transaction.objectStore("sessionStatistics").clear();
+        }
+        if (oldVersion < 3) {
+          // v3 adds per-target scorable counts and detailed grouping reasons.
+          // Statistics are derived, so only the cache is cleared; source throws remain untouched.
           void transaction.objectStore("sessionStatistics").clear();
         }
       },

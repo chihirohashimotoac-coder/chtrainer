@@ -248,5 +248,11 @@ describe("命中判定対象とグルーピングの分離", () => {
     const stats = calculateStatistics("skill", 3, records, "skill_check");
     expect(stats.grouping?.status).toBe("unavailable_non_coordinate");
     expect(stats.grouping?.averagePairDistance).toBeUndefined();
+    expect(stats.grouping?.unavailableReasons).toEqual(
+      expect.arrayContaining([
+        "segment_approximation",
+        "no_valid_three_dart_coordinate_set",
+      ])
+    );
   });
 });

@@ -25,6 +25,10 @@ export const CSV_COLUMNS = [
   "position_precision",
   "evaluation_kind",
   "round_id",
+  "round_kind",
+  "pattern_id",
+  "pattern_kind",
+  "analysis_category",
   "previous_throw_was_hit",
   "same_set_as_previous",
   "previous_throw_was_hit_in_same_set",
@@ -54,6 +58,12 @@ export interface SetNumberLookup {
   (setId: string): number | undefined;
 }
 
+function isGroupingOnly(record: ThrowRecord): boolean {
+  return record.target.evaluationKind === "grouping_only" ||
+    (record.target.type === "custom_selection" &&
+      (record.target.areas?.length ?? 0) === 0);
+}
+
 /** セッションの全投擲をCSV文字列(BOMなし)に変換する */
 export function buildSessionCsv(
   session: TrainingSession,
@@ -80,7 +90,7 @@ export function buildSessionCsv(
       cell(t.target.ring),
       cell(t.landing.number),
       cell(t.landing.ring),
-      cell(t.derived.exactHit),
+      cell(isGroupingOnly(t) ? undefined : t.derived.exactHit),
       cell(t.landing.x),
       cell(t.landing.y),
       cell(t.derived.errorX),
@@ -90,11 +100,15 @@ export function buildSessionCsv(
       cell(t.landing.positionPrecision),
       cell(t.target.evaluationKind),
       cell(t.target.roundId),
-      cell(t.derived.previousThrowWasHit),
+      cell(t.target.roundKind),
+      cell(t.target.patternId),
+      cell(t.target.patternKind),
+      cell(t.target.analysisCategory),
+      cell(t.derived.sameSetAsPrevious ? t.derived.previousThrowWasHitInSameSet : undefined),
       cell(t.derived.sameSetAsPrevious),
-      cell(t.derived.previousThrowWasHitInSameSet),
-      cell(t.derived.sameTargetAsPrevious),
-      cell(t.derived.targetChangedFromPrevious),
+      cell(t.derived.sameSetAsPrevious ? t.derived.previousThrowWasHitInSameSet : undefined),
+      cell(t.derived.sameSetAsPrevious ? t.derived.sameTargetAsPrevious : undefined),
+      cell(t.derived.sameSetAsPrevious ? t.derived.targetChangedFromPrevious : undefined),
       cell(t.elapsedMs),
       cell(t.derived.sessionProgress),
       cell(t.note),
