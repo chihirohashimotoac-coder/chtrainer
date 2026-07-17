@@ -123,6 +123,18 @@ def capture(page, name: str, report: dict, full_page: bool = True) -> None:
     assert_no_page_overflow(page, name, report)
 
 
+def assert_major_tap_targets(page, name: str, report: dict) -> None:
+    sizes = page.evaluate(
+        """() => [...document.querySelectorAll('.btn.primary, .choice')]
+          .map((element) => element.getBoundingClientRect())
+          .filter((rect) => rect.width > 0 && rect.height > 0)
+          .map((rect) => ({ width: Math.round(rect.width), height: Math.round(rect.height) }))"""
+    )
+    report[name] = sizes
+    assert sizes, f"{name}: no major tap targets found"
+    assert all(size["height"] >= 48 for size in sizes), f"{name}: tap target below 48px {sizes}"
+
+
 def main() -> None:
     OUTPUT.mkdir(exist_ok=True)
     report = {}
@@ -149,7 +161,11 @@ def main() -> None:
         capture(page, "player-settings-1024", report)
 
         page.goto(f"{BASE_URL}/#/train/mode", wait_until="networkidle")
-        page.get_by_role("button", name="全体診断").click()
+        diagnostic_mode = page.get_by_role("button", name="全体診断")
+        diagnostic_mode.focus()
+        page.keyboard.press("Enter")
+        page.wait_for_url("**/#/train/targets")
+        report["keyboard_navigation"] = {"activated": "全体診断", "url": page.url}
         page.get_by_text("固定ダブル：3本とも同じダブルを狙う").wait_for()
         capture(page, "skill-r4-explanation-1024", report)
 
@@ -157,6 +173,7 @@ def main() -> None:
         page.get_by_role("button", name="クリケット練習").click()
         page.get_by_role("button", name="セット内切替").click()
         capture(page, "cricket-within-set-switch-1024", report)
+        assert_major_tap_targets(page, "major_tap_targets", report)
 
         seed_active_session(page)
         page.set_viewport_size({"width": 375, "height": 900})
