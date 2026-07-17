@@ -124,6 +124,7 @@ export default function PreSessionPage() {
         dominantHand: player?.dominantHand ?? "right",
         ...(player?.dominantEye ? { dominantEye: player.dominantEye } : {}),
         ...(player?.stance ? { stance: player.stance } : {}),
+        ...(player?.form ? { form: { ...player.form } } : {}),
         ...(player?.goal ? { goal: player.goal } : {}),
         ...(player?.currentLevel ? { currentLevel: player.currentLevel } : {}),
         ...(player?.targetLevel ? { targetLevel: player.targetLevel } : {}),

@@ -1,9 +1,13 @@
 import { useState } from "react";
 import type {
   DominantEye,
+  GripFingerCount,
+  GripPosition,
   PlayerGoal,
   PlayerProfile,
   Stance,
+  TakebackDepth,
+  ThrowingTempo,
 } from "../types/models";
 import { SCHEMA_VERSION } from "../types/models";
 import { newId, nowIso } from "../utils/id";
@@ -35,6 +39,19 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
     initial?.dominantEye ?? "unknown"
   );
   const [stance, setStance] = useState<Stance | "">(initial?.stance ?? "");
+  const [gripFingerCount, setGripFingerCount] = useState<GripFingerCount | "">(
+    initial?.form?.gripFingerCount ?? ""
+  );
+  const [gripPosition, setGripPosition] = useState<GripPosition | "">(
+    initial?.form?.gripPosition ?? ""
+  );
+  const [takeback, setTakeback] = useState<TakebackDepth | "">(
+    initial?.form?.takeback ?? ""
+  );
+  const [throwingTempo, setThrowingTempo] = useState<ThrowingTempo | "">(
+    initial?.form?.throwingTempo ?? ""
+  );
+  const [formConcern, setFormConcern] = useState(initial?.form?.concern ?? "");
   const [goal, setGoal] = useState<PlayerGoal | "">(initial?.goal ?? "");
   const [currentLevel, setCurrentLevel] = useState(initial?.currentLevel ?? "");
   const [targetLevel, setTargetLevel] = useState(initial?.targetLevel ?? "");
@@ -57,6 +74,17 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
       dominantHand,
       dominantEye,
       ...(stance ? { stance } : {}),
+      ...(gripFingerCount || gripPosition || takeback || throwingTempo || formConcern.trim()
+        ? {
+            form: {
+              ...(gripFingerCount ? { gripFingerCount } : {}),
+              ...(gripPosition ? { gripPosition } : {}),
+              ...(takeback ? { takeback } : {}),
+              ...(throwingTempo ? { throwingTempo } : {}),
+              ...(formConcern.trim() ? { concern: formConcern.trim() } : {}),
+            },
+          }
+        : {}),
       ...(goal ? { goal } : {}),
       ...(currentLevel.trim() ? { currentLevel: currentLevel.trim() } : {}),
       ...(targetLevel.trim() ? { targetLevel: targetLevel.trim() } : {}),
@@ -121,6 +149,61 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
           ))}
         </div>
       </fieldset>
+
+      <details className="card">
+        <summary><strong>{s.player.formInfo}</strong> ({s.common.optional})</summary>
+        <p className="muted small">{s.player.formInfoHint}</p>
+        <label className="field">
+          <span>{s.player.gripFingerCount}</span>
+          <select value={gripFingerCount} onChange={(e) => setGripFingerCount(e.target.value as GripFingerCount | "")}>
+            <option value="">{s.common.none}</option>
+            <option value="2">2フィンガー</option>
+            <option value="3">3フィンガー</option>
+            <option value="4">4フィンガー</option>
+            <option value="other">その他</option>
+            <option value="unknown">不明</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>{s.player.gripPosition}</span>
+          <select value={gripPosition} onChange={(e) => setGripPosition(e.target.value as GripPosition | "")}>
+            <option value="">{s.common.none}</option>
+            <option value="front">前方</option>
+            <option value="center">中央</option>
+            <option value="rear">後方</option>
+            <option value="unknown">不明</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>{s.player.takeback}</span>
+          <select value={takeback} onChange={(e) => setTakeback(e.target.value as TakebackDepth | "")}>
+            <option value="">{s.common.none}</option>
+            <option value="shallow">浅い</option>
+            <option value="standard">標準</option>
+            <option value="deep">深い</option>
+            <option value="unknown">不明</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>{s.player.throwingTempo}</span>
+          <select value={throwingTempo} onChange={(e) => setThrowingTempo(e.target.value as ThrowingTempo | "")}>
+            <option value="">{s.common.none}</option>
+            <option value="slow">遅い</option>
+            <option value="standard">標準</option>
+            <option value="fast">速い</option>
+            <option value="unknown">不明</option>
+          </select>
+        </label>
+        <label className="field">
+          <span>{s.player.formConcern}</span>
+          <textarea
+            value={formConcern}
+            onChange={(e) => setFormConcern(e.target.value)}
+            placeholder={s.player.formConcernPlaceholder}
+            maxLength={300}
+          />
+        </label>
+      </details>
 
       <fieldset>
         <legend>{s.player.dominantEye}</legend>

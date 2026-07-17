@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { STEEL_BOARD } from "../config/boardProfiles";
+import { SOFT_BOARD, STEEL_BOARD } from "../config/boardProfiles";
 import { getThrows, getThrowSets, saveSession } from "../db/db";
 import { landingFromCoordinate } from "../domain/landing";
 import { buildSessionCsv } from "../export/csv";
 import { buildAnalysisMarkdown } from "../export/markdown";
 import { fixtureSession, T20 } from "../test/fixtures";
+import { buildSkillCheckPlan } from "../domain/skillCheck";
 import {
   commitSet,
   recalcAndSaveStatistics,
@@ -117,7 +118,7 @@ describe("session commit/export flow", () => {
     ]);
   });
 
-  it("セット境界でも次投のpreviousThrowWasHitを更新する", async () => {
+  it("セット境界の1投目は前投命中・切替直後をN/Aに保つ", async () => {
     const session = fixtureSession({ id: "session-cross-set-correction" });
     await saveSession(session);
     const rep = T20.representativePoint;
@@ -130,15 +131,93 @@ describe("session commit/export flow", () => {
     await commitSet(session, 2, darts, undefined, session.startedAt);
 
     const before = await getThrows(session.id);
-    expect(before[3]?.derived.previousThrowWasHit).toBe(true);
+    expect(before[3]?.derived.previousThrowWasHit).toBeUndefined();
     expect(before[3]?.derived.previousThrowWasHitInSameSet).toBeUndefined();
+    expect(before[3]?.derived.sameTargetAsPrevious).toBeUndefined();
+    expect(before[3]?.derived.targetChangedFromPrevious).toBe(false);
     await updateThrowLanding(
       before[2]!,
       landingFromCoordinate(rep.x + 0.3, rep.y, STEEL_BOARD)
     );
 
     const after = await getThrows(session.id);
-    expect(after[3]?.derived.previousThrowWasHit).toBe(false);
+    expect(after[3]?.derived.previousThrowWasHit).toBeUndefined();
     expect(after[3]?.derived.previousThrowWasHitInSameSet).toBeUndefined();
+  });
+
+  it("R4切替パターンのメタデータと同一セット内切替だけを保存する", async () => {
+    const targets = buildSkillCheckPlan(SOFT_BOARD, 20, "fit_bull")[17]!;
+    const session = fixtureSession({
+      id: "session-r4-switch",
+      setCount: 1,
+      plannedThrowCount: 3,
+      plannedTargets: [targets],
+      trainingMode: "skill_check",
+    });
+    await saveSession(session);
+    await commitSet(
+      session,
+      1,
+      targets.map((target, index) => ({
+        dartInSet: (index + 1) as 1 | 2 | 3,
+        target,
+        landing: landingFromCoordinate(
+          target.representativePoint.x,
+          target.representativePoint.y,
+          SOFT_BOARD
+        ),
+      })),
+      undefined,
+      session.startedAt
+    );
+    const [set] = await getThrowSets(session.id);
+    expect(set).toMatchObject({
+      roundId: "skill-r4",
+      roundKind: "checkout",
+      evaluationKind: "exact_hit",
+      patternId: "r4-route-20",
+      patternKind: "switch",
+    });
+    const saved = await getThrows(session.id);
+    expect(saved.map((record) => record.derived.targetChangedFromPrevious)).toEqual([
+      false,
+      true,
+      true,
+    ]);
+    expect(saved.map((record) => record.derived.sameSetAsPrevious)).toEqual([
+      false,
+      true,
+      true,
+    ]);
+
+    const fixedTargets = buildSkillCheckPlan(SOFT_BOARD, 20, "fit_bull")[15]!;
+    const fixedSession = fixtureSession({
+      id: "session-r4-fixed",
+      setCount: 1,
+      plannedThrowCount: 3,
+      plannedTargets: [fixedTargets],
+      trainingMode: "skill_check",
+    });
+    await saveSession(fixedSession);
+    await commitSet(
+      fixedSession,
+      1,
+      fixedTargets.map((target, index) => ({
+        dartInSet: (index + 1) as 1 | 2 | 3,
+        target,
+        landing: landingFromCoordinate(
+          target.representativePoint.x,
+          target.representativePoint.y,
+          SOFT_BOARD
+        ),
+      })),
+      undefined,
+      fixedSession.startedAt
+    );
+    expect(
+      (await getThrows(fixedSession.id)).map(
+        (record) => record.derived.targetChangedFromPrevious
+      )
+    ).toEqual([false, false, false]);
   });
 });
