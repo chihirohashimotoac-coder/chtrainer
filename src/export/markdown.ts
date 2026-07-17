@@ -2,6 +2,7 @@ import type {
   EquipmentProfile,
   MissDirection,
   PlayerProfile,
+  ScoringStyle,
   SelfAssessment,
   SessionStatistics,
   ThrowRecord,
@@ -56,8 +57,18 @@ const ARRANGEMENT_LABELS: Record<string, string> = {
   fixed_three: "3投別ターゲット",
   cycle: "登録順",
   blocks: "ナンバー順に集中(ブロック出題)",
-  skill_rounds: "ラウンド制(グルーピング/ブル/ナンバー/ダブル)",
+  skill_rounds: "ラウンド制(グルーピング/スコアリング/ナンバー/ダブル)",
 };
+
+const SCORING_STYLE_LABELS: Record<string, string> = {
+  fit_bull: "フィットブル(ブル一律50点のソフト・削りの主役はBull)",
+  separate_bull: "セパレートブル(内50/外25のソフト・削りの主役はT20)",
+  steel: "ハード(スティール・削りの主役はT20)",
+};
+
+export function scoringStyleLabel(style: string): string {
+  return SCORING_STYLE_LABELS[style] ?? style;
+}
 
 const EYE_LABELS: Record<string, string> = {
   right: "右",
@@ -229,7 +240,39 @@ export function focusCategoryOf(
   }
 }
 
-const FOCUS_SECTIONS: Record<FocusCategory, string> = {
+/**
+ * スキル診断の分析焦点。スコアリング形式で主役(R2)と副ターゲット(R3同一3投)が
+ * 入れ替わるため、セッションの形式から動的に生成する。
+ * 旧データ(scoringStyle未記録)はフィットブル配列(R2=Bull・R3同一=T20)で出題されている。
+ */
+function skillFocusSection(style: ScoringStyle | undefined): string {
+  const effective: ScoringStyle = style ?? "fit_bull";
+  const mainIsBull = effective === "fit_bull";
+  const main = mainIsBull ? "Bull" : "T20";
+  const sub = mainIsBull ? "T20" : "Bull";
+  const styleNote = style
+    ? `スコアリング形式は「${scoringStyleLabel(style)}」です。`
+    : "スコアリング形式は記録されていません(旧バージョンの診断。フィットブル相当の出題構成)。";
+  const mainDetail = mainIsBull
+    ? "命中率・平均誤差・インナー/アウター比率"
+    : "命中率・平均誤差・外した際の落下先(S20/S5/S1)の分布";
+  return `### このセッションの分析焦点(スキル診断)
+
+このセッションは4ラウンド構成の技能測定です。${styleNote}01の削りの主役ターゲットは${main}です。ターゲットのラベルからラウンドを判別できます:
+R1 グルーピング(ターゲットラベル「1投目の着弾点」: 1投目は自由な場所へ投げ、2投目・3投目は1投目の着弾点を狙って3本をまとめる。狙いが固定でないため命中・誤差は記録されない) / R2 スコアリング(主役ターゲット${main}の反復) / R3 ナンバー(副ターゲット${sub}の同一3投セットと、T20→T16→T15 および T12→T18→T3 の三角形を1投ずつなぞる切替セット) / R4 ダブル(D16・D20)。
+
+- ラウンドごとに評価し、以下の4カテゴリを100点満点で採点してください(採点基準・計算方法を必ず明示すること):
+  - グルーピング力: R1の各セットについて、3投の座標から着弾間距離(例: 3投間の最大ペア距離・平均ペア距離)を計算して評価してください。R1は狙いが自由なため命中率・誤差列はN/Aです。座標(X・Y)から直接計算してください
+  - スコアリング力: R2の主役ターゲット(${main})の${mainDetail}。この形式の01の削りにおける得点力として評価してください
+  - ナンバー精度: R3の命中率・平均誤差。副ターゲット(${sub})の同一3投セットと三角形切替セットの成績差(ターゲット切替耐性)、および2つの三角形(T20→T16→T15 / T12→T18→T3)間の精度差も評価してください
+  - チェックアウト力: R4のダブル命中率と外れ方向(内側/外側/上下)
+- 4カテゴリの強弱プロファイルを要約してください
+- 過去のスキル診断セッションが比較対象にある場合は、カテゴリ別の伸びを比較してください。ただしスコアリング形式が異なる過去診断はR2/R3の主役・副が入れ替わっているため、カテゴリ単位ではなく同一ターゲット(Bull・T20)単位で比較し、形式が異なることを明記してください
+- ラウンドの出題順(後半ほど疲労の影響)を考慮して評価してください
+- 総合評価と、最も伸びしろが大きいカテゴリへの具体的な練習提案を示してください`;
+}
+
+const FOCUS_SECTIONS: Record<Exclude<FocusCategory, "skill">, string> = {
   repeat: `### このセッションの分析焦点(同一ターゲット反復練習)
 
 このセッションは少数のターゲットを繰り返し狙う反復練習です。以下を最優先で分析してください。
@@ -268,20 +311,6 @@ const FOCUS_SECTIONS: Record<FocusCategory, string> = {
 - 出題ブロックの切り替わり直後(新しいナンバーの最初のセット)に精度低下があるか
 - ナンバーによる外れ方向の違い(ボード上の位置=狙う角度による癖)
 - Bullとナンバーで精度傾向に差があるか`,
-  skill: `### このセッションの分析焦点(スキル診断)
-
-このセッションは4ラウンド構成の技能測定です。ターゲットのラベルからラウンドを判別できます:
-R1 グルーピング(ターゲットラベル「1投目の着弾点」: 1投目は自由な場所へ投げ、2投目・3投目は1投目の着弾点を狙って3本をまとめる。狙いが固定でないため命中・誤差は記録されない) / R2 ブル(Bull) / R3 ナンバー(T20同一3投セットと、T20→T16→T15 および T12→T18→T3 の三角形を1投ずつなぞる切替セット) / R4 ダブル(D16・D20)。
-
-- ラウンドごとに評価し、以下の4カテゴリを100点満点で採点してください(採点基準・計算方法を必ず明示すること):
-  - グルーピング力: R1の各セットについて、3投の座標から着弾間距離(例: 3投間の最大ペア距離・平均ペア距離)を計算して評価してください。R1は狙いが自由なため命中率・誤差列はN/Aです。座標(X・Y)から直接計算してください
-  - ブル精度: R2の命中率・平均誤差・インナー/アウター比率
-  - ナンバー精度: R3の命中率・平均誤差。同一3投セットと三角形切替セットの成績差(ターゲット切替耐性)、および2つの三角形(T20→T16→T15 / T12→T18→T3)間の精度差も評価してください
-  - チェックアウト力: R4のダブル命中率と外れ方向(内側/外側/上下)
-- 4カテゴリの強弱プロファイルを要約してください
-- 過去のスキル診断セッションが比較対象にある場合は、カテゴリ別の伸びを比較してください
-- ラウンドの出題順(後半ほど疲労の影響)を考慮して評価してください
-- 総合評価と、最も伸びしろが大きいカテゴリへの具体的な練習提案を示してください`,
   diagnostic: `### このセッションの分析焦点(全体診断)
 
 このセッションはボード全体からランダム出題した診断用データです。以下を最優先で分析してください。
@@ -551,7 +580,7 @@ function comparisonSection(input: MarkdownInput): string {
   for (const cmp of input.comparisons) {
     const c = compareStatistics(input.stats, cmp.stats);
     out.push(
-      `### 比較対象: ${fmtDateTime(cmp.session.startedAt)} (${modeLabel(cmp.session.trainingMode)}, ${cmp.session.boardType === "steel" ? "スティール" : "ソフト"})`
+      `### 比較対象: ${fmtDateTime(cmp.session.startedAt)} (${modeLabel(cmp.session.trainingMode)}, ${cmp.session.boardType === "steel" ? "スティール" : "ソフト"}${cmp.session.scoringStyle ? `, ${scoringStyleLabel(cmp.session.scoringStyle)}` : ""})`
     );
     out.push("");
     out.push(`- 完全命中率: 今回 ${fmtRate(c.hitRate.base)} / 過去 ${fmtRate(c.hitRate.other)} / 差 ${fmtRateDiff(c.hitRate.diff)}`);
@@ -594,7 +623,10 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   out.push(ANALYSIS_INSTRUCTIONS);
   out.push("");
   const focusCategory = focusCategoryOf(session);
-  if (focusCategory) {
+  if (focusCategory === "skill") {
+    out.push(skillFocusSection(session.scoringStyle));
+    out.push("");
+  } else if (focusCategory) {
     out.push(FOCUS_SECTIONS[focusCategory]);
     out.push("");
   }
@@ -606,6 +638,9 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
     `- 練習モード: ${modeLabel(session.trainingMode)}${session.arrangement ? ` (出題方式: ${ARRANGEMENT_LABELS[session.arrangement] ?? session.arrangement})` : ""}`
   );
   out.push(`- ボード種別: ${session.boardType === "steel" ? "スティール" : "ソフト"}`);
+  if (session.scoringStyle) {
+    out.push(`- スコアリング形式: ${scoringStyleLabel(session.scoringStyle)}`);
+  }
   out.push(`- セット数: ${session.setCount} (1セット3投)`);
   out.push(`- 総投擲数(予定): ${session.plannedThrowCount}`);
   out.push(`- セッティング: ${equipmentSummary(equipment)}`);
@@ -689,7 +724,7 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   } else {
     out.push("全投擲データは添付のCSVファイルを参照してください。");
     out.push("");
-    out.push("CSVの列: session_id, session_date, training_mode, board_type, set_number, global_throw_number, dart_in_set, dart_color, target_label, target_number, target_ring, landing_number, landing_ring, exact_hit, landing_x, landing_y, error_x, error_y, error_distance, miss_direction, position_precision, previous_throw_was_hit, target_changed, elapsed_ms, session_progress, throw_note");
+    out.push("CSVの列: session_id, session_date, training_mode, board_type, scoring_style, set_number, global_throw_number, dart_in_set, dart_color, target_label, target_number, target_ring, landing_number, landing_ring, exact_hit, landing_x, landing_y, error_x, error_y, error_distance, miss_direction, position_precision, previous_throw_was_hit, target_changed, elapsed_ms, session_progress, throw_note");
   }
   out.push("");
   out.push("## セッションメモ");

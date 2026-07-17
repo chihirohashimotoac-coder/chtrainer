@@ -44,6 +44,21 @@ describe("CSV生成", () => {
     expect(first[CSV_COLUMNS.indexOf("exact_hit")]).toBe("true");
   });
 
+  it("scoring_style列: 記録ありは値、未記録は空フィールド", () => {
+    const styled = fixtureSession({
+      trainingMode: "skill_check",
+      scoringStyle: "separate_bull",
+    });
+    const csv = buildSessionCsv(styled, throws, setNumberOf);
+    const lines = csv.trim().split("\r\n");
+    expect(CSV_COLUMNS).toContain("scoring_style");
+    const col = CSV_COLUMNS.indexOf("scoring_style");
+    expect((lines[1] ?? "").split(",")[col]).toBe("separate_bull");
+    const legacyCsv = buildSessionCsv(session, throws, setNumberOf);
+    const legacyLines = legacyCsv.trim().split("\r\n");
+    expect((legacyLines[1] ?? "").split(",")[col]).toBe("");
+  });
+
   it("座標なしの投擲は空フィールド", () => {
     const csv = buildSessionCsv(session, throws, setNumberOf);
     const lines = csv.trim().split("\r\n");
@@ -144,7 +159,7 @@ describe("Markdown生成", () => {
     });
     expect(skillMd).toContain("分析焦点(スキル診断)");
     expect(skillMd).toContain("グルーピング力");
-    expect(skillMd).toContain("ブル精度");
+    expect(skillMd).toContain("スコアリング力");
     expect(skillMd).toContain("ナンバー精度");
     expect(skillMd).toContain("チェックアウト力");
     expect(
@@ -153,6 +168,40 @@ describe("Markdown生成", () => {
     expect(
       build({ trainingMode: "zero_one", arrangement: "same_per_set" })
     ).toContain("分析焦点(同一ターゲット反復練習)");
+  });
+
+  it("スキル診断の分析焦点はスコアリング形式で主役・副が切り替わる", () => {
+    const build = (overrides: Parameters<typeof fixtureSession>[0]) =>
+      buildAnalysisMarkdown({
+        session: fixtureSession(overrides),
+        player: undefined,
+        equipment: undefined,
+        stats,
+        throws,
+        setNumberOf,
+        comparisons: [],
+        embedAllThrows: false,
+      });
+    const fitBull = build({
+      trainingMode: "skill_check",
+      scoringStyle: "fit_bull",
+    });
+    expect(fitBull).toContain("フィットブル");
+    expect(fitBull).toContain("01の削りの主役ターゲットはBull");
+    expect(fitBull).toContain("R3 ナンバー(副ターゲットT20の同一3投セット");
+    expect(fitBull).toContain("- スコアリング形式: フィットブル");
+    const steel = build({
+      trainingMode: "skill_check",
+      scoringStyle: "steel",
+    });
+    expect(steel).toContain("ハード(スティール");
+    expect(steel).toContain("01の削りの主役ターゲットはT20");
+    expect(steel).toContain("R3 ナンバー(副ターゲットBullの同一3投セット");
+    // 旧データ(形式未記録)はフィットブル相当として扱い、その旨を明記する
+    const legacy = build({ trainingMode: "skill_check" });
+    expect(legacy).toContain("スコアリング形式は記録されていません");
+    expect(legacy).toContain("01の削りの主役ターゲットはBull");
+    expect(legacy).not.toContain("- スコアリング形式:");
   });
 
   it("CSV別添方式では表を含めない", () => {

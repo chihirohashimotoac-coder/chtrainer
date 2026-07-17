@@ -11,6 +11,12 @@ export interface VersionEntry {
 
 export const VERSION_HISTORY: VersionEntry[] = [
   {
+    version: "1.18.0",
+    date: "2026-07-17",
+    summary:
+      "スキル診断にスコアリング形式(フィットブル/セパレートブル/ハード)を追加。R2は形式の主役ターゲット(Bull/T20)の反復測定になり、R3同一3投は副ターゲットに入れ替え、端数セットはスコアリングラウンドへ優先配分。形式はセッションに記録され、AI分析焦点・CSV・比較(同形式を優先)へ反映",
+  },
+  {
     version: "1.17.0",
     date: "2026-07-17",
     summary:

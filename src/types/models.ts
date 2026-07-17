@@ -62,6 +62,14 @@ export type TrainingMode =
 
 export type RandomVariant = "balanced" | "pure";
 
+/**
+ * 01のスコアリング形式。ブルのルールにより「削りの主役ターゲット」が変わる。
+ *  fit_bull: ブル一律50点のソフト → 主役はBull
+ *  separate_bull: インナー50/アウター25のソフト → 主役はT20
+ *  steel: ハード(スティール) → 主役はT20
+ */
+export type ScoringStyle = "fit_bull" | "separate_bull" | "steel";
+
 /** 永続データ共通のスキーマバージョン */
 export const SCHEMA_VERSION = 1;
 
@@ -219,6 +227,8 @@ export interface TrainingSession {
   randomVariant?: RandomVariant;
   /** 出題方式 (balanced/pure/same_per_set/fixed_three/cycle) */
   arrangement?: string;
+  /** スコアリング形式(スキル診断で使用。旧データは未設定=フィットブル配列で出題) */
+  scoringStyle?: ScoringStyle;
   inputMethod: InputMethod;
   dominantHand: "right" | "left" | "ambidextrous";
   setCount: number;
