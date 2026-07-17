@@ -55,6 +55,12 @@ export default function SessionDetailPage() {
             {session.boardType === "steel" ? s.player.steel : s.player.soft}
           </strong>
         </div>
+        {session.scoringStyle && (
+          <div className="list-row">
+            <span className="muted">{s.preSession.scoringStyle}</span>
+            <strong>{s.preSession.scoringStyles[session.scoringStyle]}</strong>
+          </div>
+        )}
         <div className="list-row">
           <span className="muted">{s.sessions.equipment}</span>
           <strong>{equipment?.name ?? s.common.none}</strong>

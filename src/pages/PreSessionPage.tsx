@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AssessmentForm } from "../components/AssessmentForm";
-import { defaultBoardProfileFor } from "../config/boardProfiles";
+import {
+  defaultBoardProfileFor,
+  defaultScoringStyleFor,
+} from "../config/boardProfiles";
 import { DARTS_PER_SET } from "../config/constants";
 import { getSessions, saveSession } from "../db/db";
 import { generatePlannedTargets } from "../domain/planner";
@@ -14,6 +17,7 @@ import {
   type BoardType,
   type DailyCondition,
   type InputMethod,
+  type ScoringStyle,
   type SelfAssessment,
   type SessionEnvironment,
   type TrainingSession,
@@ -30,6 +34,9 @@ export default function PreSessionPage() {
   const [step, setStep] = useState<"form" | "assessment" | "confirm">("form");
   const [boardType, setBoardType] = useState<BoardType>(
     player?.defaultBoardType ?? "soft"
+  );
+  const [scoringStyle, setScoringStyle] = useState<ScoringStyle>(
+    defaultScoringStyleFor(player?.defaultBoardType ?? "soft")
   );
   const [equipmentId, setEquipmentId] = useState(
     player?.defaultEquipmentProfileId ?? ""
@@ -52,6 +59,9 @@ export default function PreSessionPage() {
       const last = (await getSessions()).find((x) => x.status !== "active");
       if (!last) return;
       setBoardType(last.boardType);
+      setScoringStyle(
+        last.scoringStyle ?? defaultScoringStyleFor(last.boardType)
+      );
       setEquipmentId(last.equipmentProfileId ?? "");
       setInputMethod(last.inputMethod);
     })();
@@ -84,7 +94,8 @@ export default function PreSessionPage() {
       setup.mode === "skill_check"
         ? buildSkillCheckPlan(
             defaultBoardProfileFor(boardType),
-            setup.setCount
+            setup.setCount,
+            scoringStyle
           )
         : generatePlannedTargets(
             setup.arrangement === "skill_rounds" || setup.arrangement == null
@@ -103,6 +114,7 @@ export default function PreSessionPage() {
       trainingMode: setup.mode ?? "random",
       ...(setup.randomVariant ? { randomVariant: setup.randomVariant } : {}),
       ...(setup.arrangement ? { arrangement: setup.arrangement } : {}),
+      ...(setup.mode === "skill_check" ? { scoringStyle } : {}),
       inputMethod,
       dominantHand: player?.dominantHand ?? "right",
       setCount: setup.setCount,
@@ -171,6 +183,12 @@ export default function PreSessionPage() {
             <span className="muted">{s.preSession.boardType}</span>
             <strong>{boardType === "steel" ? s.player.steel : s.player.soft}</strong>
           </div>
+          {setup.mode === "skill_check" && (
+            <div className="list-row">
+              <span className="muted">{s.preSession.scoringStyle}</span>
+              <strong>{s.preSession.scoringStyles[scoringStyle]}</strong>
+            </div>
+          )}
           <div className="list-row">
             <span className="muted">{s.preSession.equipment}</span>
             <strong>{equipment?.name ?? s.common.none}</strong>
@@ -225,7 +243,11 @@ export default function PreSessionPage() {
             <button
               key={key}
               className={`choice${boardType === key ? " selected" : ""}`}
-              onClick={() => setBoardType(key)}
+              onClick={() => {
+                setBoardType(key);
+                // ボード種別に応じた標準の形式へ初期値を合わせ直す
+                setScoringStyle(defaultScoringStyleFor(key));
+              }}
               aria-pressed={boardType === key}
             >
               {label}
@@ -233,6 +255,25 @@ export default function PreSessionPage() {
           ))}
         </div>
       </fieldset>
+
+      {setup.mode === "skill_check" && (
+        <fieldset>
+          <legend>{s.preSession.scoringStyle} ({s.common.required})</legend>
+          <div className="choice-row">
+            {(["fit_bull", "separate_bull", "steel"] as const).map((key) => (
+              <button
+                key={key}
+                className={`choice${scoringStyle === key ? " selected" : ""}`}
+                onClick={() => setScoringStyle(key)}
+                aria-pressed={scoringStyle === key}
+              >
+                {s.preSession.scoringStyles[key]}
+              </button>
+            ))}
+          </div>
+          <p className="muted small">{s.preSession.scoringStyleHint}</p>
+        </fieldset>
+      )}
 
       <label className="field">
         <span>{s.preSession.equipment}</span>

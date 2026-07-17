@@ -1,4 +1,4 @@
-import type { BoardType } from "../types/models";
+import type { BoardType, ScoringStyle } from "../types/models";
 
 /**
  * ダーツボードの寸法プロファイル。
@@ -19,6 +19,8 @@ export interface BoardProfile {
     inputAreaOuter: number;
   };
   segmentOrder: number[];
+  /** このボードで標準的な01のスコアリング形式(開始前設定の初期値) */
+  defaultScoringStyle: ScoringStyle;
 }
 
 /** 20を頂点として時計回りの標準ナンバー配列 */
@@ -45,6 +47,7 @@ export const STEEL_BOARD: BoardProfile = {
     inputAreaOuter: 1.3,
   },
   segmentOrder: STANDARD_SEGMENT_ORDER,
+  defaultScoringStyle: "steel",
 };
 
 /**
@@ -66,6 +69,7 @@ export const SOFT_BOARD: BoardProfile = {
     inputAreaOuter: 1.3,
   },
   segmentOrder: STANDARD_SEGMENT_ORDER,
+  defaultScoringStyle: "fit_bull",
 };
 
 export const BOARD_PROFILES: BoardProfile[] = [STEEL_BOARD, SOFT_BOARD];
@@ -76,4 +80,9 @@ export function getBoardProfile(id: string): BoardProfile {
 
 export function defaultBoardProfileFor(type: BoardType): BoardProfile {
   return type === "steel" ? STEEL_BOARD : SOFT_BOARD;
+}
+
+/** ボード種別に応じたスコアリング形式の初期値 */
+export function defaultScoringStyleFor(type: BoardType): ScoringStyle {
+  return defaultBoardProfileFor(type).defaultScoringStyle;
 }
