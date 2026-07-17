@@ -119,7 +119,7 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     expect(r4Cycle[15]?.map((x) => x.label)).toEqual(["D20", "D20", "D20"]);
   });
 
-  it("使用ターゲット一覧は追加ダブルを含む", () => {
+  it("20セットの使用ターゲット一覧は実計画順で重複排除し、未出題D2を含まない", () => {
     expect(
       skillCheckUniqueTargets(SOFT_BOARD, "fit_bull").map((x) => x.label)
     ).toEqual([
@@ -140,8 +140,16 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
       "D12",
       "D18",
       "D6",
-      "D2",
     ]);
+  });
+
+  it("実計画に含まれる60セットではD2を表示する", () => {
+    const labels = skillCheckUniqueTargets(SOFT_BOARD, 60, "fit_bull").map(
+      (target) => target.label
+    );
+    expect(labels).toContain("D2");
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(labels.indexOf("D10")).toBeLessThan(labels.indexOf("D2"));
   });
 });
 
@@ -177,7 +185,7 @@ describe("buildSkillCheckPlan (T20主体のスコアリング形式)", () => {
     const labels = skillCheckUniqueTargets(STEEL_BOARD, "steel").map(
       (x) => x.label
     );
-    expect(labels).toHaveLength(18);
+    expect(labels).toHaveLength(17);
     expect(labels.slice(0, 3)).toEqual(["1投目の着弾点", "T20", "Bull"]);
   });
 });

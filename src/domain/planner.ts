@@ -17,7 +17,8 @@ export type Arrangement =
   | "cycle"
   | "balanced"
   | "pure"
-  | "blocks";
+  | "blocks"
+  | "within_set_switch";
 
 export type Rng = () => number;
 
@@ -72,6 +73,15 @@ export function generatePlannedTargets(
       return Array.from({ length: setCount }, () => three.slice());
     }
     case "cycle": {
+      const flat: TargetDefinition[] = [];
+      for (let i = 0; i < totalThrows; i++) {
+        flat.push(pool[i % pool.length] as TargetDefinition);
+      }
+      return chunkIntoSets(flat);
+    }
+    case "within_set_switch": {
+      // 登録順をセッション全体で連続循環する。3種類以上なら原則3投が別、
+      // 2種類なら A→B→A / B→A→B となり、出題数差は最大1投に収まる。
       const flat: TargetDefinition[] = [];
       for (let i = 0; i < totalThrows; i++) {
         flat.push(pool[i % pool.length] as TargetDefinition);

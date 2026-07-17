@@ -240,23 +240,26 @@ export function buildSkillCheckPlan(
 /** 設定確認画面などで表示する、スキル診断で使用するターゲット一覧 */
 export function skillCheckUniqueTargets(
   profile: BoardProfile,
-  scoringStyle: ScoringStyle = "fit_bull"
+  scoringStyle?: ScoringStyle
+): TargetDefinition[];
+export function skillCheckUniqueTargets(
+  profile: BoardProfile,
+  setCount: number,
+  scoringStyle?: ScoringStyle
+): TargetDefinition[];
+export function skillCheckUniqueTargets(
+  profile: BoardProfile,
+  setCountOrStyle: number | ScoringStyle = 20,
+  style: ScoringStyle = "fit_bull"
 ): TargetDefinition[] {
-  const bull = makeBullAnyTarget();
-  const t20 = makeSegmentTarget("triple", profile, 20);
-  const [main, sub] =
-    scoringMainOf(scoringStyle) === "bull" ? [bull, t20] : [t20, bull];
-  return [
-    groupingTarget(profile),
-    main,
-    sub,
-    makeSegmentTarget("triple", profile, 16),
-    makeSegmentTarget("triple", profile, 15),
-    makeSegmentTarget("triple", profile, 12),
-    makeSegmentTarget("triple", profile, 18),
-    makeSegmentTarget("triple", profile, 3),
-    ...[20, 16, 10, 5, 8, 4, 12, 18, 6, 2].map((number) =>
-      makeSegmentTarget("double", profile, number)
-    ),
-  ];
+  const setCount = typeof setCountOrStyle === "number" ? setCountOrStyle : 20;
+  const scoringStyle = typeof setCountOrStyle === "number" ? style : setCountOrStyle;
+  const unique = new Map<string, TargetDefinition>();
+  for (const set of buildSkillCheckPlan(profile, setCount, scoringStyle)) {
+    for (const target of set) {
+      // IDは生成ごとに異なるため、表示上の意味を表すラベルで順序付き重複排除する。
+      if (!unique.has(target.label)) unique.set(target.label, target);
+    }
+  }
+  return [...unique.values()];
 }

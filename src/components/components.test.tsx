@@ -6,6 +6,7 @@ import { SimpleInput } from "./SimpleInput";
 import { AssessmentForm } from "./AssessmentForm";
 import { StatsView } from "./StatsView";
 import { Scale11 } from "./Scale11";
+import { PlayerForm } from "./PlayerForm";
 import SetCountPage from "../pages/SetCountPage";
 import { SetupProvider } from "../state/SetupContext";
 import { STEEL_BOARD } from "../config/boardProfiles";
@@ -111,6 +112,33 @@ describe("AssessmentForm (中間自己評価)", () => {
   it("痛みの免責事項を表示する", () => {
     render(<AssessmentForm timing="before" onSubmit={vi.fn()} />);
     expect(screen.getByText(/医学的評価ではありません/)).toBeInTheDocument();
+  });
+
+  it("開始前・中間・終了時共通の投擲プロセス指標を任意保存できる", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(<AssessmentForm timing="after" onSubmit={onSubmit} />);
+    await user.click(screen.getByRole("button", { name: "メンタル評価(任意)" }));
+    await user.selectOptions(screen.getByRole("combobox", { name: /止まらず投げられた割合/ }), "70");
+    await user.selectOptions(screen.getByRole("combobox", { name: /リリースが止まる主なタイミング/ }), "before_release");
+    await user.click(screen.getByRole("button", { name: "次へ" }));
+    expect(onSubmit.mock.calls[0]?.[0]).toMatchObject({
+      timing: "after",
+      uninterruptedThrowRate: 70,
+      releaseStopTiming: "before_release",
+    });
+  });
+});
+
+describe("PlayerForm (アクセシブルな任意フォーム情報)", () => {
+  it("4つのselectをラベル名から取得できる", async () => {
+    const user = userEvent.setup();
+    render(<PlayerForm onSave={vi.fn()} />);
+    await user.click(screen.getByText(/フォーム情報/));
+    expect(screen.getByRole("combobox", { name: "グリップ本数" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "グリップ位置" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "テイクバック" })).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "投擲テンポ" })).toBeInTheDocument();
   });
 });
 

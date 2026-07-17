@@ -153,9 +153,9 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
       <details className="card">
         <summary><strong>{s.player.formInfo}</strong> ({s.common.optional})</summary>
         <p className="muted small">{s.player.formInfoHint}</p>
-        <label className="field">
+        <label className="field" htmlFor="player-grip-finger-count">
           <span>{s.player.gripFingerCount}</span>
-          <select value={gripFingerCount} onChange={(e) => setGripFingerCount(e.target.value as GripFingerCount | "")}>
+          <select id="player-grip-finger-count" value={gripFingerCount} onChange={(e) => setGripFingerCount(e.target.value as GripFingerCount | "")}>
             <option value="">{s.common.none}</option>
             <option value="2">2フィンガー</option>
             <option value="3">3フィンガー</option>
@@ -164,9 +164,9 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
             <option value="unknown">不明</option>
           </select>
         </label>
-        <label className="field">
+        <label className="field" htmlFor="player-grip-position">
           <span>{s.player.gripPosition}</span>
-          <select value={gripPosition} onChange={(e) => setGripPosition(e.target.value as GripPosition | "")}>
+          <select id="player-grip-position" value={gripPosition} onChange={(e) => setGripPosition(e.target.value as GripPosition | "")}>
             <option value="">{s.common.none}</option>
             <option value="front">前方</option>
             <option value="center">中央</option>
@@ -174,9 +174,9 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
             <option value="unknown">不明</option>
           </select>
         </label>
-        <label className="field">
+        <label className="field" htmlFor="player-takeback">
           <span>{s.player.takeback}</span>
-          <select value={takeback} onChange={(e) => setTakeback(e.target.value as TakebackDepth | "")}>
+          <select id="player-takeback" value={takeback} onChange={(e) => setTakeback(e.target.value as TakebackDepth | "")}>
             <option value="">{s.common.none}</option>
             <option value="shallow">浅い</option>
             <option value="standard">標準</option>
@@ -184,9 +184,9 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
             <option value="unknown">不明</option>
           </select>
         </label>
-        <label className="field">
+        <label className="field" htmlFor="player-throwing-tempo">
           <span>{s.player.throwingTempo}</span>
-          <select value={throwingTempo} onChange={(e) => setThrowingTempo(e.target.value as ThrowingTempo | "")}>
+          <select id="player-throwing-tempo" value={throwingTempo} onChange={(e) => setThrowingTempo(e.target.value as ThrowingTempo | "")}>
             <option value="">{s.common.none}</option>
             <option value="slow">遅い</option>
             <option value="standard">標準</option>

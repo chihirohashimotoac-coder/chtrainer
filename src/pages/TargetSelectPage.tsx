@@ -332,8 +332,9 @@ function CricketPicker({ profile, proceed, error }: PickerProps) {
   const [numbers, setNumbers] = useState<number[]>(CRICKET_NUMBERS);
   const [includeBull, setIncludeBull] = useState(true);
   const [cricketArrangement, setCricketArrangement] = useState<
-    "blocks" | "balanced"
+    "blocks" | "balanced" | "within_set_switch"
   >("blocks");
+  const selectedTargetCount = numbers.length + (includeBull ? 1 : 0);
 
   return (
     <div>
@@ -376,6 +377,7 @@ function CricketPicker({ profile, proceed, error }: PickerProps) {
             [
               ["blocks", s.mode.arrBlocks],
               ["balanced", s.mode.balancedRandom],
+              ["within_set_switch", s.mode.withinSetSwitch],
             ] as const
           ).map(([key, label]) => (
             <button
@@ -383,6 +385,7 @@ function CricketPicker({ profile, proceed, error }: PickerProps) {
               className={`choice${cricketArrangement === key ? " selected" : ""}`}
               onClick={() => setCricketArrangement(key)}
               aria-pressed={cricketArrangement === key}
+              disabled={key === "within_set_switch" && selectedTargetCount < 2}
             >
               {label}
             </button>
@@ -391,8 +394,13 @@ function CricketPicker({ profile, proceed, error }: PickerProps) {
         <p className="muted small">
           {cricketArrangement === "blocks"
             ? s.mode.arrBlocksDesc
-            : s.mode.balancedRandomDesc}
+            : cricketArrangement === "balanced"
+              ? s.mode.balancedRandomDesc
+              : s.mode.withinSetSwitchDesc}
         </p>
+        {selectedTargetCount === 1 && (
+          <p className="info-box">ターゲットが1種類の場合、セット内切替は選択できません。同一ターゲット練習になります。</p>
+        )}
       </fieldset>
 
       {error && <p className="error-text">{error}</p>}
@@ -455,6 +463,11 @@ function DiagnosticPicker({ profile, proceed, error }: PickerProps) {
               <div className="muted small">測定: {round.measure}</div>
             </div>
           ))}
+          <div className="info-box">
+            <strong>R4の固定・切替</strong><br />
+            固定ダブル：3本とも同じダブルを狙う<br />
+            切替ダブル：2投目・3投目で別のダブルへ狙いを変更する
+          </div>
         </>
       )}
 

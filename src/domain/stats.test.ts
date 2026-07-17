@@ -10,7 +10,7 @@ import {
 import { buildThrows, handComputedThrows, mixedPrecisionThrows, T20, D16 } from "../test/fixtures";
 import { STEEL_BOARD } from "../config/boardProfiles";
 import { landingFromCoordinate, landingFromSegment } from "../domain/landing";
-import { makeBullAnyTarget } from "../domain/targets";
+import { makeBullAnyTarget, makeSegmentTarget } from "../domain/targets";
 
 describe("mean / median (平均値・中央値)", () => {
   it("空配列はundefined", () => {
@@ -139,6 +139,7 @@ describe("クリケット統計 (マーク換算)", () => {
     expect(c.noMarkRate).toBeCloseTo(2 / 6);
     expect(c.byTarget["T20"]?.totalMarks).toBe(4);
     expect(c.byTarget["T20"]?.marksPerThreeDarts).toBeCloseTo(4);
+    expect(c.byTarget["T20"]?.effectiveMarkRate).toBeCloseTo(2 / 3);
     expect(c.byTarget["Bull"]?.totalMarks).toBe(3);
   });
 
@@ -147,6 +148,36 @@ describe("クリケット統計 (マーク換算)", () => {
     expect(stats.cricket).toBeDefined();
     const statsNoMode = calculateStatistics("s", 6, throws);
     expect(statsNoMode.cricket).toBeUndefined();
+  });
+
+  it("同一継続とセット内切替直後を独立集計し、セット先頭を除外する", () => {
+    const t19 = makeSegmentTarget("triple", STEEL_BOARD, 19);
+    const mixed = buildThrows([
+      { target: T20, landing: landingFromSegment("triple", STEEL_BOARD, 20) },
+      { target: T20, landing: landingFromSegment("outer_single", STEEL_BOARD, 20) },
+      { target: t19, landing: landingFromSegment("triple", STEEL_BOARD, 19) },
+      { target: T20, landing: landingFromSegment("triple", STEEL_BOARD, 20) },
+      { target: t19, landing: landingFromSegment("outer_single", STEEL_BOARD, 19) },
+      { target: t19, landing: landingFromSegment("triple", STEEL_BOARD, 19) },
+    ], 6);
+    const c = calculateCricketStats(mixed);
+    expect(c.continuity.sameTarget.throwCount).toBe(2);
+    expect(c.continuity.sameTarget.totalMarks).toBe(4);
+    expect(c.continuity.afterSwitch.throwCount).toBe(2);
+    expect(c.continuity.afterSwitch.totalMarks).toBe(4);
+    expect(mixed[3]?.derived.sameSetAsPrevious).toBe(false);
+    expect(mixed[3]?.derived.targetChangedFromPrevious).toBe(false);
+  });
+
+  it("切替サンプル0件は未測定値としてundefinedを保持する", () => {
+    const sameTargetOnly = buildThrows([
+      { target: T20, landing: landingFromSegment("triple", STEEL_BOARD, 20) },
+      { target: T20, landing: landingFromSegment("triple", STEEL_BOARD, 20) },
+      { target: T20, landing: landingFromSegment("triple", STEEL_BOARD, 20) },
+    ], 3);
+    const c = calculateCricketStats(sameTargetOnly);
+    expect(c.continuity.afterSwitch).toEqual({ throwCount: 0, totalMarks: 0 });
+    expect(c.continuity.afterSwitch.marksPerDart).toBeUndefined();
   });
 });
 
