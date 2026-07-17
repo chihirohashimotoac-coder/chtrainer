@@ -70,6 +70,7 @@ export async function commitSet(
   };
 
   const records: ThrowRecord[] = [];
+  const dartColors = session.contextSnapshot?.dartColors ?? player?.dartColors;
   let prevTarget: TargetDefinition | undefined = lastExisting?.target;
   let prevHit: boolean | undefined = lastExisting?.derived.exactHit;
   darts.forEach((dart, i) => {
@@ -88,7 +89,7 @@ export async function commitSet(
       setId: throwSet.id,
       globalThrowNumber,
       dartInSet: dart.dartInSet,
-      dartColor: player?.dartColors[dart.dartInSet - 1],
+      dartColor: dartColors?.[dart.dartInSet - 1],
       target: dart.target,
       thrownAt: now,
       elapsedMs: Math.max(0, Date.now() - sessionStart),
@@ -153,11 +154,24 @@ export async function updateThrowLanding(
   };
   await saveThrow(updated);
   const next = index >= 0 ? all[index + 1] : undefined;
-  if (next && next.setId === record.setId && next.derived.previousThrowWasHitInSameSet !== derived.exactHit) {
-    await saveThrow({
-      ...next,
-      derived: { ...next.derived, previousThrowWasHit: derived.exactHit, previousThrowWasHitInSameSet: derived.exactHit },
-    });
+  if (next) {
+    const sameSet = next.setId === record.setId;
+    const needsUpdate =
+      next.derived.previousThrowWasHit !== derived.exactHit ||
+      (sameSet &&
+        next.derived.previousThrowWasHitInSameSet !== derived.exactHit);
+    if (needsUpdate) {
+      await saveThrow({
+        ...next,
+        derived: {
+          ...next.derived,
+          previousThrowWasHit: derived.exactHit,
+          ...(sameSet
+            ? { previousThrowWasHitInSameSet: derived.exactHit }
+            : {}),
+        },
+      });
+    }
   }
   await recalcAndSaveStatistics(record.sessionId);
 }

@@ -11,7 +11,7 @@ export interface ComparisonCandidate {
 
 /**
  * 比較対象候補のスコアリング。
- * 優先順位: 同モード > 同ターゲット構成 > 同ボード種別 > 同機材 > 日付が近い
+ * 優先順位: 同モード > 同ターゲット構成 > 同ボード種別 > 同スコアリング形式 > 同機材 > 日付が近い
  */
 export function rankComparisonCandidates(
   base: TrainingSession,
@@ -35,6 +35,13 @@ export function rankComparisonCandidates(
       if (session.boardType === base.boardType) {
         score += 250;
         reasons.push("同じボード種別");
+      }
+      if (
+        base.scoringStyle != null &&
+        session.scoringStyle === base.scoringStyle
+      ) {
+        score += 150;
+        reasons.push("同じスコアリング形式");
       }
       if (
         session.equipmentProfileId != null &&
@@ -68,7 +75,11 @@ export function isDissimilarComparison(
 ): boolean {
   return (
     base.trainingMode !== other.trainingMode ||
-    base.boardType !== other.boardType
+    base.boardType !== other.boardType ||
+    // スコアリング形式が両方記録されていて異なる場合は出題構成が入れ替わっている
+    (base.scoringStyle != null &&
+      other.scoringStyle != null &&
+      base.scoringStyle !== other.scoringStyle)
   );
 }
 

@@ -262,7 +262,8 @@ export function calculateStatistics(
   sessionId: UUID,
   plannedThrowCount: number,
   throws: readonly ThrowRecord[],
-  mode?: string
+  mode?: string,
+  calculatedAt: string = nowIso()
 ): SessionStatistics {
   const sorted = throws
     .slice()
@@ -380,6 +381,6 @@ export function calculateStatistics(
       maximumPairDistance: pairDistances.length > 0 ? Math.max(...pairDistances) : undefined,
       medianPairDistance: median(pairDistances),
     } } : {}),
-    calculatedAt: nowIso(),
+    calculatedAt,
   };
 }

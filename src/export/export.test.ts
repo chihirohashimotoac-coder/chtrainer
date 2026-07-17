@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import JSZip from "jszip";
 import { buildSessionCsv, csvToBlob, escapeCsvField, CSV_COLUMNS } from "./csv";
 import { buildAnalysisMarkdown } from "./markdown";
 import { buildBackup, parseBackup, serializeBackup, validateBackup } from "./backup";
@@ -12,6 +13,7 @@ import {
 import { landingFromCoordinate } from "../domain/landing";
 import { STEEL_BOARD } from "../config/boardProfiles";
 import { BACKUP_VERSION } from "../config/constants";
+import { buildAnalysisZip } from "./zip";
 
 const session = fixtureSession();
 const throws = handComputedThrows();
@@ -42,6 +44,21 @@ describe("CSV生成", () => {
     expect(first[CSV_COLUMNS.indexOf("dart_in_set")]).toBe("1");
     expect(first[CSV_COLUMNS.indexOf("target_label")]).toBe("T20");
     expect(first[CSV_COLUMNS.indexOf("exact_hit")]).toBe("true");
+  });
+
+  it("scoring_style列: 記録ありは値、未記録は空フィールド", () => {
+    const styled = fixtureSession({
+      trainingMode: "skill_check",
+      scoringStyle: "separate_bull",
+    });
+    const csv = buildSessionCsv(styled, throws, setNumberOf);
+    const lines = csv.trim().split("\r\n");
+    expect(CSV_COLUMNS).toContain("scoring_style");
+    const col = CSV_COLUMNS.indexOf("scoring_style");
+    expect((lines[1] ?? "").split(",")[col]).toBe("separate_bull");
+    const legacyCsv = buildSessionCsv(session, throws, setNumberOf);
+    const legacyLines = legacyCsv.trim().split("\r\n");
+    expect((legacyLines[1] ?? "").split(",")[col]).toBe("");
   });
 
   it("座標なしの投擲は空フィールド", () => {
@@ -143,16 +160,51 @@ describe("Markdown生成", () => {
       arrangement: "blocks",
     });
     expect(skillMd).toContain("分析焦点(スキル診断)");
-    expect(skillMd).toContain("グルーピング力");
-    expect(skillMd).toContain("ブル精度");
-    expect(skillMd).toContain("ナンバー精度");
-    expect(skillMd).toContain("チェックアウト力");
+    expect(skillMd).toContain("R1 グルーピング(grouping_only)");
+    expect(skillMd).toContain("R2 スコアリング(scoring)");
+    expect(skillMd).toContain("R3 ナンバー(number)");
+    expect(skillMd).toContain("R4 チェックアウト(checkout)");
+    expect(skillMd).toContain("100点満点評価や採点基準の創作は禁止");
     expect(
       build({ trainingMode: "zero_one", arrangement: "fixed_three" })
     ).toContain("分析焦点(フィニッシュ3投指定)");
     expect(
       build({ trainingMode: "zero_one", arrangement: "same_per_set" })
     ).toContain("分析焦点(同一ターゲット反復練習)");
+  });
+
+  it("スキル診断の分析焦点はスコアリング形式で主役・副が切り替わる", () => {
+    const build = (overrides: Parameters<typeof fixtureSession>[0]) =>
+      buildAnalysisMarkdown({
+        session: fixtureSession(overrides),
+        player: undefined,
+        equipment: undefined,
+        stats,
+        throws,
+        setNumberOf,
+        comparisons: [],
+        embedAllThrows: false,
+      });
+    const fitBull = build({
+      trainingMode: "skill_check",
+      scoringStyle: "fit_bull",
+    });
+    expect(fitBull).toContain("フィットブル");
+    expect(fitBull).toContain("01の削りの主役ターゲットはBull");
+    expect(fitBull).toContain("R3 ナンバー(number): 副ターゲットT20");
+    expect(fitBull).toContain("- スコアリング形式: フィットブル");
+    const steel = build({
+      trainingMode: "skill_check",
+      scoringStyle: "steel",
+    });
+    expect(steel).toContain("ハード(スティール");
+    expect(steel).toContain("01の削りの主役ターゲットはT20");
+    expect(steel).toContain("R3 ナンバー(number): 副ターゲットBull");
+    // 旧データ(形式未記録)はフィットブル相当として扱い、その旨を明記する
+    const legacy = build({ trainingMode: "skill_check" });
+    expect(legacy).toContain("スコアリング形式は記録されていません");
+    expect(legacy).toContain("01の削りの主役ターゲットはBull");
+    expect(legacy).not.toContain("- スコアリング形式:");
   });
 
   it("CSV別添方式では表を含めない", () => {
@@ -185,6 +237,33 @@ describe("Markdown生成", () => {
     });
     expect(withCompare).toContain("### 比較対象:");
     expect(withCompare).toContain("差 0.0pt");
+  });
+});
+
+describe("ZIP出力", () => {
+  it("Markdown・CSV・metadata.jsonを正しい内部名で含む", async () => {
+    const csv = buildSessionCsv(session, throws, setNumberOf);
+    const blob = await buildAnalysisZip("# analysis", csv, session);
+    const bytes = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(blob);
+    });
+    const zip = await JSZip.loadAsync(bytes);
+    expect(Object.keys(zip.files).sort()).toEqual([
+      "analysis-request.md",
+      "metadata.json",
+      "throws.csv",
+    ]);
+    expect(await zip.file("analysis-request.md")?.async("string")).toBe(
+      "# analysis"
+    );
+    expect(await zip.file("throws.csv")?.async("string")).toBe(csv);
+    const metadata = JSON.parse(
+      (await zip.file("metadata.json")?.async("string")) ?? "{}"
+    ) as Record<string, unknown>;
+    expect(metadata["sessionId"]).toBe(session.id);
   });
 });
 
