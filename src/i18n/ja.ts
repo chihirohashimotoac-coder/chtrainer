@@ -414,6 +414,7 @@ export const ja = {
     firstHalf: "前半",
     secondHalf: "後半",
     throwCount: "投擲数",
+    scorableThrowCount: "命中判定対象",
     hitCount: "命中数",
     hitRate: "命中率",
     mainMissDirection: "主な外れ方向",

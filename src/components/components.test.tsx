@@ -121,6 +121,7 @@ describe("StatsView (セッション結果)", () => {
     expect(screen.getByText("完全命中率")).toBeInTheDocument();
     expect(screen.getAllByText("16.7%").length).toBeGreaterThan(0);
     expect(screen.getAllByText("0.150").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("命中判定対象").length).toBeGreaterThan(0);
   });
 });
 
