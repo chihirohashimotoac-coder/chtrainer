@@ -38,6 +38,31 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     const grouping = plan[0]?.[0];
     expect(grouping?.type).toBe("custom_selection");
     expect(grouping?.areas).toEqual([]);
+    expect(grouping).toMatchObject({
+      evaluationKind: "grouping_only",
+      roundId: "skill-r1",
+      roundKind: "grouping",
+      requiredInputPrecision: "coordinate",
+    });
+  });
+
+  it("R2〜R4へ意味上のラウンドメタデータを保存する", () => {
+    expect(plan[5]?.[0]).toMatchObject({
+      evaluationKind: "exact_hit",
+      roundId: "skill-r2",
+      roundKind: "scoring",
+      requiredInputPrecision: "any",
+    });
+    expect(plan[10]?.[0]).toMatchObject({
+      evaluationKind: "exact_hit",
+      roundId: "skill-r3",
+      roundKind: "number",
+    });
+    expect(plan[15]?.[0]).toMatchObject({
+      evaluationKind: "exact_hit",
+      roundId: "skill-r4",
+      roundKind: "checkout",
+    });
   });
 
   it("scoringStyle省略時はフィットブル配列(旧バージョン互換)", () => {
@@ -95,6 +120,7 @@ describe("buildSkillCheckPlan (T20主体のスコアリング形式)", () => {
       // R2: スコアリング (主役はT20)
       for (let i = 5; i < 10; i++) {
         expect(plan[i]?.every((x) => x.label === "T20")).toBe(true);
+        expect(plan[i]?.every((x) => x.roundKind === "scoring")).toBe(true);
       }
       // R3: 副ターゲット(Bull)同一3投 → 三角形2種
       expect(plan[10]?.map((x) => x.label)).toEqual(["Bull", "Bull", "Bull"]);

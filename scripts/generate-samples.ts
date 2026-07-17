@@ -13,6 +13,7 @@ import { SCHEMA_VERSION, type PlayerProfile } from "../src/types/models";
 
 const outDir = join(process.cwd(), "samples");
 mkdirSync(outDir, { recursive: true });
+const SAMPLE_GENERATED_AT = "2026-01-01T10:30:00.000Z";
 
 const player: PlayerProfile = {
   schemaVersion: SCHEMA_VERSION,
@@ -62,7 +63,13 @@ const session = fixtureSession({
   sessionNote: "サンプルセッション(フィクスチャから生成)",
 });
 const throws = handComputedThrows();
-const stats = calculateStatistics(session.id, session.plannedThrowCount, throws);
+const stats = calculateStatistics(
+  session.id,
+  session.plannedThrowCount,
+  throws,
+  session.trainingMode,
+  SAMPLE_GENERATED_AT
+);
 const setNumberOf = (setId: string) => Number(setId.replace("set-", ""));
 
 const backup = buildBackup({
@@ -82,7 +89,7 @@ const backup = buildBackup({
   throwSets: [],
   throws,
   sessionStatistics: [stats],
-});
+}, SAMPLE_GENERATED_AT);
 writeFileSync(join(outDir, "sample-backup.json"), serializeBackup(backup));
 
 const markdown = buildAnalysisMarkdown({

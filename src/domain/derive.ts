@@ -56,6 +56,7 @@ export function outboardDirectionToMiss(
 export interface DeriveContext {
   previousTarget?: TargetDefinition;
   previousWasHit?: boolean;
+  sameSetAsPrevious?: boolean;
   /** この投擲の通し番号 (1始まり) */
   globalThrowNumber: number;
   plannedThrowCount: number;
@@ -79,6 +80,10 @@ export function deriveThrow(
     exactHit,
     targetChangedFromPrevious,
     previousThrowWasHit: ctx.previousWasHit,
+    sameSetAsPrevious: ctx.sameSetAsPrevious ?? false,
+    previousThrowWasHitInSameSet: ctx.sameSetAsPrevious ? ctx.previousWasHit : undefined,
+    sameTargetAsPrevious:
+      ctx.previousTarget != null && !targetChangedFromPrevious,
     sessionProgress,
   };
 

@@ -64,6 +64,24 @@ function groupingTarget(profile: BoardProfile): TargetDefinition {
   return {
     ...makeCustomTarget("1投目の着弾点", [], profile),
     instruction: SKILL_INSTRUCTIONS.grouping,
+    evaluationKind: "grouping_only",
+    roundId: "skill-r1",
+    roundKind: "grouping",
+    requiredInputPrecision: "coordinate",
+  };
+}
+
+function skillTarget(
+  target: TargetDefinition,
+  roundId: string,
+  roundKind: "scoring" | "number" | "checkout"
+): TargetDefinition {
+  return {
+    ...target,
+    evaluationKind: "exact_hit",
+    roundId,
+    roundKind,
+    requiredInputPrecision: "any",
   };
 }
 
@@ -72,12 +90,14 @@ function scoringTarget(
   profile: BoardProfile,
   style: ScoringStyle
 ): TargetDefinition {
-  return scoringMainOf(style) === "bull"
-    ? withInstruction(makeBullAnyTarget(), SKILL_INSTRUCTIONS.scoringBull)
-    : withInstruction(
-        makeSegmentTarget("triple", profile, 20),
-        SKILL_INSTRUCTIONS.scoringT20
-      );
+  const target =
+    scoringMainOf(style) === "bull"
+      ? withInstruction(makeBullAnyTarget(), SKILL_INSTRUCTIONS.scoringBull)
+      : withInstruction(
+          makeSegmentTarget("triple", profile, 20),
+          SKILL_INSTRUCTIONS.scoringT20
+        );
+  return skillTarget(target, "skill-r2", "scoring");
 }
 
 /** R3同一3投セットの副ターゲット(主役と入れ替えで両方のデータを確保する) */
@@ -85,12 +105,14 @@ function numberSameTarget(
   profile: BoardProfile,
   style: ScoringStyle
 ): TargetDefinition {
-  return scoringMainOf(style) === "bull"
-    ? withInstruction(
-        makeSegmentTarget("triple", profile, 20),
-        SKILL_INSTRUCTIONS.numberSame
-      )
-    : withInstruction(makeBullAnyTarget(), SKILL_INSTRUCTIONS.numberSame);
+  const target =
+    scoringMainOf(style) === "bull"
+      ? withInstruction(
+          makeSegmentTarget("triple", profile, 20),
+          SKILL_INSTRUCTIONS.numberSame
+        )
+      : withInstruction(makeBullAnyTarget(), SKILL_INSTRUCTIONS.numberSame);
+  return skillTarget(target, "skill-r3", "number");
 }
 
 export function buildSkillCheckPlan(
@@ -102,15 +124,15 @@ export function buildSkillCheckPlan(
   const scoring = scoringTarget(profile, scoringStyle);
   const numberSame = numberSameTarget(profile, scoringStyle);
   const tri = (n: number) =>
-    withInstruction(
+    skillTarget(withInstruction(
       makeSegmentTarget("triple", profile, n),
       SKILL_INSTRUCTIONS.triangle
-    );
+    ), "skill-r3", "number");
   const dbl = (n: number) =>
-    withInstruction(
+    skillTarget(withInstruction(
       makeSegmentTarget("double", profile, n),
       SKILL_INSTRUCTIONS.double
-    );
+    ), "skill-r4", "checkout");
 
   const base = Math.floor(setCount / 4);
   const extra = setCount % 4;
