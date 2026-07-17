@@ -20,6 +20,7 @@ export async function buildAnalysisZip(
         trainingMode: session.trainingMode,
         scoringStyle: session.scoringStyle ?? null,
         contextSnapshot: session.contextSnapshot ?? null,
+        assessments: session.assessments,
       },
       null,
       2

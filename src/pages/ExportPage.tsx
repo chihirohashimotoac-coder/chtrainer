@@ -125,11 +125,18 @@ export default function ExportPage() {
   };
 
   const baseName = `darts-${timestampForFilename(session.startedAt)}`;
+  const estimatedFullChars = 14000 + throws.length * 350;
+  const recommendAttachment = estimatedFullChars > MAX_EMBEDDED_MARKDOWN_CHARS;
 
   return (
     <div>
       <h1>{s.export.title}</h1>
       <p className="muted small">{s.export.usage}</p>
+      {recommendAttachment && (
+        <div className="info-box">
+          全投擲埋め込みは約{estimatedFullChars.toLocaleString()}文字になる見込みです。生成前から「集計＋CSV別添」を推奨します。
+        </div>
+      )}
 
       <fieldset>
         <legend>{s.export.format}</legend>

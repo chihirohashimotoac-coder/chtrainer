@@ -102,6 +102,17 @@ const TIMING_LABELS: Record<string, string> = {
   after: "終了後",
 };
 
+const RELEASE_STOP_TIMING_LABELS: Record<string, string> = {
+  none: "なし",
+  during_setup: "セットアップ中",
+  before_takeback: "テイクバック開始前",
+  after_takeback: "テイクバック後／前へ出す直前",
+  during_forward: "フォワード動作中",
+  before_release: "リリース直前",
+  unknown: "わからない",
+  other: "その他",
+};
+
 const CHANGE_LABELS: Record<string, string> = {
   better: "開始時より良くなった",
   same: "変わらない",
@@ -143,9 +154,13 @@ export const ANALYSIS_INSTRUCTIONS = `以下の順序とルールで、統計の
 - 着弾データだけからグリップ、スタンス、肘、肩、手首、リリース等を真因として断定してはいけません。フォーム情報も自己申告の背景であり、原因確定には使えません。
 - 原因はデータと関係するものだけを、優先順位付きの「原因候補・仮説」として示してください。候補の大量列挙は禁止です。
 - 医学的診断、心理的診断、性格診断は禁止です。復調・イップス傾向でも症状名や人格を診断しないでください。
+- 初心者、または専門用語に詳しくないと記録されたユーザーには、専門用語の初出時に括弧で短い説明を付けてください。
+- プロ志望でも練習データだけからプロレベル、試験合格、レーティングを断定しないでください。試合データがなければ試合適応性は追加質問または分析不能としてください。
 - 重要な指摘には「確からしさ：高 / 中 / 低 / 分析不能」を表示してください。複数セット・複数指標で再現=高、1指標で一定傾向=中、少数または間接推測=低、必要データなし=分析不能を目安にしてください。
 - 統計的有意差を計算していないため「有意」という表現は禁止です。1投しかない個別ターゲットを得意・不得意と断定しないでください。
 - same_set_as_previous=false の投擲はセットの1投目です。前投命中・ターゲット変更をN/Aとして、切替直後、命中後の再現性、ミス後の修正の集計から除外してください。previous_throw_was_hit_in_same_set と same_target_as_previous を優先してください。
+- クリケットのセット内切替サンプルが0投なら、切替能力を推測せず「未測定・分析不能」と明記してください。
+- 復調目的では命中結果と投擲プロセスを分け、止まらず投げられた割合を主要改善指標として時間変化を評価してください。不安またはリリースの怖さが悪化した場合は休憩か終了を提案し、リリース動作を過度に意識させる提案は禁止です。
 
 ## 用語を混同しない
 - 問題点: 観測された結果（例「3投目の右方向ミスが多い」）
@@ -368,32 +383,19 @@ function equipmentSummary(equipment: EquipmentProfile | EquipmentSnapshot | unde
 
 function assessmentSection(assessments: readonly SelfAssessment[]): string {
   if (assessments.length === 0) return "記録なし\n";
-  const hasMental = assessments.some(
-    (a) =>
-      a.anxiety != null || a.releaseFear != null || a.routineAdherence != null
-  );
-  const lines: string[] = hasMental
-    ? [
-        "| タイミング | 疲労度 | 集中度 | 痛み | 自信度 | 投げる前の不安 | リリースの怖さ | ルーティン達成度 | 調子の変化 | メモ |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---|---|",
-      ]
-    : [
-        "| タイミング | 疲労度 | 集中度 | 痛み | 自信度 | 調子の変化 | メモ |",
-        "|---|---:|---:|---:|---:|---|---|",
-      ];
+  const lines: string[] = [
+    "| タイミング | 疲労度 | 集中度 | 痛み | 自信度 | 投げる前の不安 | リリースの怖さ | ルーティン達成度 | 止まらず投げられた割合 | 止まる主なタイミング | 調子の変化 | メモ |",
+    "|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|---|",
+  ];
   for (const a of assessments) {
-    const mental = hasMental
-      ? ` ${a.anxiety ?? NA} | ${a.releaseFear ?? NA} | ${a.routineAdherence ?? NA} |`
-      : "";
     lines.push(
-      `| ${TIMING_LABELS[a.timing] ?? a.timing} | ${a.fatigue} | ${a.concentration} | ${a.pain} | ${a.confidence} |${mental} ${a.conditionChange ? CHANGE_LABELS[a.conditionChange] : NA} | ${a.note ?? ""} |`
+      `| ${TIMING_LABELS[a.timing] ?? a.timing} | ${a.fatigue} | ${a.concentration} | ${a.pain} | ${a.confidence} | ${a.anxiety ?? NA} | ${a.releaseFear ?? NA} | ${a.routineAdherence ?? NA} | ${a.uninterruptedThrowRate != null ? `${a.uninterruptedThrowRate}%` : NA} | ${a.releaseStopTiming ? RELEASE_STOP_TIMING_LABELS[a.releaseStopTiming] ?? a.releaseStopTiming : NA} | ${a.conditionChange ? CHANGE_LABELS[a.conditionChange] : NA} | ${a.note ?? ""} |`
     );
   }
   lines.push("");
   lines.push("(各項目は0〜10の自己評価。0=まったくない/非常に低い、10=非常に強い/非常に高い。医学的評価ではない)");
-  if (hasMental) {
-    lines.push("(メンタル評価はイップス等の主観記録であり、心理的・医学的診断ではない。分析時は投擲データとの関連を仮説として扱うこと)");
-  }
+  lines.push("(止まらず投げられた割合は命中率ではなく、一連の動作を完了できたと本人が感じた主観割合。旧セッションの欠損値はN/Aとして扱う)");
+  lines.push("(メンタル・投擲プロセス評価は主観記録であり、心理的・医学的診断ではない。分析時は投擲データとの関連を仮説として扱うこと)");
   return lines.join("\n") + "\n";
 }
 
@@ -514,14 +516,27 @@ function statsSection(stats: SessionStatistics): string {
     out.push(`- 有効マーク率(1マーク以上の投擲): ${fmtRate(c.effectiveMarkRate)}`);
     out.push(`- ノーマーク率: ${fmtRate(c.noMarkRate)}`);
     out.push("");
-    out.push("| ターゲット | 投擲数 | 総マーク | 3投あたり平均マーク | ノーマーク率 |");
-    out.push("|---|---:|---:|---:|---:|");
+    out.push("| ターゲット | 投擲数 | 総マーク | 3投あたり平均マーク | 有効マーク率 | ノーマーク率 |");
+    out.push("|---|---:|---:|---:|---:|---:|");
     for (const label of Object.keys(c.byTarget).sort()) {
       const g = c.byTarget[label];
       if (!g) continue;
       out.push(
-        `| ${label} | ${g.throwCount} | ${g.totalMarks} | ${fmtNum(g.marksPerThreeDarts, 2)} | ${fmtRate(g.noMarkRate)} |`
+        `| ${label} | ${g.throwCount} | ${g.totalMarks} | ${fmtNum(g.marksPerThreeDarts, 2)} | ${fmtRate(g.effectiveMarkRate)} | ${fmtRate(g.noMarkRate)} |`
       );
+    }
+    out.push("");
+    out.push("#### セット内の同一ターゲット継続・切替直後");
+    out.push("");
+    out.push("| 条件 | 投擲数 | 総マーク | 1投平均マーク | ノーマーク率 | 測定状態 |");
+    out.push("|---|---:|---:|---:|---:|---|");
+    const continuity = c.continuity;
+    for (const [label, g] of [
+      ["同一ターゲット継続", continuity?.sameTarget],
+      ["セット内切替直後", continuity?.afterSwitch],
+    ] as const) {
+      const measured = g != null && g.throwCount > 0;
+      out.push(`| ${label} | ${g?.throwCount ?? 0} | ${g?.totalMarks ?? 0} | ${measured ? fmtNum(g?.marksPerDart, 2) : NA} | ${measured ? fmtRate(g?.noMarkRate) : NA} | ${measured ? "測定済み" : "未測定・分析不能"} |`);
     }
     out.push("");
   }

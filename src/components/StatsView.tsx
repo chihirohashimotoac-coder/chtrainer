@@ -8,9 +8,9 @@ import { t } from "../i18n/ja";
 export function StatsView({ stats }: { stats: SessionStatistics }) {
   const s = t();
   return (
-    <div>
+    <div className="stats-view">
       <h2>{s.result.overview}</h2>
-      <div className="card">
+      <div className="card kpi-card">
         {(
           [
             [s.result.totalThrows, String(stats.totalThrows)],
@@ -95,6 +95,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
             </div>
           </div>
           <div className="table-wrap">
+            <p className="scroll-hint">横にスクロールして詳細を確認できます →</p>
             <table className="stats">
               <thead>
                 <tr>
@@ -102,6 +103,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
                   <th>{s.result.throwCount}</th>
                   <th>{s.result.totalMarks}</th>
                   <th>{s.result.marksPerThree}</th>
+                  <th>{s.result.effectiveMarkRate}</th>
                   <th>{s.result.noMarkRate}</th>
                 </tr>
               </thead>
@@ -117,10 +119,34 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
                         <td>{g.throwCount}</td>
                         <td>{g.totalMarks}</td>
                         <td>{fmtNum(g.marksPerThreeDarts, 2)}</td>
+                        <td>{fmtRate(g.effectiveMarkRate)}</td>
                         <td>{fmtRate(g.noMarkRate)}</td>
                       </tr>
                     );
                   })}
+              </tbody>
+            </table>
+          </div>
+          <h3>セット内のターゲット継続・切替比較</h3>
+          <div className="table-wrap">
+            <p className="scroll-hint">横にスクロールして詳細を確認できます →</p>
+            <table className="stats">
+              <thead>
+                <tr><th>条件</th><th>投擲数</th><th>総マーク</th><th>1投平均マーク</th><th>ノーマーク率</th></tr>
+              </thead>
+              <tbody>
+                {([
+                  ["同一ターゲット継続", stats.cricket.continuity?.sameTarget],
+                  ["セット内切替直後", stats.cricket.continuity?.afterSwitch],
+                ] as const).map(([label, group]) => (
+                  <tr key={label}>
+                    <td>{label}</td>
+                    <td>{group?.throwCount ?? 0}</td>
+                    <td>{group?.totalMarks ?? 0}</td>
+                    <td>{group && group.throwCount > 0 ? fmtNum(group.marksPerDart, 2) : "未測定"}</td>
+                    <td>{group && group.throwCount > 0 ? fmtRate(group.noMarkRate) : "分析不能"}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -161,6 +187,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
 
       <h2>{s.result.byDartOrder}</h2>
       <div className="table-wrap">
+        <p className="scroll-hint">横にスクロールして詳細を確認できます →</p>
         <table className="stats">
           <thead>
             <tr>
@@ -194,6 +221,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
 
       <h2>{s.result.byTarget}</h2>
       <div className="table-wrap">
+        <p className="scroll-hint">横にスクロールして詳細を確認できます →</p>
         <table className="stats">
           <thead>
             <tr>
@@ -232,6 +260,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
 
       <h2>{s.result.byDirection}</h2>
       <div className="table-wrap">
+        <p className="scroll-hint">横にスクロールして詳細を確認できます →</p>
         <table className="stats">
           <thead>
             <tr>
@@ -252,6 +281,7 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
 
       <h2>{s.result.halves}</h2>
       <div className="table-wrap">
+        <p className="scroll-hint">横にスクロールして詳細を確認できます →</p>
         <table className="stats">
           <thead>
             <tr>
@@ -281,6 +311,9 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="info-box na-legend">
+        <strong>N/A：</strong>このラウンドでは命中・誤差を評価しない、または判定に必要なデータがない項目です。R1グルーピングは命中率を測定しないためN/Aです。
       </div>
     </div>
   );

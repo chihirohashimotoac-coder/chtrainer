@@ -187,6 +187,8 @@ export const ja = {
     numberDesc: "指定ナンバーの各エリアを練習(ハードのT20など)",
     balancedRandom: "均等ランダム",
     balancedRandomDesc: "出題数を均等にし、順番だけランダム化(推奨)",
+    withinSetSwitch: "セット内切替",
+    withinSetSwitchDesc: "1セット3投の中でターゲットを変更。選択ターゲットを登録順に決定論的かつ均等に循環します。",
     pureRandom: "完全ランダム",
     pureRandomDesc: "毎投完全にランダムに決定",
   },
@@ -308,6 +310,9 @@ export const ja = {
     anxiety: "投げる前の不安",
     releaseFear: "リリースの怖さ・違和感",
     routineAdherence: "ルーティンを守れた度",
+    uninterruptedThrowRate: "止まらず投げられた割合",
+    uninterruptedThrowRateHint: "命中率ではなく、本人が止まらず一連の動作を完了できたと感じた割合です。",
+    releaseStopTiming: "リリースが止まる主なタイミング",
   },
   throwing: {
     setLabel: "セット",

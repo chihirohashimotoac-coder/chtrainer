@@ -11,6 +11,12 @@ export interface VersionEntry {
 
 export const VERSION_HISTORY: VersionEntry[] = [
   {
+    version: "1.21.0",
+    date: "2026-07-17",
+    summary:
+      "実計画に基づくスキル診断ターゲット表示、クリケットのセット内切替と独立統計、復調プロセス指標を追加。N/A説明とアクセシビリティを改善し、高級感・分析性のあるレスポンシブUIへ刷新",
+  },
+  {
     version: "1.20.0",
     date: "2026-07-17",
     summary:
