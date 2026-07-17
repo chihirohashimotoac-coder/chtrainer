@@ -40,9 +40,11 @@ export default function HomePage() {
   const needsSetup = !settings?.onboardingCompleted;
 
   return (
-    <div>
-      <div className="top-bar">
+    <div className="home-page">
+      <div className="home-hero">
+        <span className="eyebrow">PERFORMANCE ANALYTICS</span>
         <h1>{s.appName}</h1>
+        <p>1投ごとの事実を、次の改善判断へ。</p>
       </div>
 
       {needsSetup ? (
@@ -79,8 +81,7 @@ export default function HomePage() {
           )}
           {!activeSession && (
             <button
-              className="btn primary block"
-              style={{ minHeight: 64, fontSize: "1.15rem" }}
+              className="btn primary block hero-cta"
               onClick={() => {
                 reset();
                 navigate("/train/mode");

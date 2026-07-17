@@ -255,8 +255,22 @@ export interface SelfAssessment {
   releaseFear?: number;
   /** メンタル評価(任意): ルーティンを守れた度 0-10 */
   routineAdherence?: number;
+  /** 命中率ではなく、一連の投擲動作を止まらず完了できた主観割合 (0-100) */
+  uninterruptedThrowRate?: number;
+  /** リリース動作が止まる主なタイミング。旧セッションでは未記録。 */
+  releaseStopTiming?: ReleaseStopTiming;
   note?: string;
 }
+
+export type ReleaseStopTiming =
+  | "none"
+  | "during_setup"
+  | "before_takeback"
+  | "after_takeback"
+  | "during_forward"
+  | "before_release"
+  | "unknown"
+  | "other";
 
 export interface SessionEnvironment {
   location?: string;
@@ -440,9 +454,22 @@ export interface CricketStats {
       throwCount: number;
       totalMarks: number;
       marksPerThreeDarts: number;
+      effectiveMarkRate: number;
       noMarkRate: number;
     }
   >;
+  /** 同一セット内の2・3投目だけを、実際のターゲット列で分類した比較。 */
+  continuity: {
+    sameTarget: CricketTransitionStats;
+    afterSwitch: CricketTransitionStats;
+  };
+}
+
+export interface CricketTransitionStats {
+  throwCount: number;
+  totalMarks: number;
+  marksPerDart?: number;
+  noMarkRate?: number;
 }
 
 /** 01練習専用統計 */

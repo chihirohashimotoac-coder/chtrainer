@@ -193,6 +193,7 @@ export function calculateCricketStats(
         throwCount: 0,
         totalMarks: 0,
         marksPerThreeDarts: 0,
+        effectiveMarkRate: 0,
         noMarkRate: 0,
       };
     }
@@ -206,16 +207,38 @@ export function calculateCricketStats(
       totalMarks: groupMarks,
       marksPerThreeDarts:
         group.length > 0 ? (groupMarks / group.length) * 3 : 0,
+      effectiveMarkRate: group.length > 0 ? (group.length - noMarks) / group.length : 0,
       noMarkRate: group.length > 0 ? noMarks / group.length : 0,
     };
   }
   const noMarkCount = marks.filter((x) => x.m === 0).length;
+  const transitionStats = (
+    group: readonly { t: ThrowRecord; m: number }[]
+  ): import("../types/models").CricketTransitionStats => {
+    const groupMarks = group.reduce((sum, item) => sum + item.m, 0);
+    if (group.length === 0) return { throwCount: 0, totalMarks: 0 };
+    return {
+      throwCount: group.length,
+      totalMarks: groupMarks,
+      marksPerDart: groupMarks / group.length,
+      noMarkRate: group.filter((item) => item.m === 0).length / group.length,
+    };
+  };
+  const withinSet = marks.filter(({ t }) => t.derived.sameSetAsPrevious === true);
   return {
     totalMarks,
     marksPerThreeDarts: count > 0 ? (totalMarks / count) * 3 : 0,
     effectiveMarkRate: count > 0 ? (count - noMarkCount) / count : 0,
     noMarkRate: count > 0 ? noMarkCount / count : 0,
     byTarget,
+    continuity: {
+      sameTarget: transitionStats(
+        withinSet.filter(({ t }) => t.derived.sameTargetAsPrevious === true)
+      ),
+      afterSwitch: transitionStats(
+        withinSet.filter(({ t }) => t.derived.targetChangedFromPrevious === true)
+      ),
+    },
   };
 }
 

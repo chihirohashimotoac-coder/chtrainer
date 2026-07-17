@@ -52,11 +52,13 @@ export default function App() {
   const location = useLocation();
   const s = t();
   const inSession = location.pathname.startsWith("/train/session");
+  const wideLayout = /^\/session\/[^/]+\/(result|throws|compare|export)$/.test(location.pathname)
+    || location.pathname === "/history";
   return (
     <AppProvider>
       <SetupProvider>
         <UpdateBanner />
-        <main className={`app-main${inSession ? " no-nav" : ""}`}>
+        <main className={`app-main${inSession ? " no-nav" : ""}${wideLayout ? " wide-layout" : ""}`}>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/setup" element={<OnboardingPage />} />

@@ -8,7 +8,7 @@ import {
 import { DARTS_PER_SET } from "../config/constants";
 import { getSessions, saveSession } from "../db/db";
 import { generatePlannedTargets } from "../domain/planner";
-import { buildSkillCheckPlan } from "../domain/skillCheck";
+import { buildSkillCheckPlan, skillCheckUniqueTargets } from "../domain/skillCheck";
 import { useApp } from "../state/AppContext";
 import { useSetup } from "../state/SetupContext";
 import { modeLabel } from "../export/markdown";
@@ -183,6 +183,13 @@ export default function PreSessionPage() {
 
   if (step === "confirm") {
     const equipment = equipmentProfiles.find((e) => e.id === equipmentId);
+    const displayedTargets = setup.mode === "skill_check"
+      ? skillCheckUniqueTargets(
+          defaultBoardProfileFor(boardType),
+          setup.setCount,
+          scoringStyle
+        )
+      : setup.targets;
     return (
       <div>
         <h1>{s.preSession.summary}</h1>
@@ -194,7 +201,7 @@ export default function PreSessionPage() {
           <div className="list-row">
             <span className="muted">{s.target.title}</span>
             <strong>
-              {[...new Set(setup.targets.map((x) => x.label))].join(", ")}
+              {displayedTargets.map((x) => x.label).join(", ")}
             </strong>
           </div>
           <div className="list-row">
