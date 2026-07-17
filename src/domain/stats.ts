@@ -52,6 +52,22 @@ function isBounceOut(t: ThrowRecord): boolean {
   return t.landing.ring === "bounce_out";
 }
 
+function isGroupingOnly(t: ThrowRecord): boolean {
+  if (t.target.evaluationKind != null) {
+    return t.target.evaluationKind === "grouping_only";
+  }
+  // v1 skill-check R1 records did not carry evaluationKind. Its typed target
+  // shape (a free custom selection) is stable and avoids locale/label matching.
+  return (
+    t.target.type === "custom_selection" &&
+    (t.target.areas?.length ?? 0) === 0
+  );
+}
+
+function isScorable(t: ThrowRecord): boolean {
+  return !isGroupingOnly(t);
+}
+
 function errorDistances(throws: readonly ThrowRecord[]): number[] {
   return throws
     .map((t) => t.derived.errorDistance)
@@ -83,12 +99,14 @@ function computeErrorStats(throws: readonly ThrowRecord[]): ErrorStats {
 
 function computeDartOrderStats(throws: readonly ThrowRecord[]): DartOrderStats {
   const count = throws.length;
-  const hits = throws.filter((t) => t.derived.exactHit).length;
+  const scorable = throws.filter(isScorable);
+  const hits = scorable.filter((t) => t.derived.exactHit).length;
   const outs = throws.filter(isOutboard).length;
   return {
     throwCount: count,
+    scorableThrows: scorable.length,
     hitCount: hits,
-    hitRate: count > 0 ? hits / count : 0,
+    hitRate: scorable.length > 0 ? hits / scorable.length : 0,
     averageErrorDistance: mean(errorDistances(throws)),
     outboardCount: outs,
     outboardRate: count > 0 ? outs / count : 0,
@@ -121,12 +139,14 @@ function mainDirection(
 
 function computeHalfStats(throws: readonly ThrowRecord[]): HalfStats {
   const count = throws.length;
-  const hits = throws.filter((t) => t.derived.exactHit).length;
+  const scorable = throws.filter(isScorable);
+  const hits = scorable.filter((t) => t.derived.exactHit).length;
   const outs = throws.filter(isOutboard).length;
   return {
     throwCount: count,
+    scorableThrows: scorable.length,
     hitCount: hits,
-    hitRate: count > 0 ? hits / count : 0,
+    hitRate: scorable.length > 0 ? hits / scorable.length : 0,
     averageErrorDistance: mean(errorDistances(throws)),
     outboardCount: outs,
     outboardRate: count > 0 ? outs / count : 0,
@@ -242,13 +262,16 @@ export function calculateStatistics(
   sessionId: UUID,
   plannedThrowCount: number,
   throws: readonly ThrowRecord[],
-  mode?: string
+  mode?: string,
+  calculatedAt: string = nowIso()
 ): SessionStatistics {
   const sorted = throws
     .slice()
     .sort((a, b) => a.globalThrowNumber - b.globalThrowNumber);
   const completed = sorted.length;
-  const hits = sorted.filter((t) => t.derived.exactHit).length;
+  const scorable = sorted.filter(isScorable);
+  const groupingOnly = sorted.filter(isGroupingOnly);
+  const hits = scorable.filter((t) => t.derived.exactHit).length;
   const outboards = sorted.filter(isOutboard).length;
   const bounceOuts = sorted.filter(isBounceOut).length;
   const coordinateThrows = sorted.filter(
@@ -279,12 +302,13 @@ export function calculateStatistics(
   }
   for (const label of Object.keys(byTarget)) {
     const group = sorted.filter((t) => t.target.label === label);
-    const hitCount = group.filter((t) => t.derived.exactHit).length;
+    const targetScorable = group.filter(isScorable);
+    const hitCount = targetScorable.filter((t) => t.derived.exactHit).length;
     byTarget[label] = {
       label,
       throwCount: group.length,
       hitCount,
-      hitRate: group.length > 0 ? hitCount / group.length : 0,
+      hitRate: targetScorable.length > 0 ? hitCount / targetScorable.length : 0,
       averageErrorDistance: mean(errorDistances(group)),
       mainMissDirection: mainDirection(group),
       outboardCount: group.filter(isOutboard).length,
@@ -302,13 +326,40 @@ export function calculateStatistics(
   const firstHalf = computeHalfStats(sorted.slice(0, halfIndex));
   const secondHalf = computeHalfStats(sorted.slice(halfIndex));
 
+  const groupingSets = new Map<string, ThrowRecord[]>();
+  for (const dart of groupingOnly) {
+    const list = groupingSets.get(dart.setId) ?? [];
+    list.push(dart);
+    groupingSets.set(dart.setId, list);
+  }
+  const pairDistances: number[] = [];
+  let validSetCount = 0;
+  let hasNonCoordinate = false;
+  for (const set of groupingSets.values()) {
+    if (set.some((dart) => dart.landing.positionPrecision !== "coordinate")) {
+      hasNonCoordinate = true;
+      continue;
+    }
+    if (set.length < 3 || set.some((dart) => dart.landing.x == null || dart.landing.y == null)) continue;
+    validSetCount += 1;
+    for (let i = 0; i < set.length; i += 1) {
+      for (let j = i + 1; j < set.length; j += 1) {
+        pairDistances.push(Math.hypot((set[i]!.landing.x ?? 0) - (set[j]!.landing.x ?? 0), (set[i]!.landing.y ?? 0) - (set[j]!.landing.y ?? 0)));
+      }
+    }
+  }
+  const groupingStatus = validSetCount > 0 ? "available" : hasNonCoordinate ? "unavailable_non_coordinate" : "insufficient_data";
   return {
     schemaVersion: SCHEMA_VERSION,
     sessionId,
     totalThrows: plannedThrowCount,
     completedThrows: completed,
     exactHits: hits,
-    exactHitRate: completed > 0 ? hits / completed : 0,
+    scorableThrows: scorable.length,
+    scorableExactHitRate: scorable.length > 0 ? hits / scorable.length : 0,
+    groupingOnlyThrows: groupingOnly.length,
+    errorSampleCount: computeErrorStats(sorted).sampleCount,
+    exactHitRate: scorable.length > 0 ? hits / scorable.length : 0,
     outboardCount: outboards,
     outboardRate: completed > 0 ? outboards / completed : 0,
     bounceOutCount: bounceOuts,
@@ -323,6 +374,13 @@ export function calculateStatistics(
     secondHalf,
     ...(mode === "cricket" ? { cricket: calculateCricketStats(sorted) } : {}),
     ...(mode === "zero_one" ? { zeroOne: calculateZeroOneStats(sorted) } : {}),
-    calculatedAt: nowIso(),
+    ...(groupingOnly.length > 0 ? { grouping: {
+      status: groupingStatus,
+      validSetCount,
+      averagePairDistance: mean(pairDistances),
+      maximumPairDistance: pairDistances.length > 0 ? Math.max(...pairDistances) : undefined,
+      medianPairDistance: median(pairDistances),
+    } } : {}),
+    calculatedAt,
   };
 }

@@ -199,3 +199,54 @@ describe("データ不足時の挙動", () => {
     expect(stats.exactHitRate).toBeCloseTo(1 / 6);
   });
 });
+
+describe("命中判定対象とグルーピングの分離", () => {
+  it("v1の自由選択R1もラベルに依存せず命中率から除外する", () => {
+    const legacyGroupingTarget = {
+      ...T20,
+      id: "legacy-r1",
+      label: "locale-independent legacy target",
+      type: "custom_selection" as const,
+      areas: [],
+    };
+    const records = buildThrows([{ target: legacyGroupingTarget, landing: landingFromCoordinate(0, 0, STEEL_BOARD) }], 1);
+    const result = calculateStatistics("legacy", 1, records, "skill_check");
+    expect(result.groupingOnlyThrows).toBe(1);
+    expect(result.scorableThrows).toBe(0);
+  });
+  it("R1の15投を除外し3/45を命中率とする", () => {
+    const groupingTarget = { ...T20, id: "grouping", evaluationKind: "grouping_only" as const, roundId: "skill-r1", roundKind: "grouping" as const, requiredInputPrecision: "coordinate" as const };
+    const specs = Array.from({ length: 60 }, (_, index) => ({
+      target: index < 15 ? groupingTarget : T20,
+      landing: landingFromCoordinate(
+        T20.representativePoint.x + (index >= 18 ? 0.2 : 0),
+        T20.representativePoint.y,
+        STEEL_BOARD
+      ),
+    }));
+    const records = buildThrows(specs, 60);
+    records.forEach((record, index) => {
+      record.derived.exactHit = index >= 15 && index < 18;
+    });
+    const stats = calculateStatistics("skill", 60, records, "skill_check");
+    expect(stats.completedThrows).toBe(60);
+    expect(stats.groupingOnlyThrows).toBe(15);
+    expect(stats.scorableThrows).toBe(45);
+    expect(stats.exactHits).toBe(3);
+    expect(stats.scorableExactHitRate).toBeCloseTo(3 / 45);
+    expect(stats.exactHitRate).toBeCloseTo(3 / 45);
+    expect(stats.byDartInSet["1"].scorableThrows).toBe(15);
+  });
+
+  it("簡易入力のR1は精密グルーピング分析不能", () => {
+    const target = { ...T20, evaluationKind: "grouping_only" as const };
+    const records = buildThrows(Array.from({ length: 3 }, () => ({
+      target,
+      landing: landingFromSegment("triple", STEEL_BOARD, 20),
+      setId: "r1-set",
+    })), 3);
+    const stats = calculateStatistics("skill", 3, records, "skill_check");
+    expect(stats.grouping?.status).toBe("unavailable_non_coordinate");
+    expect(stats.grouping?.averagePairDistance).toBeUndefined();
+  });
+});

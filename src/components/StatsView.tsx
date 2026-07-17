@@ -15,6 +15,8 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
           [
             [s.result.totalThrows, String(stats.totalThrows)],
             [s.result.completedThrows, String(stats.completedThrows)],
+            ["命中判定対象投擲数", String(stats.scorableThrows ?? stats.completedThrows)],
+            ["グルーピング専用投擲数", String(stats.groupingOnlyThrows ?? 0)],
             [s.result.exactHits, String(stats.exactHits)],
             [s.result.exactHitRate, fmtRate(stats.exactHitRate)],
             [
