@@ -10,8 +10,14 @@ import type {
   TrainingSession,
 } from "../types/models";
 
-export const T20 = makeSegmentTarget("triple", STEEL_BOARD, 20);
-export const D16 = makeSegmentTarget("double", STEEL_BOARD, 16);
+export const T20: TargetDefinition = {
+  ...makeSegmentTarget("triple", STEEL_BOARD, 20),
+  id: "fixture-target-t20",
+};
+export const D16: TargetDefinition = {
+  ...makeSegmentTarget("double", STEEL_BOARD, 16),
+  id: "fixture-target-d16",
+};
 
 export interface FixtureThrowSpec {
   target: TargetDefinition;

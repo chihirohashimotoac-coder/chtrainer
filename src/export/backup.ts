@@ -16,7 +16,10 @@ export const BACKUP_STORE_KEYS: (keyof BackupData)[] = [
 ];
 
 /** 全データからバックアップファイルオブジェクトを構築する */
-export function buildBackup(data: BackupData): BackupFile {
+export function buildBackup(
+  data: BackupData,
+  createdAt: string = nowIso()
+): BackupFile {
   const counts: Record<string, number> = {};
   for (const key of BACKUP_STORE_KEYS) {
     counts[key] = data[key].length;
@@ -24,7 +27,7 @@ export function buildBackup(data: BackupData): BackupFile {
   return {
     format: "darts-training-analyzer-backup",
     backupVersion: BACKUP_VERSION,
-    createdAt: nowIso(),
+    createdAt,
     appVersion: APP_VERSION,
     counts,
     data,

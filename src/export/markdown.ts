@@ -3,6 +3,7 @@ import type {
   EquipmentSnapshot,
   MissDirection,
   PlayerProfile,
+  ScoringStyle,
   SelfAssessment,
   SessionStatistics,
   ThrowRecord,
@@ -57,8 +58,18 @@ const ARRANGEMENT_LABELS: Record<string, string> = {
   fixed_three: "3投別ターゲット",
   cycle: "登録順",
   blocks: "ナンバー順に集中(ブロック出題)",
-  skill_rounds: "ラウンド制(グルーピング/ブル/ナンバー/ダブル)",
+  skill_rounds: "ラウンド制(グルーピング/スコアリング/ナンバー/ダブル)",
 };
+
+const SCORING_STYLE_LABELS: Record<string, string> = {
+  fit_bull: "フィットブル(ブル一律50点のソフト・削りの主役はBull)",
+  separate_bull: "セパレートブル(内50/外25のソフト・削りの主役はT20)",
+  steel: "ハード(スティール・削りの主役はT20)",
+};
+
+export function scoringStyleLabel(style: string): string {
+  return SCORING_STYLE_LABELS[style] ?? style;
+}
 
 const EYE_LABELS: Record<string, string> = {
   right: "右",
@@ -174,7 +185,37 @@ export function focusCategoryOf(
   }
 }
 
-const FOCUS_SECTIONS: Record<FocusCategory, string> = {
+/**
+ * スキル診断の分析焦点。スコアリング形式で主役(R2)と副ターゲット(R3同一3投)が
+ * 入れ替わるため、セッションの形式から動的に生成する。
+ * 旧データ(scoringStyle未記録)はフィットブル配列(R2=Bull・R3同一=T20)で出題されている。
+ */
+function skillFocusSection(style: ScoringStyle | undefined): string {
+  const effective: ScoringStyle = style ?? "fit_bull";
+  const mainIsBull = effective === "fit_bull";
+  const main = mainIsBull ? "Bull" : "T20";
+  const sub = mainIsBull ? "T20" : "Bull";
+  const styleNote = style
+    ? `スコアリング形式は「${scoringStyleLabel(style)}」です。`
+    : "スコアリング形式は記録されていません(旧バージョンの診断。フィットブル相当の出題構成)。";
+  const mainDetail = mainIsBull
+    ? "命中率・平均誤差・インナー/アウター比率"
+    : "命中率・平均誤差・外した際の落下先(S20/S5/S1)の分布";
+  return `### このセッションの分析焦点(スキル診断)
+
+このセッションは4ラウンド構成の技能測定です。${styleNote}01の削りの主役ターゲットは${main}です。round_id・round_kind・evaluation_kindを優先してラウンドを判別し、これらがない旧データだけターゲット構造を補助的に使ってください。
+
+- R1 グルーピング(grouping_only): 詳細座標入力の有効な3投セットだけで、平均・最大・中央値ペア距離と有効セット数を扱ってください。簡易入力のセグメント代表点は実着弾座標ではないため、R1が簡易入力なら「分析不能」と明記してください。R1を完全命中率や誤差距離の分母へ含めないでください
+- R2 スコアリング(scoring): 主役ターゲット${main}の${mainDetail}を、命中判定対象投擲数とともに示してください
+- R3 ナンバー(number): 副ターゲット${sub}の同一3投セットと、T20→T16→T15 / T12→T18→T3の切替セットを、命中率・平均誤差・切替直後の変化で比較してください
+- R4 チェックアウト(checkout): D16・D20の命中率、内外・上下ミス、アウトボード率を対象投擲数とともに示してください
+- 根拠のない100点満点評価や採点基準の創作は禁止です。4ラウンドの強弱は実測値・分母・入力精度・信頼度を併記し、サンプル不足は参考値または分析不能としてください
+- 過去のスキル診断セッションが比較対象にある場合は、カテゴリ別の伸びを比較してください。ただしスコアリング形式が異なる過去診断はR2/R3の主役・副が入れ替わっているため、カテゴリ単位ではなく同一ターゲット(Bull・T20)単位で比較し、形式が異なることを明記してください
+- ラウンドの出題順と自己評価の時間変化は関連の仮説として扱い、因果関係を断定しないでください
+- 最も優先度の高い課題と、その根拠に対応する具体的な練習提案を示してください`;
+}
+
+const FOCUS_SECTIONS: Record<Exclude<FocusCategory, "skill">, string> = {
   repeat: `### このセッションの分析焦点(同一ターゲット反復練習)
 
 このセッションは少数のターゲットを繰り返し狙う反復練習です。以下を最優先で分析してください。
@@ -213,14 +254,6 @@ const FOCUS_SECTIONS: Record<FocusCategory, string> = {
 - 出題ブロックの切り替わり直後(新しいナンバーの最初のセット)に精度低下があるか
 - ナンバーによる外れ方向の違い(ボード上の位置=狙う角度による癖)
 - Bullとナンバーで精度傾向に差があるか`,
-  skill: `### このセッションの分析焦点(スキル診断)
-
-4ラウンドを実測値とサンプル数で比較してください。根拠のない絶対評価や採点基準の創作は禁止です。
-- R1 グルーピング力 (grouping_only): 詳細座標の有効セットだけで平均・最大・中央値ペア距離を扱う。簡易入力なら「分析不能」。
-- R2 ブル精度: 命中率、平均誤差、インナー/アウター比率。
-- R3 ナンバー精度: 命中率、同一ターゲット時と切替直後の誤差、切替ペナルティ。
-- R4 チェックアウト力: ダブル命中率、内外・上下ミス、アウトボード率。
-強弱は実測値と信頼度を併記し、サンプル不足は参考値または分析不能としてください。`,
   diagnostic: `### このセッションの分析焦点(全体診断)
 
 このセッションはボード全体からランダム出題した診断用データです。以下を最優先で分析してください。
@@ -521,7 +554,7 @@ function comparisonSection(input: MarkdownInput): string {
   for (const cmp of input.comparisons) {
     const c = compareStatistics(input.stats, cmp.stats);
     out.push(
-      `### 比較対象: ${fmtDateTime(cmp.session.startedAt)} (${modeLabel(cmp.session.trainingMode)}, ${cmp.session.boardType === "steel" ? "スティール" : "ソフト"})`
+      `### 比較対象: ${fmtDateTime(cmp.session.startedAt)} (${modeLabel(cmp.session.trainingMode)}, ${cmp.session.boardType === "steel" ? "スティール" : "ソフト"}${cmp.session.scoringStyle ? `, ${scoringStyleLabel(cmp.session.scoringStyle)}` : ""})`
     );
     out.push("");
     out.push(`- 完全命中率: 今回 ${fmtRate(c.hitRate.base)} / 過去 ${fmtRate(c.hitRate.other)} / 差 ${fmtRateDiff(c.hitRate.diff)}`);
@@ -579,7 +612,10 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   out.push(ANALYSIS_INSTRUCTIONS);
   out.push("");
   const focusCategory = focusCategoryOf(session);
-  if (focusCategory) {
+  if (focusCategory === "skill") {
+    out.push(skillFocusSection(session.scoringStyle));
+    out.push("");
+  } else if (focusCategory) {
     out.push(FOCUS_SECTIONS[focusCategory]);
     out.push("");
   }
@@ -599,6 +635,9 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
     `- 練習モード: ${modeLabel(session.trainingMode)}${session.arrangement ? ` (出題方式: ${ARRANGEMENT_LABELS[session.arrangement] ?? session.arrangement})` : ""}`
   );
   out.push(`- ボード種別: ${session.boardType === "steel" ? "スティール" : "ソフト"}`);
+  if (session.scoringStyle) {
+    out.push(`- スコアリング形式: ${scoringStyleLabel(session.scoringStyle)}`);
+  }
   out.push(`- セット数: ${session.setCount} (1セット3投)`);
   out.push(`- 総投擲数(予定): ${session.plannedThrowCount}`);
   out.push(`- セッティング: ${equipmentSummary(equipment)}`);
@@ -684,7 +723,7 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   } else {
     out.push("全投擲データは添付のCSVファイルを参照してください。");
     out.push("");
-    out.push("CSVの列: session_id, session_date, training_mode, board_type, set_number, global_throw_number, dart_in_set, dart_color, target_label, target_number, target_ring, landing_number, landing_ring, exact_hit, landing_x, landing_y, error_x, error_y, error_distance, miss_direction, position_precision, previous_throw_was_hit, target_changed, elapsed_ms, session_progress, throw_note");
+    out.push("CSVの列: session_id, session_date, training_mode, board_type, scoring_style, set_number, global_throw_number, dart_in_set, dart_color, target_label, target_number, target_ring, landing_number, landing_ring, exact_hit, landing_x, landing_y, error_x, error_y, error_distance, miss_direction, position_precision, evaluation_kind, round_id, previous_throw_was_hit, same_set_as_previous, previous_throw_was_hit_in_same_set, same_target_as_previous, target_changed, elapsed_ms, session_progress, throw_note");
   }
   out.push("");
   out.push("## セッションメモ");

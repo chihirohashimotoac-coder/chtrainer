@@ -207,7 +207,7 @@ export const ja = {
     randomAutoInfo: "ターゲットはボード全体(S1〜S20・D1〜D20・T1〜T20・Bull)から自動で選ばれます。出題方式だけ選んでください。",
     diagnosticSetHint: "フリースキャンは1ターゲットあたりのサンプルが少なくなります。40セット(120投)以上を推奨します。",
     skillCheck: "スキル診断(定型メニュー)",
-    skillCheckDesc: "4ラウンドであなたの技能を測定します。各ラウンドの狙い方は投擲画面にも表示されます。20セット(各ラウンド5セット)を推奨。",
+    skillCheckDesc: "4ラウンドであなたの技能を測定します。各ラウンドの狙い方は投擲画面にも表示されます。20セット(各ラウンド5セット)を推奨。スコアリング形式(フィットブル/セパレートブル/ハード)は開始前設定で選択します。",
     skillRounds: [
       {
         name: "R1 グルーピング",
@@ -215,13 +215,13 @@ export const ja = {
         measure: "3投のまとまり(命中率は不問)",
       },
       {
-        name: "R2 ブル",
-        aim: "Bullを狙う",
-        measure: "ブル命中精度",
+        name: "R2 スコアリング",
+        aim: "01の削りの主役を狙う(フィットブル=Bull / セパレートブル・ハード=T20)",
+        measure: "スコアリング(削り)の精度",
       },
       {
         name: "R3 ナンバー",
-        aim: "T20同一3投 / T20→T16→T15 / T12→T18→T3",
+        aim: "副ターゲット同一3投 / T20→T16→T15 / T12→T18→T3",
         measure: "ナンバー精度とターゲット切替耐性",
       },
       {
@@ -253,6 +253,14 @@ export const ja = {
   preSession: {
     title: "セッション開始前設定",
     boardType: "ボード種別",
+    scoringStyle: "スコアリング形式",
+    scoringStyles: {
+      fit_bull: "フィットブル",
+      separate_bull: "セパレートブル",
+      steel: "ハード",
+    },
+    scoringStyleHint:
+      "01の削りの主役が変わります: フィットブル(ブル一律50点)=Bull / セパレートブル(内50・外25)とハード=T20。スキル診断のR2スコアリングとR3同一3投の出題に反映されます。",
     dominantHand: "利き腕",
     equipment: "セッティング",
     inputMethod: "入力方式",

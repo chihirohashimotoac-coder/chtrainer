@@ -47,21 +47,27 @@ let dbPromise: Promise<IDBPDatabase<DtaDb>> | undefined;
 export function getDb(): Promise<IDBPDatabase<DtaDb>> {
   if (!dbPromise) {
     dbPromise = openDB<DtaDb>(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion) {
-        if (oldVersion >= 1) return;
-        db.createObjectStore("settings", { keyPath: "id" });
-        db.createObjectStore("players", { keyPath: "id" });
-        db.createObjectStore("equipmentProfiles", { keyPath: "id" });
-        db.createObjectStore("trainingPlans", { keyPath: "id" });
-        const sessions = db.createObjectStore("sessions", { keyPath: "id" });
-        sessions.createIndex("byStatus", "status");
-        sessions.createIndex("byStartedAt", "startedAt");
-        const sets = db.createObjectStore("throwSets", { keyPath: "id" });
-        sets.createIndex("bySession", "sessionId");
-        const throws = db.createObjectStore("throws", { keyPath: "id" });
-        throws.createIndex("bySession", "sessionId");
-        db.createObjectStore("sessionStatistics", { keyPath: "sessionId" });
-        db.createObjectStore("appMetadata", { keyPath: "key" });
+      upgrade(db, oldVersion, _newVersion, transaction) {
+        if (oldVersion < 1) {
+          db.createObjectStore("settings", { keyPath: "id" });
+          db.createObjectStore("players", { keyPath: "id" });
+          db.createObjectStore("equipmentProfiles", { keyPath: "id" });
+          db.createObjectStore("trainingPlans", { keyPath: "id" });
+          const sessions = db.createObjectStore("sessions", { keyPath: "id" });
+          sessions.createIndex("byStatus", "status");
+          sessions.createIndex("byStartedAt", "startedAt");
+          const sets = db.createObjectStore("throwSets", { keyPath: "id" });
+          sets.createIndex("bySession", "sessionId");
+          const throws = db.createObjectStore("throws", { keyPath: "id" });
+          throws.createIndex("bySession", "sessionId");
+          db.createObjectStore("sessionStatistics", { keyPath: "sessionId" });
+          db.createObjectStore("appMetadata", { keyPath: "key" });
+        }
+        if (oldVersion < 2) {
+          // Statistics are derived data. Schema v2 changes grouping-only and
+          // scorable denominators, so stale v1 rows must be recalculated on use.
+          void transaction.objectStore("sessionStatistics").clear();
+        }
       },
     });
   }
