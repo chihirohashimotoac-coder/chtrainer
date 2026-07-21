@@ -11,6 +11,12 @@ export interface VersionEntry {
 
 export const VERSION_HISTORY: VersionEntry[] = [
   {
+    version: "1.23.0",
+    date: "2026-07-21",
+    summary:
+      "レーティングの構造化入力(DARTSLIVE/PHOENIX体系＋数値)を追加。自己申告レーティングをAI依頼文へ、01のPPD・クリケットのMPRの目安と目標までのギャップとして参照注入(非公式の参考値であり判定には使わない旨を明記)。従来の自由記述レベル欄は併存",
+  },
+  {
     version: "1.22.0",
     date: "2026-07-21",
     summary:
