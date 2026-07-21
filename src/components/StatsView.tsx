@@ -1,12 +1,29 @@
-import type { SessionStatistics } from "../types/models";
+import type { SessionStatistics, TrainingSession } from "../types/models";
 import { ALL_DIRECTIONS } from "../domain/stats";
 import { directionLabel } from "../export/markdown";
+import { STAT_DEFINITIONS } from "../config/statsDefinitions";
 import { fmtNum, fmtRate } from "../utils/format";
 import { t } from "../i18n/ja";
 
+const GROUPING_REASON_LABELS: Record<string, string> = {
+  no_valid_three_dart_coordinate_set: "有効な詳細座標3投セットがない",
+  bounce_out: "バウンスアウトを含む",
+  outboard: "アウトボードを含む",
+  unknown_position: "位置不明を含む",
+  fewer_than_three_throws: "3投未満",
+  segment_approximation: "簡易入力(概算)を含む",
+};
+
 /** セッション統計の表示ブロック(結果画面・詳細画面で共用) */
-export function StatsView({ stats }: { stats: SessionStatistics }) {
+export function StatsView({
+  stats,
+  session,
+}: {
+  stats: SessionStatistics;
+  session?: TrainingSession;
+}) {
   const s = t();
+  const grouping = stats.grouping;
   return (
     <div className="stats-view">
       <h2>{s.result.overview}</h2>
@@ -35,6 +52,96 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
         ))}
       </div>
 
+      {grouping && (
+        <>
+          <h2>{s.result.groupingStats}</h2>
+          <div className="card">
+            <p className="muted small">{s.result.groupingInfo}</p>
+            <div className="list-row">
+              <span className="muted">{s.result.groupingValidSets}</span>
+              <strong>{grouping.validSetCount}</strong>
+            </div>
+            <div className="list-row">
+              <span className="muted">{s.result.groupingThrowCount}</span>
+              <strong>{grouping.groupingThrowCount ?? grouping.validSetCount * 3}</strong>
+            </div>
+            {grouping.validSetCount > 0 ? (
+              <>
+                <div className="list-row">
+                  <span className="muted">{s.result.groupingAvgDiameter}</span>
+                  <strong>{fmtNum(grouping.averageDiameter)}</strong>
+                </div>
+                <div className="list-row">
+                  <span className="muted">{s.result.groupingMedianDiameter}</span>
+                  <strong>{fmtNum(grouping.medianDiameter)}</strong>
+                </div>
+                <div className="list-row">
+                  <span className="muted">{s.result.groupingAvgPair}</span>
+                  <strong>{fmtNum(grouping.averagePairDistance)}</strong>
+                </div>
+                <div className="list-row">
+                  <span className="muted">{s.result.groupingMaxPair}</span>
+                  <strong>{fmtNum(grouping.maximumPairDistance)}</strong>
+                </div>
+                <div className="list-row">
+                  <span className="muted">{s.result.groupingFirstHalf}</span>
+                  <strong>{fmtNum(grouping.firstHalfAverageDiameter)}</strong>
+                </div>
+                <div className="list-row">
+                  <span className="muted">{s.result.groupingSecondHalf}</span>
+                  <strong>{fmtNum(grouping.secondHalfAverageDiameter)}</strong>
+                </div>
+                <div className="list-row">
+                  <span className="muted">{s.result.groupingD1D2}</span>
+                  <strong>{fmtNum(grouping.interDartDistances?.d1d2)}</strong>
+                </div>
+                <div className="list-row">
+                  <span className="muted">{s.result.groupingD2D3}</span>
+                  <strong>{fmtNum(grouping.interDartDistances?.d2d3)}</strong>
+                </div>
+                <div className="list-row">
+                  <span className="muted">{s.result.groupingD1D3}</span>
+                  <strong>{fmtNum(grouping.interDartDistances?.d1d3)}</strong>
+                </div>
+              </>
+            ) : (
+              <p className="muted small">{s.result.groupingNoValidSets}</p>
+            )}
+            {(grouping.unavailableReasons?.length ?? 0) > 0 && (
+              <p className="muted small">
+                {s.result.groupingExcluded}:{" "}
+                {grouping.unavailableReasons
+                  ?.map((r) => GROUPING_REASON_LABELS[r] ?? r)
+                  .join(" / ")}
+              </p>
+            )}
+          </div>
+          {(grouping.perSet?.length ?? 0) > 0 && (
+            <div className="table-wrap">
+              <p className="scroll-hint">横にスクロールして詳細を確認できます →</p>
+              <table className="stats">
+                <thead>
+                  <tr>
+                    <th>{s.result.groupingSetNo}</th>
+                    <th>{s.result.groupingSetMax}</th>
+                    <th>{s.result.groupingSetAvg}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {grouping.perSet?.map((row, index) => (
+                    <tr key={index}>
+                      <td>{index + 1}</td>
+                      <td>{fmtNum(row.maxPairDistance)}</td>
+                      <td>{fmtNum(row.averagePairDistance)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
       <h2>{s.result.errorStats}</h2>
       {(
         [
@@ -45,7 +152,11 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
         <div className="card" key={title}>
           <h3>{title}</h3>
           {err.sampleCount === 0 ? (
-            <p className="muted small">{s.result.noCoordinateData}</p>
+            <p className="muted small">
+              {stats.groupingOnlyThrows > 0
+                ? s.result.groupingNoErrorStats
+                : s.result.noCoordinateData}
+            </p>
           ) : (
             <>
               <div className="list-row">
@@ -177,7 +288,11 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
             )}
             {stats.zeroOne.allHitSetRate != null && (
               <div className="list-row">
-                <span className="muted">{s.result.allHitSetRate}</span>
+                <span className="muted">
+                  {session?.arrangement === "fixed_three"
+                    ? s.result.allHitSetRateFinish
+                    : s.result.allHitSetRate}
+                </span>
                 <strong>{fmtRate(stats.zeroOne.allHitSetRate)}</strong>
               </div>
             )}
@@ -315,6 +430,24 @@ export function StatsView({ stats }: { stats: SessionStatistics }) {
       <div className="info-box na-legend">
         <strong>N/A：</strong>このラウンドでは命中・誤差を評価しない、または判定に必要なデータがない項目です。R1グルーピングは命中率を測定しないためN/Aです。
       </div>
+
+      <details className="card">
+        <summary>
+          <strong>{s.result.statsHelpTitle}</strong>
+        </summary>
+        <dl>
+          {STAT_DEFINITIONS.map(({ term, definition }) => (
+            <div key={term} style={{ margin: "0.4rem 0" }}>
+              <dt>
+                <strong>{term}</strong>
+              </dt>
+              <dd className="muted small" style={{ margin: 0 }}>
+                {definition}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </details>
     </div>
   );
 }

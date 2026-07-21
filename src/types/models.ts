@@ -549,6 +549,8 @@ export interface SessionStatistics {
   grouping?: {
     status: "available" | "insufficient_data" | "unavailable_non_coordinate";
     validSetCount: number;
+    /** グルーピング評価対象投擲数 (= validSetCount × 3) */
+    groupingThrowCount?: number;
     /** 有効な3投座標セットにならなかった具体的な理由 */
     unavailableReasons?: (
       | "no_valid_three_dart_coordinate_set"
@@ -561,6 +563,27 @@ export interface SessionStatistics {
     averagePairDistance?: number;
     maximumPairDistance?: number;
     medianPairDistance?: number;
+    /** 有効セットごとの3投間距離(セット実施順)。値は正規化座標(外側ダブル半径=1.0) */
+    perSet?: {
+      /** 3点の全ペア距離の最大値(=グルーピング径) */
+      maxPairDistance: number;
+      /** 3点の全ペア距離の平均値 */
+      averagePairDistance: number;
+    }[];
+    /** 各セットのグルーピング径(=最大ペア距離)のセッション平均 */
+    averageDiameter?: number;
+    /** 各セットのグルーピング径の中央値 */
+    medianDiameter?: number;
+    /** 前半セット(有効セットを実施順で半分に割った前側)の平均グルーピング径 */
+    firstHalfAverageDiameter?: number;
+    /** 後半セットの平均グルーピング径 */
+    secondHalfAverageDiameter?: number;
+    /** 投順間距離の平均(1→2投目 / 2→3投目 / 1→3投目)。分母は有効セット数 */
+    interDartDistances?: {
+      d1d2?: number;
+      d2d3?: number;
+      d1d3?: number;
+    };
   };
   calculatedAt: ISODateTime;
 }
