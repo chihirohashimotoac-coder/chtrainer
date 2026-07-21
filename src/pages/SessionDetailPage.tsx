@@ -89,7 +89,7 @@ export default function SessionDetailPage() {
         )}
       </div>
 
-      {stats && <StatsView stats={stats} />}
+      {stats && <StatsView stats={stats} session={session} />}
 
       <div className="action-bar">
         {session.status === "aborted" && (

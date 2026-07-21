@@ -30,7 +30,7 @@ export default function ResultPage() {
   return (
     <div>
       <h1>{s.result.title}</h1>
-      <StatsView stats={stats} />
+      <StatsView stats={stats} session={session} />
 
       <h2>{s.result.sessionNote}</h2>
       <textarea

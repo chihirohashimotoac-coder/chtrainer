@@ -357,6 +357,10 @@ export function calculateStatistics(
     groupingSets.set(dart.setId, list);
   }
   const pairDistances: number[] = [];
+  const perSet: { maxPairDistance: number; averagePairDistance: number }[] = [];
+  const d1d2List: number[] = [];
+  const d2d3List: number[] = [];
+  const d1d3List: number[] = [];
   let validSetCount = 0;
   let hasNonCoordinate = false;
   const groupingReasons = new Set<NonNullable<NonNullable<SessionStatistics["grouping"]>["unavailableReasons"]>[number]>();
@@ -406,10 +410,28 @@ export function calculateStatistics(
       continue;
     }
     validSetCount += 1;
-    for (let i = 0; i < set.length; i += 1) {
-      for (let j = i + 1; j < set.length; j += 1) {
-        pairDistances.push(Math.hypot((set[i]!.landing.x ?? 0) - (set[j]!.landing.x ?? 0), (set[i]!.landing.y ?? 0) - (set[j]!.landing.y ?? 0)));
+    // 投順どおりに並べて投順間距離(1→2, 2→3, 1→3)を測る
+    const ordered = set.slice().sort((a, b) => a.dartInSet - b.dartInSet);
+    const dist = (a: ThrowRecord, b: ThrowRecord) =>
+      Math.hypot(
+        (a.landing.x ?? 0) - (b.landing.x ?? 0),
+        (a.landing.y ?? 0) - (b.landing.y ?? 0)
+      );
+    const setPairs: number[] = [];
+    for (let i = 0; i < ordered.length; i += 1) {
+      for (let j = i + 1; j < ordered.length; j += 1) {
+        setPairs.push(dist(ordered[i]!, ordered[j]!));
       }
+    }
+    pairDistances.push(...setPairs);
+    perSet.push({
+      maxPairDistance: Math.max(...setPairs),
+      averagePairDistance: mean(setPairs) ?? 0,
+    });
+    if (ordered.length === 3) {
+      d1d2List.push(dist(ordered[0]!, ordered[1]!));
+      d2d3List.push(dist(ordered[1]!, ordered[2]!));
+      d1d3List.push(dist(ordered[0]!, ordered[2]!));
     }
   }
   if (validSetCount === 0) {
@@ -445,10 +467,26 @@ export function calculateStatistics(
     ...(groupingOnly.length > 0 ? { grouping: {
       status: groupingStatus,
       validSetCount,
+      groupingThrowCount: validSetCount * 3,
       unavailableReasons: [...groupingReasons],
       averagePairDistance: mean(pairDistances),
       maximumPairDistance: pairDistances.length > 0 ? Math.max(...pairDistances) : undefined,
       medianPairDistance: median(pairDistances),
+      perSet,
+      averageDiameter: mean(perSet.map((x) => x.maxPairDistance)),
+      medianDiameter: median(perSet.map((x) => x.maxPairDistance)),
+      // 前半・後半: 有効セットを実施順で半分に割る(奇数は前半に多く)
+      firstHalfAverageDiameter: mean(
+        perSet.slice(0, Math.ceil(perSet.length / 2)).map((x) => x.maxPairDistance)
+      ),
+      secondHalfAverageDiameter: mean(
+        perSet.slice(Math.ceil(perSet.length / 2)).map((x) => x.maxPairDistance)
+      ),
+      interDartDistances: {
+        d1d2: mean(d1d2List),
+        d2d3: mean(d2d3List),
+        d1d3: mean(d1d3List),
+      },
     } } : {}),
     calculatedAt,
   };

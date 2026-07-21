@@ -102,6 +102,44 @@ describe("CSV生成", () => {
     expect(first[CSV_COLUMNS.indexOf("target_changed")]).toBe("");
   });
 
+  it("speed_kmh列はtarget_changedの後・elapsed_msの前に位置する", () => {
+    const idx = CSV_COLUMNS.indexOf("speed_kmh");
+    expect(idx).toBeGreaterThan(-1);
+    expect(CSV_COLUMNS[idx - 1]).toBe("target_changed");
+    expect(CSV_COLUMNS[idx + 1]).toBe("elapsed_ms");
+  });
+
+  it("speed_kmhの小数値を保持し、ヘッダーとデータの列数が一致する", () => {
+    const withSpeed = throws.map((record, i) => ({
+      ...record,
+      ...(i === 0 ? { speedKmh: 58.9 } : {}),
+    }));
+    const csv = buildSessionCsv(session, withSpeed, setNumberOf);
+    const lines = csv.split("\r\n").filter((l) => l.length > 0);
+    const headerCols = lines[0]!.split(",").length;
+    expect(headerCols).toBe(CSV_COLUMNS.length);
+    const first = lines[1]!.split(",");
+    expect(first).toHaveLength(headerCols);
+    expect(first[CSV_COLUMNS.indexOf("speed_kmh")]).toBe("58.9");
+    // CRLF改行で終端する
+    expect(csv.endsWith("\r\n")).toBe(true);
+  });
+
+  it("Unicode・改行・カンマ・引用符を含むメモを正しくエスケープし読み戻せる", () => {
+    const trickyNote = 'メモ🎯 "quote", カンマ,\n改行あり';
+    const withNote = throws.map((record, i) =>
+      i === 0 ? { ...record, note: trickyNote } : record
+    );
+    const csv = buildSessionCsv(session, withNote, setNumberOf);
+    // RFC4180: 引用符は2重化され、フィールドは引用符で囲まれる
+    expect(csv).toContain('"メモ🎯 ""quote"", カンマ,\n改行あり"');
+    // 引用符内の改行を考慮した簡易パースで読み戻し検証
+    const unquoted = csv
+      .match(/"((?:[^"]|"")*)"/g)
+      ?.map((f) => f.slice(1, -1).replace(/""/g, '"'));
+    expect(unquoted).toContain(trickyNote);
+  });
+
   it("speed_kmh列: 記録ありは値、未記録は空フィールド", () => {
     const withSpeed = throws.map((record, i) =>
       i === 0 ? { ...record, speedKmh: 64.2 } : record
@@ -203,6 +241,113 @@ describe("Markdown生成", () => {
     expect(md).toContain("矢速(km/h)");
     expect(md).toContain("| 64.2 |");
     expect(md).toContain("speed_kmh");
+  });
+
+  it("グルーピング統計(径・前後半・投順間距離)と定義をAI出力へ含める", () => {
+    const groupingTarget = buildSkillCheckPlan(SOFT_BOARD, 20)[0]![0]!;
+    const groupingThrows = buildThrows(
+      [
+        [0, 0],
+        [0.3, 0],
+        [0, 0.4],
+      ].map(([x, y]) => ({
+        target: groupingTarget,
+        setId: "grouping-set",
+        landing: landingFromCoordinate(x!, y!, SOFT_BOARD),
+      })),
+      3
+    );
+    const groupingStats = calculateStatistics("grouping-md", 3, groupingThrows, "skill_check");
+    const md = buildAnalysisMarkdown({
+      session: fixtureSession({ trainingMode: "skill_check", plannedThrowCount: 3, setCount: 1 }),
+      player: undefined,
+      equipment: undefined,
+      stats: groupingStats,
+      throws: groupingThrows,
+      setNumberOf: () => 1,
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    expect(md).toContain("平均グルーピング径");
+    expect(md).toContain("中央値グルーピング径");
+    expect(md).toContain("投順間平均距離");
+    expect(md).toContain("| セット(実施順) | 3投間最大距離 | 3投間平均距離 |");
+    expect(md).toContain("グルーピング径=セット内3投の全ペア距離の最大値");
+  });
+
+  it("3投命中セット率のラベルは練習方式で切り替わる", () => {
+    const bullTarget = { ...T20 };
+    const throws3 = buildThrows(
+      [0, 1, 2].map(() => ({
+        target: bullTarget,
+        setId: "set-1",
+        landing: landingFromCoordinate(
+          bullTarget.representativePoint.x,
+          bullTarget.representativePoint.y,
+          STEEL_BOARD
+        ),
+      })),
+      3
+    );
+    const st = calculateStatistics("zeroone", 3, throws3, "zero_one");
+    const build = (arrangement: string) =>
+      buildAnalysisMarkdown({
+        session: fixtureSession({
+          trainingMode: "zero_one",
+          arrangement,
+          plannedThrowCount: 3,
+          setCount: 1,
+        }),
+        player: undefined,
+        equipment: undefined,
+        stats: st,
+        throws: throws3,
+        setNumberOf: () => 1,
+        comparisons: [],
+        embedAllThrows: false,
+      });
+    // 同一ターゲット反復ではフィニッシュ成立率と呼ばない
+    const repeat = build("same_per_set");
+    expect(repeat).toContain("3投すべてターゲットに命中したセット率");
+    expect(repeat).not.toContain("フィニッシュ成立率");
+    // フィニッシュ3投指定ではフィニッシュ成立率と呼ぶ
+    expect(build("fixed_three")).toContain("フィニッシュ成立率");
+  });
+
+  it("中断セッションは予定投擲数と完了投擲数を概要の最初に明示する", () => {
+    const aborted = fixtureSession({
+      status: "aborted",
+      plannedThrowCount: 60,
+      setCount: 20,
+    });
+    const md = buildAnalysisMarkdown({
+      session: aborted,
+      player: undefined,
+      equipment: undefined,
+      stats,
+      throws,
+      setNumberOf,
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    expect(md).toContain("セッション状態: 中断(予定60投中6投で中断)");
+    const completedMd = buildAnalysisMarkdown({
+      session,
+      player: undefined,
+      equipment: undefined,
+      stats,
+      throws,
+      setNumberOf,
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    expect(completedMd).toContain("セッション状態: 完了");
+  });
+
+  it("依頼文は少数標本・フォーム情報なし・公式レーティング算出禁止の指示を含む", () => {
+    expect(markdown).toContain("確からしさを「高」にしないでください");
+    expect(markdown).toContain("フォーム情報が記録されていない場合は、身体・動作要因を断定的な最有力候補にせず");
+    expect(markdown).toContain("公式のPPD・MPR・レーティング");
   });
 
   it("grouping_onlyは命中数・命中率・投擲命中をN/A表示にする", () => {
@@ -470,6 +615,46 @@ describe("ZIP出力", () => {
     ) as Record<string, unknown>;
     expect(metadata["sessionId"]).toBe(session.id);
     expect(metadata["assessments"]).toEqual(session.assessments);
+  });
+
+  it("Markdown・CSVのセッションIDが一致し、CSVにspeed_kmhが含まれる", async () => {
+    const md = buildAnalysisMarkdown({
+      session,
+      player: undefined,
+      equipment: undefined,
+      stats,
+      throws: throws.map((record, i) =>
+        i === 0 ? { ...record, speedKmh: 64.2 } : record
+      ),
+      setNumberOf,
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    const csv = buildSessionCsv(
+      session,
+      throws.map((record, i) =>
+        i === 0 ? { ...record, speedKmh: 64.2 } : record
+      ),
+      setNumberOf
+    );
+    const blob = await buildAnalysisZip(md, csv, session);
+    const bytes = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(blob);
+    });
+    const zip = await JSZip.loadAsync(bytes);
+    // ファイル名が重複しない
+    const names = Object.keys(zip.files);
+    expect(new Set(names).size).toBe(names.length);
+    // 展開して両ファイルを読み戻し、セッションIDが一致する
+    const mdBack = await zip.file("analysis-request.md")?.async("string");
+    const csvBack = await zip.file("throws.csv")?.async("string");
+    expect(mdBack).toContain(`セッションID: ${session.id}`);
+    expect(csvBack).toContain(session.id);
+    expect(csvBack).toContain("speed_kmh");
+    expect(csvBack).toContain("64.2");
   });
 });
 
