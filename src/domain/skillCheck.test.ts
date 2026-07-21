@@ -3,7 +3,7 @@ import { SOFT_BOARD, STEEL_BOARD } from "../config/boardProfiles";
 import { buildSkillCheckPlan, skillCheckUniqueTargets } from "./skillCheck";
 
 describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
-  const plan = buildSkillCheckPlan(SOFT_BOARD, 20, "fit_bull");
+  const plan = buildSkillCheckPlan(SOFT_BOARD, 20, "fat_bull");
 
   it("20セットを4ラウンドへ5セットずつ配分する", () => {
     expect(plan).toHaveLength(20);
@@ -87,20 +87,20 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
 
   it("割り切れないセット数はスコアリングラウンド優先(R2→R1→R3→R4)で+1配分する", () => {
     // 21 = 5,6,5,5 (余り1はR2へ)
-    const plan21 = buildSkillCheckPlan(SOFT_BOARD, 21, "fit_bull");
+    const plan21 = buildSkillCheckPlan(SOFT_BOARD, 21, "fat_bull");
     expect(plan21).toHaveLength(21);
     expect(plan21[4]?.[0]?.label).toBe("1投目の着弾点");
     expect(plan21[5]?.[0]?.label).toBe("Bull");
     expect(plan21[10]?.[0]?.label).toBe("Bull");
     expect(plan21[11]?.map((x) => x.label)).toEqual(["T20", "T20", "T20"]);
     // 22 = 6,6,5,5 (余り2はR2とR1へ)
-    const plan22 = buildSkillCheckPlan(SOFT_BOARD, 22, "fit_bull");
+    const plan22 = buildSkillCheckPlan(SOFT_BOARD, 22, "fat_bull");
     expect(plan22).toHaveLength(22);
     expect(plan22[5]?.[0]?.label).toBe("1投目の着弾点");
     expect(plan22[6]?.[0]?.label).toBe("Bull");
     expect(plan22[11]?.[0]?.label).toBe("Bull");
     // 23 = 6,6,6,5 (余り3はR2・R1・R3へ)
-    const plan23 = buildSkillCheckPlan(SOFT_BOARD, 23, "fit_bull");
+    const plan23 = buildSkillCheckPlan(SOFT_BOARD, 23, "fat_bull");
     expect(plan23).toHaveLength(23);
     // R3は12〜17の6セット(同一→三角形1→三角形2を2巡)
     expect(plan23[15]?.map((x) => x.label)).toEqual(["T20", "T20", "T20"]);
@@ -109,19 +109,19 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
   });
 
   it("R4が6セット以上なら追加パターンを決定論的に使用して循環する", () => {
-    const plan44 = buildSkillCheckPlan(SOFT_BOARD, 44, "fit_bull");
+    const plan44 = buildSkillCheckPlan(SOFT_BOARD, 44, "fat_bull");
     const r4 = plan44.filter((set) => set[0]?.roundId === "skill-r4");
     expect(r4).toHaveLength(11);
     expect(r4[5]?.map((x) => x.label)).toEqual(["D10", "D10", "D10"]);
     expect(r4[10]?.map((x) => x.label)).toEqual(["D4", "D4", "D4"]);
-    const plan64 = buildSkillCheckPlan(SOFT_BOARD, 64, "fit_bull");
+    const plan64 = buildSkillCheckPlan(SOFT_BOARD, 64, "fat_bull");
     const r4Cycle = plan64.filter((set) => set[0]?.roundId === "skill-r4");
     expect(r4Cycle[15]?.map((x) => x.label)).toEqual(["D20", "D20", "D20"]);
   });
 
   it("20セットの使用ターゲット一覧は実計画順で重複排除し、未出題D2を含まない", () => {
     expect(
-      skillCheckUniqueTargets(SOFT_BOARD, "fit_bull").map((x) => x.label)
+      skillCheckUniqueTargets(SOFT_BOARD, "fat_bull").map((x) => x.label)
     ).toEqual([
       "1投目の着弾点",
       "Bull",
@@ -144,7 +144,7 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
   });
 
   it("実計画に含まれる60セットではD2を表示する", () => {
-    const labels = skillCheckUniqueTargets(SOFT_BOARD, 60, "fit_bull").map(
+    const labels = skillCheckUniqueTargets(SOFT_BOARD, 60, "fat_bull").map(
       (target) => target.label
     );
     expect(labels).toContain("D2");
@@ -174,7 +174,7 @@ describe("buildSkillCheckPlan (T20主体のスコアリング形式)", () => {
   }
 
   it("主役の指示文が形式に応じて切り替わる", () => {
-    const fitBull = buildSkillCheckPlan(SOFT_BOARD, 20, "fit_bull");
+    const fitBull = buildSkillCheckPlan(SOFT_BOARD, 20, "fat_bull");
     expect(fitBull[5]?.[0]?.instruction).toContain("Bullを狙って");
     const steel = buildSkillCheckPlan(STEEL_BOARD, 20, "steel");
     expect(steel[5]?.[0]?.instruction).toContain("T20を狙って");

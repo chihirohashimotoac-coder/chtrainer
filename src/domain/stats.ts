@@ -10,6 +10,7 @@ import type {
   UUID,
 } from "../types/models";
 import { nowIso } from "../utils/id";
+import { isGroupingOnlyTarget } from "./targets";
 
 export function mean(values: readonly number[]): number | undefined {
   if (values.length === 0) return undefined;
@@ -53,15 +54,7 @@ function isBounceOut(t: ThrowRecord): boolean {
 }
 
 function isGroupingOnly(t: ThrowRecord): boolean {
-  if (t.target.evaluationKind != null) {
-    return t.target.evaluationKind === "grouping_only";
-  }
-  // v1 skill-check R1 records did not carry evaluationKind. Its typed target
-  // shape (a free custom selection) is stable and avoids locale/label matching.
-  return (
-    t.target.type === "custom_selection" &&
-    (t.target.areas?.length ?? 0) === 0
-  );
+  return isGroupingOnlyTarget(t.target);
 }
 
 function isScorable(t: ThrowRecord): boolean {
@@ -475,7 +468,10 @@ export function calculateStatistics(
       perSet,
       averageDiameter: mean(perSet.map((x) => x.maxPairDistance)),
       medianDiameter: median(perSet.map((x) => x.maxPairDistance)),
-      // 前半・後半: 有効セットを実施順で半分に割る(奇数は前半に多く)
+      // 前半・後半グルーピング径: perSet は「3投すべてに詳細座標がある
+      // グルーピング評価対象セット」だけを、セット番号順(=投擲順)で抽出した列。
+      // これを実施順で半分に割り、奇数のときは前半を1セット多くする(ceil)。
+      // 各区間はセット内最大距離(グルーピング径)の平均。分母0なら mean が undefined(N/A)。
       firstHalfAverageDiameter: mean(
         perSet.slice(0, Math.ceil(perSet.length / 2)).map((x) => x.maxPairDistance)
       ),

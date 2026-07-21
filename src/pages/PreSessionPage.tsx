@@ -295,7 +295,7 @@ export default function PreSessionPage() {
         <fieldset>
           <legend>{s.preSession.scoringStyle} ({s.common.required})</legend>
           <div className="choice-row">
-            {(["fit_bull", "separate_bull", "steel"] as const).map((key) => (
+            {(["fat_bull", "separate_bull", "steel"] as const).map((key) => (
               <button
                 key={key}
                 className={`choice${scoringStyle === key ? " selected" : ""}`}

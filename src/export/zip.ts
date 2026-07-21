@@ -1,5 +1,6 @@
 import JSZip from "jszip";
 import type { TrainingSession } from "../types/models";
+import { normalizeScoringStyle } from "../types/models";
 
 /** Builds a portable analysis bundle without mutating persisted data. */
 export async function buildAnalysisZip(
@@ -18,7 +19,8 @@ export async function buildAnalysisZip(
         sessionId: session.id,
         startedAt: session.startedAt,
         trainingMode: session.trainingMode,
-        scoringStyle: session.scoringStyle ?? null,
+        // 外部向けの機械可読値は正式値へ正規化する(旧 fit_bull → fat_bull)。
+        scoringStyle: normalizeScoringStyle(session.scoringStyle) ?? null,
         contextSnapshot: session.contextSnapshot ?? null,
         assessments: session.assessments,
       },

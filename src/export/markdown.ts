@@ -10,6 +10,8 @@ import type {
   ThrowRecord,
   TrainingSession,
 } from "../types/models";
+import { normalizeScoringStyle } from "../types/models";
+import { isGroupingOnlyTarget } from "../domain/targets";
 import {
   effectiveR4PatternMetadata,
   type EffectivePatternMetadata,
@@ -72,13 +74,15 @@ const ARRANGEMENT_LABELS: Record<string, string> = {
 };
 
 const SCORING_STYLE_LABELS: Record<string, string> = {
-  fit_bull: "ファットブル(ブル一律50点のソフト・削りの主役はBull)",
+  fat_bull: "ファットブル(ブル一律50点のソフト・削りの主役はBull)",
   separate_bull: "セパレートブル(内50/外25のソフト・削りの主役はT20)",
   steel: "ハード(スティール・削りの主役はT20)",
 };
 
+/** スコアリング形式の表示ラベル。旧値 fit_bull もファットブルとして受理する。 */
 export function scoringStyleLabel(style: string): string {
-  return SCORING_STYLE_LABELS[style] ?? style;
+  const normalized = normalizeScoringStyle(style) ?? style;
+  return SCORING_STYLE_LABELS[normalized] ?? normalized;
 }
 
 const EYE_LABELS: Record<string, string> = {
@@ -255,8 +259,8 @@ export function focusCategoryOf(
  * 旧データ(scoringStyle未記録)はファットブル配列(R2=Bull・R3同一=T20)で出題されている。
  */
 function skillFocusSection(style: ScoringStyle | undefined): string {
-  const effective: ScoringStyle = style ?? "fit_bull";
-  const mainIsBull = effective === "fit_bull";
+  const effective: ScoringStyle = normalizeScoringStyle(style) ?? "fat_bull";
+  const mainIsBull = effective === "fat_bull";
   const main = mainIsBull ? "Bull" : "T20";
   const sub = mainIsBull ? "T20" : "Bull";
   const styleNote = style
@@ -269,7 +273,7 @@ function skillFocusSection(style: ScoringStyle | undefined): string {
 
 このセッションは4ラウンド構成の技能測定です。${styleNote}01の削りの主役ターゲットは${main}です。round_id・round_kind・evaluation_kindを優先してラウンドを判別し、これらがない旧データだけターゲット構造を補助的に使ってください。
 
-- R1 グルーピング(grouping_only): 詳細座標入力の有効な3投セットだけで、平均・最大・中央値ペア距離と有効セット数を扱ってください。命中数・命中率・投擲一覧の命中はN/Aです。分析不能理由は、有効な詳細座標3投セットなし、バウンスアウト、アウトボード、位置不明、3投未満、segment_approximationを区別してください
+- R1 グルーピング(grouping_only): 詳細座標入力の有効な3投セットだけで、平均・最大・中央値ペア距離と有効セット数を扱ってください。R1は命中を評価しないため、命中数・命中率・投擲一覧の命中(exact_hit)・前投命中(previous_throw_was_hit / previous_throw_was_hit_in_same_set)はすべてN/Aです。前投がミスだった前提の「ミス後の修正」としてR1を扱わないでください。分析不能理由は、有効な詳細座標3投セットなし、バウンスアウト、アウトボード、位置不明、3投未満、segment_approximationを区別してください
 - R2 スコアリング(scoring): 主役ターゲット${main}の${mainDetail}を、命中判定対象投擲数とともに示してください
 - R3 ナンバー(number): 副ターゲット${sub}の同一3投セットと、T20→T16→T15 / T12→T18→T3の切替セットを、命中率・平均誤差・切替直後の変化で比較してください
 - R4 チェックアウト(checkout): pattern_id・pattern_kind・analysis_categoryを使い、実際にサンプルが存在する分類だけを比較してください。D20固定、D16固定、固定全体、切替全体、20系、16系、位置分散、切替直後、ボード上側/下側/左側/右側、内側/外側/上下ミス、D16・D20以外、特定ダブル依存、1投目ミス後のセット内修正が候補です。サンプルがない分類は未測定として「分析不能」とし、測定済みであるかのように扱わないでください。個別1投のダブルを得意・不得意とせず、少数なら固定/切替/20系/16系/位置分散/位置/ミス方向でまとめてください
@@ -476,6 +480,7 @@ function statsSection(stats: SessionStatistics, session?: TrainingSession): stri
       out.push(`- 最大ペア距離: ${fmtNum(s.grouping.maximumPairDistance)}`);
       out.push(`- 中央値ペア距離: ${fmtNum(s.grouping.medianPairDistance)}`);
       out.push(`- 前半の平均グルーピング径: ${fmtNum(s.grouping.firstHalfAverageDiameter)} / 後半: ${fmtNum(s.grouping.secondHalfAverageDiameter)}`);
+      out.push("  (前半・後半は、3投すべてに詳細座標がある有効セットだけをセット番号順に並べ、その有効セット列を半分に割った区間です。奇数のときは前半を1セット多くし、各区間はセット内最大距離(グルーピング径)の平均、対象0件ならN/A)");
       out.push(`- 投順間平均距離: 1→2投目 ${fmtNum(s.grouping.interDartDistances?.d1d2)} / 2→3投目 ${fmtNum(s.grouping.interDartDistances?.d2d3)} / 1→3投目 ${fmtNum(s.grouping.interDartDistances?.d1d3)}`);
       if ((s.grouping.perSet?.length ?? 0) > 0) {
         out.push("");
@@ -704,9 +709,7 @@ function throwTable(
           : th.landing.positionPrecision === "direction_only"
             ? "方向のみ"
             : "不明";
-    const groupingOnly = th.target.evaluationKind === "grouping_only" ||
-      (th.target.type === "custom_selection" &&
-        (th.target.areas?.length ?? 0) === 0);
+    const groupingOnly = isGroupingOnlyTarget(th.target);
     const sameSet = th.derived.sameSetAsPrevious === true;
     const boolMark = (value: boolean | undefined) =>
       value == null ? NA : value ? "○" : "×";
@@ -732,7 +735,9 @@ function throwTable(
         pattern?.analysisCategory ?? th.target.analysisCategory ?? NA,
         pattern?.source ?? NA,
         sameSet ? "true" : "false",
-        sameSet ? boolMark(th.derived.previousThrowWasHitInSameSet) : NA,
+        sameSet && !groupingOnly
+          ? boolMark(th.derived.previousThrowWasHitInSameSet)
+          : NA,
         sameSet ? boolMark(th.derived.sameTargetAsPrevious) : NA,
         sameSet
           ? th.derived.targetChangedFromPrevious

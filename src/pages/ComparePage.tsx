@@ -4,12 +4,13 @@ import { getSession, getSessions, getStatistics } from "../db/db";
 import { recalcAndSaveStatistics } from "../services/sessionService";
 import {
   compareStatistics,
-  isDissimilarComparison,
+  comparisonMismatches,
   rankComparisonCandidates,
   rankDissimilarCandidates,
 } from "../domain/compare";
 import { modeLabel } from "../export/markdown";
 import type { SessionStatistics, TrainingSession } from "../types/models";
+import { normalizeScoringStyle } from "../types/models";
 import { fmtDateTime, fmtNum, fmtNumDiff, fmtRate, fmtRateDiff } from "../utils/format";
 import { t } from "../i18n/ja";
 
@@ -102,9 +103,7 @@ export default function ComparePage() {
               {reasons.join(" / ") || "-"}
               {!hasStats && ` (${s.errors.notEnoughData})`}
             </div>
-            {isSelected && isDissimilarComparison(base, cand) && (
-              <div className="warn-box">{s.compare.warning}</div>
-            )}
+            {isSelected && <ComparisonWarning base={base} other={cand} />}
           </button>
         );
       })}
@@ -139,7 +138,7 @@ export default function ComparePage() {
                   <strong>{modeLabel(cand.trainingMode)}</strong>
                   <span className="muted small">{fmtDateTime(cand.startedAt)}</span>
                 </div>
-                <div className="warn-box">{s.compare.warning}</div>
+                <ComparisonWarning base={base} other={cand} />
               </button>
             );
           })}
@@ -245,6 +244,50 @@ export default function ComparePage() {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * 比較条件の差分を実データから判定し、正確な理由だけを表示する。
+ * スコアリング形式差は具体的な形式名と、同一ターゲット単位で比較する指示を添える。
+ * 差分がなければ何も表示しない(完全同条件では警告を出さない)。
+ */
+function ComparisonWarning({
+  base,
+  other,
+}: {
+  base: TrainingSession;
+  other: TrainingSession;
+}) {
+  const s = t();
+  const m = comparisonMismatches(base, other);
+  const lines: string[] = [];
+  if (m.mode) lines.push(s.compare.diffMode);
+  if (m.board) lines.push(s.compare.diffBoard);
+  if (m.input) lines.push(s.compare.diffInput);
+  if (m.scoring) {
+    const bs = normalizeScoringStyle(base.scoringStyle);
+    const os = normalizeScoringStyle(other.scoringStyle);
+    const bl = bs ? s.preSession.scoringStyles[bs] : "";
+    const ol = os ? s.preSession.scoringStyles[os] : "";
+    lines.push(
+      `${s.compare.diffScoring}（${bl} / ${ol}）。${s.compare.diffScoringNote}`
+    );
+  }
+  if (lines.length === 0) return null;
+  // モード・ボード・入力方式が異なる場合のみ「参考程度に」を添える
+  // (形式差だけの場合は同一ターゲット単位での比較指示で十分)。
+  const showTail = m.mode || m.board || m.input;
+  return (
+    <div className="warn-box">
+      <strong>{s.compare.warningLead}</strong>
+      <ul style={{ margin: "0.3rem 0 0", paddingLeft: "1.2rem" }}>
+        {lines.map((line, i) => (
+          <li key={i}>{line}</li>
+        ))}
+      </ul>
+      {showTail && <div className="small">{s.compare.warningTail}</div>}
     </div>
   );
 }

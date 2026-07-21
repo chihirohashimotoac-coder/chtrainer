@@ -9,7 +9,7 @@ import {
 } from "./stats";
 import { buildThrows, handComputedThrows, mixedPrecisionThrows, T20, D16 } from "../test/fixtures";
 import { SOFT_BOARD, STEEL_BOARD } from "../config/boardProfiles";
-import { landingFromCoordinate, landingFromSegment } from "../domain/landing";
+import { landingFromCoordinate, landingFromSegment, landingBounceOut } from "../domain/landing";
 import { makeBullAnyTarget, makeSegmentTarget } from "../domain/targets";
 import { buildSkillCheckPlan } from "../domain/skillCheck";
 
@@ -371,5 +371,82 @@ describe("命中判定対象とグルーピングの分離", () => {
         "no_valid_three_dart_coordinate_set",
       ])
     );
+  });
+});
+
+describe("R1グルーピングの前半・後半(有効セットをセット番号順に分割)", () => {
+  const groupingTarget = buildSkillCheckPlan(SOFT_BOARD, 20, "fat_bull")[0]![0]!;
+  // 各セットを [(0,0),(d,0),(0,0)] で作ると、そのセットのグルーピング径(最大ペア距離)= d。
+  // "excluded" はバウンスアウトを含み、グルーピング評価対象外になる。
+  function groupingThrows(sets: (number | "excluded")[]) {
+    const specs = sets.flatMap((set, i) => {
+      const setId = `g-${i + 1}`;
+      if (set === "excluded") {
+        return [
+          { target: groupingTarget, setId, landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+          { target: groupingTarget, setId, landing: landingBounceOut() },
+          { target: groupingTarget, setId, landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+        ];
+      }
+      return [
+        { target: groupingTarget, setId, landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+        { target: groupingTarget, setId, landing: landingFromCoordinate(set, 0, SOFT_BOARD) },
+        { target: groupingTarget, setId, landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+      ];
+    });
+    return buildThrows(specs, specs.length);
+  }
+  const grouping = (sets: (number | "excluded")[]) =>
+    calculateStatistics("g", 60, groupingThrows(sets), "skill_check").grouping!;
+
+  it("有効セット数が偶数: 前半・後半を均等に割る", () => {
+    const g = grouping([0.2, 0.4]);
+    expect(g.validSetCount).toBe(2);
+    expect(g.firstHalfAverageDiameter).toBeCloseTo(0.2);
+    expect(g.secondHalfAverageDiameter).toBeCloseTo(0.4);
+  });
+
+  it("有効セット数が奇数: 前半を1セット多くする", () => {
+    const g = grouping([0.2, 0.4, 0.6]);
+    expect(g.validSetCount).toBe(3);
+    // 前半 = [0.2, 0.4] の平均 = 0.3 / 後半 = [0.6]
+    expect(g.firstHalfAverageDiameter).toBeCloseTo(0.3);
+    expect(g.secondHalfAverageDiameter).toBeCloseTo(0.6);
+  });
+
+  it("途中に対象外セットがあると、除外後の有効セット列で分割する", () => {
+    const g = grouping([0.2, "excluded", 0.6]);
+    expect(g.validSetCount).toBe(2);
+    expect(g.perSet).toHaveLength(2);
+    expect(g.firstHalfAverageDiameter).toBeCloseTo(0.2);
+    expect(g.secondHalfAverageDiameter).toBeCloseTo(0.6);
+  });
+
+  it("先頭が対象外でも、有効セット順は維持される", () => {
+    const g = grouping(["excluded", 0.2, 0.4]);
+    expect(g.validSetCount).toBe(2);
+    expect(g.firstHalfAverageDiameter).toBeCloseTo(0.2);
+    expect(g.secondHalfAverageDiameter).toBeCloseTo(0.4);
+  });
+
+  it("末尾が対象外でも、有効セット順は維持される", () => {
+    const g = grouping([0.2, 0.4, "excluded"]);
+    expect(g.validSetCount).toBe(2);
+    expect(g.firstHalfAverageDiameter).toBeCloseTo(0.2);
+    expect(g.secondHalfAverageDiameter).toBeCloseTo(0.4);
+  });
+
+  it("有効セット1件: 前半のみ、後半はN/A", () => {
+    const g = grouping([0.3]);
+    expect(g.validSetCount).toBe(1);
+    expect(g.firstHalfAverageDiameter).toBeCloseTo(0.3);
+    expect(g.secondHalfAverageDiameter).toBeUndefined();
+  });
+
+  it("有効セット0件: 前半・後半ともにN/A", () => {
+    const g = grouping(["excluded"]);
+    expect(g.validSetCount).toBe(0);
+    expect(g.firstHalfAverageDiameter).toBeUndefined();
+    expect(g.secondHalfAverageDiameter).toBeUndefined();
   });
 });
