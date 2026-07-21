@@ -40,15 +40,21 @@ export interface PendingDart {
 /**
  * 1セット分(3投)の入力を確定し、派生データを計算して保存する。
  * 直前セットまでの最後の投擲を基準に previousThrow 系を求める。
+ *
+ * replaceSetId を渡すと、そのセットIDの既存データを単一トランザクションで
+ * 置き換える(セット確認画面での再保存用。二重保存されない)。
  */
 export async function commitSet(
   session: TrainingSession,
   setNumber: number,
   darts: PendingDart[],
   player: PlayerProfile | undefined,
-  setStartedAt: string | undefined
+  setStartedAt: string | undefined,
+  replaceSetId?: string
 ): Promise<{ throwSet: ThrowSet; records: ThrowRecord[] }> {
-  const existing = await getThrows(session.id);
+  const existing = (await getThrows(session.id)).filter(
+    (record) => record.setId !== replaceSetId
+  );
   const lastExisting = existing[existing.length - 1];
   const baseGlobal = existing.length;
   const sessionStart = Date.parse(session.startedAt);
@@ -56,7 +62,7 @@ export async function commitSet(
 
   const throwSet: ThrowSet = {
     schemaVersion: SCHEMA_VERSION,
-    id: newId(),
+    id: replaceSetId ?? newId(),
     sessionId: session.id,
     setNumber,
     startedAt: setStartedAt ?? now,

@@ -106,10 +106,10 @@ function computeDartOrderStats(throws: readonly ThrowRecord[]): DartOrderStats {
     throwCount: count,
     scorableThrows: scorable.length,
     hitCount: hits,
-    hitRate: scorable.length > 0 ? hits / scorable.length : 0,
+    hitRate: scorable.length > 0 ? hits / scorable.length : undefined,
     averageErrorDistance: mean(errorDistances(throws)),
     outboardCount: outs,
-    outboardRate: count > 0 ? outs / count : 0,
+    outboardRate: count > 0 ? outs / count : undefined,
   };
 }
 
@@ -146,10 +146,10 @@ function computeHalfStats(throws: readonly ThrowRecord[]): HalfStats {
     throwCount: count,
     scorableThrows: scorable.length,
     hitCount: hits,
-    hitRate: scorable.length > 0 ? hits / scorable.length : 0,
+    hitRate: scorable.length > 0 ? hits / scorable.length : undefined,
     averageErrorDistance: mean(errorDistances(throws)),
     outboardCount: outs,
-    outboardRate: count > 0 ? outs / count : 0,
+    outboardRate: count > 0 ? outs / count : undefined,
   };
 }
 
@@ -227,9 +227,9 @@ export function calculateCricketStats(
   const withinSet = marks.filter(({ t }) => t.derived.sameSetAsPrevious === true);
   return {
     totalMarks,
-    marksPerThreeDarts: count > 0 ? (totalMarks / count) * 3 : 0,
-    effectiveMarkRate: count > 0 ? (count - noMarkCount) / count : 0,
-    noMarkRate: count > 0 ? noMarkCount / count : 0,
+    marksPerThreeDarts: count > 0 ? (totalMarks / count) * 3 : undefined,
+    effectiveMarkRate: count > 0 ? (count - noMarkCount) / count : undefined,
+    noMarkRate: count > 0 ? noMarkCount / count : undefined,
     byTarget,
     continuity: {
       sameTarget: transitionStats(
@@ -318,7 +318,6 @@ export function calculateStatistics(
         label,
         throwCount: 0,
         hitCount: 0,
-        hitRate: 0,
         outboardCount: 0,
       };
     }
@@ -332,7 +331,8 @@ export function calculateStatistics(
       throwCount: group.length,
       scorableThrows: targetScorable.length,
       hitCount,
-      hitRate: targetScorable.length > 0 ? hitCount / targetScorable.length : 0,
+      hitRate:
+        targetScorable.length > 0 ? hitCount / targetScorable.length : undefined,
       averageErrorDistance: mean(errorDistances(group)),
       mainMissDirection: mainDirection(group),
       outboardCount: group.filter(isOutboard).length,
@@ -357,6 +357,10 @@ export function calculateStatistics(
     groupingSets.set(dart.setId, list);
   }
   const pairDistances: number[] = [];
+  const perSet: { maxPairDistance: number; averagePairDistance: number }[] = [];
+  const d1d2List: number[] = [];
+  const d2d3List: number[] = [];
+  const d1d3List: number[] = [];
   let validSetCount = 0;
   let hasNonCoordinate = false;
   const groupingReasons = new Set<NonNullable<NonNullable<SessionStatistics["grouping"]>["unavailableReasons"]>[number]>();
@@ -406,10 +410,28 @@ export function calculateStatistics(
       continue;
     }
     validSetCount += 1;
-    for (let i = 0; i < set.length; i += 1) {
-      for (let j = i + 1; j < set.length; j += 1) {
-        pairDistances.push(Math.hypot((set[i]!.landing.x ?? 0) - (set[j]!.landing.x ?? 0), (set[i]!.landing.y ?? 0) - (set[j]!.landing.y ?? 0)));
+    // 投順どおりに並べて投順間距離(1→2, 2→3, 1→3)を測る
+    const ordered = set.slice().sort((a, b) => a.dartInSet - b.dartInSet);
+    const dist = (a: ThrowRecord, b: ThrowRecord) =>
+      Math.hypot(
+        (a.landing.x ?? 0) - (b.landing.x ?? 0),
+        (a.landing.y ?? 0) - (b.landing.y ?? 0)
+      );
+    const setPairs: number[] = [];
+    for (let i = 0; i < ordered.length; i += 1) {
+      for (let j = i + 1; j < ordered.length; j += 1) {
+        setPairs.push(dist(ordered[i]!, ordered[j]!));
       }
+    }
+    pairDistances.push(...setPairs);
+    perSet.push({
+      maxPairDistance: Math.max(...setPairs),
+      averagePairDistance: mean(setPairs) ?? 0,
+    });
+    if (ordered.length === 3) {
+      d1d2List.push(dist(ordered[0]!, ordered[1]!));
+      d2d3List.push(dist(ordered[1]!, ordered[2]!));
+      d1d3List.push(dist(ordered[0]!, ordered[2]!));
     }
   }
   if (validSetCount === 0) {
@@ -423,12 +445,13 @@ export function calculateStatistics(
     completedThrows: completed,
     exactHits: hits,
     scorableThrows: scorable.length,
-    scorableExactHitRate: scorable.length > 0 ? hits / scorable.length : 0,
+    scorableExactHitRate:
+      scorable.length > 0 ? hits / scorable.length : undefined,
     groupingOnlyThrows: groupingOnly.length,
     errorSampleCount: computeErrorStats(sorted).sampleCount,
-    exactHitRate: scorable.length > 0 ? hits / scorable.length : 0,
+    exactHitRate: scorable.length > 0 ? hits / scorable.length : undefined,
     outboardCount: outboards,
-    outboardRate: completed > 0 ? outboards / completed : 0,
+    outboardRate: completed > 0 ? outboards / completed : undefined,
     bounceOutCount: bounceOuts,
     coordinateInputCount: coordinateThrows.length,
     approximateInputCount: approxThrows.length,
@@ -444,10 +467,26 @@ export function calculateStatistics(
     ...(groupingOnly.length > 0 ? { grouping: {
       status: groupingStatus,
       validSetCount,
+      groupingThrowCount: validSetCount * 3,
       unavailableReasons: [...groupingReasons],
       averagePairDistance: mean(pairDistances),
       maximumPairDistance: pairDistances.length > 0 ? Math.max(...pairDistances) : undefined,
       medianPairDistance: median(pairDistances),
+      perSet,
+      averageDiameter: mean(perSet.map((x) => x.maxPairDistance)),
+      medianDiameter: median(perSet.map((x) => x.maxPairDistance)),
+      // 前半・後半: 有効セットを実施順で半分に割る(奇数は前半に多く)
+      firstHalfAverageDiameter: mean(
+        perSet.slice(0, Math.ceil(perSet.length / 2)).map((x) => x.maxPairDistance)
+      ),
+      secondHalfAverageDiameter: mean(
+        perSet.slice(Math.ceil(perSet.length / 2)).map((x) => x.maxPairDistance)
+      ),
+      interDartDistances: {
+        d1d2: mean(d1d2List),
+        d2d3: mean(d2d3List),
+        d1d3: mean(d1d3List),
+      },
     } } : {}),
     calculatedAt,
   };

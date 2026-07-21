@@ -419,14 +419,21 @@ export interface ThrowRecord {
   updatedAt: ISODateTime;
 }
 
+/**
+ * 率の値は「分母が0(未測定)の場合は undefined」で統一する。
+ * 0 は「分母が存在し、該当が0件だった」ことだけを意味する。
+ * 表示層は undefined を必ず N/A として扱い、0% と混同してはならない。
+ */
 export interface DartOrderStats {
   throwCount: number;
   scorableThrows?: number;
   hitCount: number;
-  hitRate: number;
+  /** 命中率。命中判定対象数が0なら undefined (N/A) */
+  hitRate?: number;
   averageErrorDistance?: number;
   outboardCount: number;
-  outboardRate: number;
+  /** アウトボード率。投擲数0なら undefined (N/A) */
+  outboardRate?: number;
 }
 
 export interface TargetStats {
@@ -434,7 +441,8 @@ export interface TargetStats {
   throwCount: number;
   scorableThrows?: number;
   hitCount: number;
-  hitRate: number;
+  /** 命中率。命中判定対象数が0なら undefined (N/A) */
+  hitRate?: number;
   averageErrorDistance?: number;
   mainMissDirection?: MissDirection;
   outboardCount: number;
@@ -444,10 +452,12 @@ export interface HalfStats {
   throwCount: number;
   scorableThrows?: number;
   hitCount: number;
-  hitRate: number;
+  /** 命中率。命中判定対象数が0なら undefined (N/A) */
+  hitRate?: number;
   averageErrorDistance?: number;
   outboardCount: number;
-  outboardRate: number;
+  /** アウトボード率。投擲数0なら undefined (N/A) */
+  outboardRate?: number;
 }
 
 export interface ErrorStats {
@@ -462,12 +472,12 @@ export interface ErrorStats {
 /** クリケット専用統計 (マーク換算: T=3, D=2, S=1, IB=2, OB=1) */
 export interface CricketStats {
   totalMarks: number;
-  /** 3投あたり平均マーク (MPR相当) */
-  marksPerThreeDarts: number;
-  /** 1マーク以上を得た投擲の割合 (有効マーク率) */
-  effectiveMarkRate: number;
-  /** マーク0の投擲の割合 */
-  noMarkRate: number;
+  /** 3投あたり平均マーク (MPR相当)。投擲数0なら undefined (N/A) */
+  marksPerThreeDarts?: number;
+  /** 1マーク以上を得た投擲の割合 (有効マーク率)。投擲数0なら undefined (N/A) */
+  effectiveMarkRate?: number;
+  /** マーク0の投擲の割合。投擲数0なら undefined (N/A) */
+  noMarkRate?: number;
   byTarget: Record<
     string,
     {
@@ -511,12 +521,15 @@ export interface SessionStatistics {
   completedThrows: number;
   exactHits: number;
   scorableThrows: number;
-  scorableExactHitRate: number;
+  /** 命中判定対象の完全命中率。命中判定対象数が0なら undefined (N/A) */
+  scorableExactHitRate?: number;
   groupingOnlyThrows: number;
   errorSampleCount: number;
-  exactHitRate: number;
+  /** 完全命中率。命中判定対象数が0なら undefined (N/A) */
+  exactHitRate?: number;
   outboardCount: number;
-  outboardRate: number;
+  /** アウトボード率。完了投擲数が0なら undefined (N/A) */
+  outboardRate?: number;
   bounceOutCount: number;
   coordinateInputCount: number;
   approximateInputCount: number;
@@ -536,6 +549,8 @@ export interface SessionStatistics {
   grouping?: {
     status: "available" | "insufficient_data" | "unavailable_non_coordinate";
     validSetCount: number;
+    /** グルーピング評価対象投擲数 (= validSetCount × 3) */
+    groupingThrowCount?: number;
     /** 有効な3投座標セットにならなかった具体的な理由 */
     unavailableReasons?: (
       | "no_valid_three_dart_coordinate_set"
@@ -548,6 +563,27 @@ export interface SessionStatistics {
     averagePairDistance?: number;
     maximumPairDistance?: number;
     medianPairDistance?: number;
+    /** 有効セットごとの3投間距離(セット実施順)。値は正規化座標(外側ダブル半径=1.0) */
+    perSet?: {
+      /** 3点の全ペア距離の最大値(=グルーピング径) */
+      maxPairDistance: number;
+      /** 3点の全ペア距離の平均値 */
+      averagePairDistance: number;
+    }[];
+    /** 各セットのグルーピング径(=最大ペア距離)のセッション平均 */
+    averageDiameter?: number;
+    /** 各セットのグルーピング径の中央値 */
+    medianDiameter?: number;
+    /** 前半セット(有効セットを実施順で半分に割った前側)の平均グルーピング径 */
+    firstHalfAverageDiameter?: number;
+    /** 後半セットの平均グルーピング径 */
+    secondHalfAverageDiameter?: number;
+    /** 投順間距離の平均(1→2投目 / 2→3投目 / 1→3投目)。分母は有効セット数 */
+    interDartDistances?: {
+      d1d2?: number;
+      d2d3?: number;
+      d1d3?: number;
+    };
   };
   calculatedAt: ISODateTime;
 }

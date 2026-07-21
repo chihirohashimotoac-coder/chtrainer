@@ -9,9 +9,61 @@ export interface ComparisonCandidate {
   reasons: string[];
 }
 
+function scoreCandidate(
+  base: TrainingSession,
+  session: TrainingSession,
+  baseLabels: string,
+  baseTime: number
+): ComparisonCandidate {
+  let score = 0;
+  const reasons: string[] = [];
+  if (session.trainingMode === base.trainingMode) {
+    score += 1000;
+    reasons.push("同じトレーニングモード");
+  }
+  if (
+    base.scoringStyle != null &&
+    session.scoringStyle === base.scoringStyle
+  ) {
+    score += 500;
+    reasons.push("同じスコアリング形式");
+  }
+  if (targetSignature(session) === baseLabels) {
+    score += 400;
+    reasons.push("同じターゲット構成");
+  }
+  if (session.boardType === base.boardType) {
+    score += 250;
+    reasons.push("同じボード種別");
+  }
+  if (session.inputMethod === base.inputMethod) {
+    score += 120;
+    reasons.push("同じ入力方式");
+  }
+  if (
+    session.equipmentProfileId != null &&
+    session.equipmentProfileId === base.equipmentProfileId
+  ) {
+    score += 100;
+    reasons.push("同じ使用機材");
+  }
+  if (session.status === "completed") {
+    score += 80;
+  } else {
+    reasons.push("中断セッション");
+  }
+  // 日付の近さ: 30日以内で最大50点
+  const days = Math.abs(baseTime - Date.parse(session.startedAt)) / 86400000;
+  score += Math.max(0, 50 - Math.min(50, days * (50 / 30)));
+  return { session, score, reasons };
+}
+
 /**
- * 比較対象候補のスコアリング。
- * 優先順位: 同モード > 同ターゲット構成 > 同ボード種別 > 同スコアリング形式 > 同機材 > 日付が近い
+ * 「おすすめの比較候補」= 同一トレーニングモードのセッションのみ。
+ * モードが異なるセッションは統計の意味が違うため、おすすめには決して含めない
+ * (参考として見たい場合は rankDissimilarCandidates を明示的に使う)。
+ * 同モード内の優先順位: スコアリング形式 > ターゲット構成 > ボード種別 >
+ * 入力方式 > 機材 > 完了状態 > 日付の近さ
  */
 export function rankComparisonCandidates(
   base: TrainingSession,
@@ -20,42 +72,34 @@ export function rankComparisonCandidates(
   const baseLabels = targetSignature(base);
   const baseTime = Date.parse(base.startedAt);
   return others
-    .filter((s) => s.id !== base.id && s.status !== "active")
-    .map((session) => {
-      let score = 0;
-      const reasons: string[] = [];
-      if (session.trainingMode === base.trainingMode) {
-        score += 1000;
-        reasons.push("同じトレーニングモード");
-      }
-      if (targetSignature(session) === baseLabels) {
-        score += 500;
-        reasons.push("同じターゲット構成");
-      }
-      if (session.boardType === base.boardType) {
-        score += 250;
-        reasons.push("同じボード種別");
-      }
-      if (
-        base.scoringStyle != null &&
-        session.scoringStyle === base.scoringStyle
-      ) {
-        score += 150;
-        reasons.push("同じスコアリング形式");
-      }
-      if (
-        session.equipmentProfileId != null &&
-        session.equipmentProfileId === base.equipmentProfileId
-      ) {
-        score += 100;
-        reasons.push("同じ使用機材");
-      }
-      // 日付の近さ: 30日以内で最大50点
-      const days =
-        Math.abs(baseTime - Date.parse(session.startedAt)) / 86400000;
-      score += Math.max(0, 50 - Math.min(50, days * (50 / 30)));
-      return { session, score, reasons };
-    })
+    .filter(
+      (s) =>
+        s.id !== base.id &&
+        s.status !== "active" &&
+        s.trainingMode === base.trainingMode
+    )
+    .map((session) => scoreCandidate(base, session, baseLabels, baseTime))
+    .sort((a, b) => b.score - a.score);
+}
+
+/**
+ * 条件の異なる(=モードが違う)セッションの参考リスト。
+ * ユーザーが明示的に「条件の異なるセッションを表示」を選んだ場合だけ使う。
+ */
+export function rankDissimilarCandidates(
+  base: TrainingSession,
+  others: readonly TrainingSession[]
+): ComparisonCandidate[] {
+  const baseLabels = targetSignature(base);
+  const baseTime = Date.parse(base.startedAt);
+  return others
+    .filter(
+      (s) =>
+        s.id !== base.id &&
+        s.status !== "active" &&
+        s.trainingMode !== base.trainingMode
+    )
+    .map((session) => scoreCandidate(base, session, baseLabels, baseTime))
     .sort((a, b) => b.score - a.score);
 }
 

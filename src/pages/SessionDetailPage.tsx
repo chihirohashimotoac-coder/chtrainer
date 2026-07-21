@@ -75,9 +75,21 @@ export default function SessionDetailPage() {
                 : s.sessions.active}
           </strong>
         </div>
+        {session.status !== "completed" && stats && (
+          <div className="list-row">
+            <span className="muted">{s.sessions.progress}</span>
+            <strong>
+              {stats.completedThrows}/{session.plannedThrowCount}
+              {s.sets.throwsUnit}
+              {session.plannedThrowCount > 0
+                ? ` (${((stats.completedThrows / session.plannedThrowCount) * 100).toFixed(1)}%)`
+                : ""}
+            </strong>
+          </div>
+        )}
       </div>
 
-      {stats && <StatsView stats={stats} />}
+      {stats && <StatsView stats={stats} session={session} />}
 
       <div className="action-bar">
         {session.status === "aborted" && (

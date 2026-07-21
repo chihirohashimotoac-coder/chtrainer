@@ -73,7 +73,8 @@ export default function ExportPage() {
         .reverse();
       const trend: { session: TrainingSession; stats: SessionStatistics }[] = [];
       for (const x of sameMode) {
-        const st = await getStatistics(x.id);
+        const st =
+          (await getStatistics(x.id)) ?? (await recalcAndSaveStatistics(x.id));
         if (st) trend.push({ session: x, stats: st });
       }
       setRecentSessions(trend);
@@ -82,7 +83,9 @@ export default function ExportPage() {
       const map: Record<string, SessionStatistics> = {};
       await Promise.all(
         ranked.map(async (r) => {
-          const st = await getStatistics(r.session.id);
+          const st =
+            (await getStatistics(r.session.id)) ??
+            (await recalcAndSaveStatistics(r.session.id));
           if (st) map[r.session.id] = st;
         })
       );
@@ -125,16 +128,47 @@ export default function ExportPage() {
   };
 
   const baseName = `darts-${timestampForFilename(session.startedAt)}`;
-  const estimatedFullChars = 14000 + throws.length * 350;
-  const recommendAttachment = estimatedFullChars > MAX_EMBEDDED_MARKDOWN_CHARS;
+  // 実際の生成処理(buildAnalysisMarkdown)そのものでプレビュー文字数を算出する。
+  // 生成は純粋関数なので、形式・比較対象の変更に即時追随し予測誤差が出ない。
+  const previewChars = (() => {
+    try {
+      const comparisons = selectedCompare
+        .map((cid) => {
+          const cand = candidates.find((x) => x.id === cid);
+          const st = candidateStats[cid];
+          return cand && st ? { session: cand, stats: st } : null;
+        })
+        .filter((x): x is { session: TrainingSession; stats: SessionStatistics } => x != null);
+      return buildAnalysisMarkdown({
+        session,
+        player,
+        equipment,
+        stats,
+        throws,
+        setNumberOf,
+        comparisons,
+        recentSessions,
+        embedAllThrows: embedAll,
+      }).length;
+    } catch {
+      return undefined;
+    }
+  })();
+  const recommendAttachment =
+    embedAll && previewChars != null && previewChars > MAX_EMBEDDED_MARKDOWN_CHARS;
 
   return (
     <div>
       <h1>{s.export.title}</h1>
       <p className="muted small">{s.export.usage}</p>
+      {previewChars != null && (
+        <p className="muted small">
+          この形式で生成されるテキスト: {previewChars.toLocaleString()}文字 / 概算トークン数（参考値）: {Math.ceil(previewChars / 4).toLocaleString()}
+        </p>
+      )}
       {recommendAttachment && (
         <div className="info-box">
-          全投擲埋め込みは約{estimatedFullChars.toLocaleString()}文字になる見込みです。生成前から「集計＋CSV別添」を推奨します。
+          全投擲埋め込みは{previewChars.toLocaleString()}文字になります。「集計＋CSV別添」を推奨します。
         </div>
       )}
 

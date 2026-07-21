@@ -148,8 +148,8 @@ export default function ThrowsPage() {
               <th>{s.throws.hit}</th>
               <th>X</th>
               <th>Y</th>
-              <th>{s.result.averageErrorDistance}</th>
-              <th>{s.result.mainMissDirection}</th>
+              <th>{s.throws.errorDistance}</th>
+              <th>{s.throws.missDirection}</th>
               <th></th>
             </tr>
           </thead>

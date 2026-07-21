@@ -71,6 +71,44 @@ describe("ExportPage (AI出力設定)", () => {
     expect((await screen.findAllByText("コピーしました")).length).toBeGreaterThan(0);
   });
 
+  it("生成前の文字数表示は実際の生成結果と一致する(両形式)", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    // 全データ埋め込み形式: 生成前表示を読む
+    await screen.findByRole("button", { name: /全データ埋め込み/ });
+    const before = screen.getByText(/この形式で生成されるテキスト/).textContent!;
+    const predicted = Number(
+      /この形式で生成されるテキスト: ([\d,]+)文字/.exec(before)![1]!.replace(/,/g, "")
+    );
+    await user.click(screen.getByRole("button", { name: "AIへ渡すテキストを生成" }));
+    await screen.findByText(/# ダーツ投擲データ分析依頼/);
+    const actualText = screen
+      .getAllByText(/文字 \/ 概算トークン数/)
+      .map((el) => el.textContent!)
+      .find((text) => !text.includes("この形式"))!;
+    const actual = Number(/([\d,]+)文字/.exec(actualText)![1]!.replace(/,/g, ""));
+    // 実生成と同一ロジックのため一致する(±5%どころか完全一致)
+    expect(predicted).toBe(actual);
+
+    // 集計+CSV別添形式へ切り替えると予測が即時更新される
+    await user.click(screen.getByRole("button", { name: /集計\+CSV別添/ }));
+    const summaryBefore = screen.getByText(/この形式で生成されるテキスト/).textContent!;
+    const summaryPredicted = Number(
+      /この形式で生成されるテキスト: ([\d,]+)文字/.exec(summaryBefore)![1]!.replace(/,/g, "")
+    );
+    expect(summaryPredicted).toBeLessThan(predicted);
+    await user.click(screen.getByRole("button", { name: "AIへ渡すテキストを生成" }));
+    await screen.findByText(/CSVファイルを参照/);
+    const summaryActualText = screen
+      .getAllByText(/文字 \/ 概算トークン数/)
+      .map((el) => el.textContent!)
+      .find((text) => !text.includes("この形式"))!;
+    const summaryActual = Number(
+      /([\d,]+)文字/.exec(summaryActualText)![1]!.replace(/,/g, "")
+    );
+    expect(summaryPredicted).toBe(summaryActual);
+  });
+
   it("集計+CSV別添方式へ切り替えられる", async () => {
     const user = userEvent.setup();
     renderPage();
