@@ -146,14 +146,12 @@ export default function SessionPage() {
       next[dartIndex] = landing;
       return next;
     });
-    // 矢速は任意入力: 入力画面で値があれば反映、空なら既存値(確認画面での入力)を保持
-    if (speedKmh != null) {
-      setSpeeds((prev) => {
-        const next = [...prev];
-        next[dartIndex] = String(speedKmh);
-        return next;
-      });
-    }
+    // 矢速は入力画面の欄をプリフィルした上で、確定時の欄の値を常に正とする(空で確定=クリア)
+    setSpeeds((prev) => {
+      const next = [...prev];
+      next[dartIndex] = speedKmh != null ? String(speedKmh) : "";
+      return next;
+    });
     if (returnToConfirm) {
       setReturnToConfirm(false);
       setStep("confirm");
@@ -172,6 +170,11 @@ export default function SessionPage() {
       setLandings((prev) => {
         const next = [...prev];
         next[prevIndex] = null;
+        return next;
+      });
+      setSpeeds((prev) => {
+        const next = [...prev];
+        next[prevIndex] = "";
         return next;
       });
       setDartIndex(prevIndex);
@@ -412,12 +415,14 @@ export default function SessionPage() {
               key={`${setNumber}-${dartIndex}`}
               profile={profile}
               onConfirm={handleLanding}
+              initialSpeedKmh={parseSpeedKmh(speeds[dartIndex] ?? "")}
             />
           ) : (
             <SimpleInput
               key={`${setNumber}-${dartIndex}`}
               profile={profile}
               onConfirm={handleLanding}
+              initialSpeedKmh={parseSpeedKmh(speeds[dartIndex] ?? "")}
             />
           )}
         </div>

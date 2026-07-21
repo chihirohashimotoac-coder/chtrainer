@@ -152,6 +152,32 @@ describe("SessionPage (3投入力フロー)", () => {
     expect(throws[2]?.speedKmh).toBe(58.9);
   });
 
+  it("Undoで戻ると入力済みの矢速もクリアされる", async () => {
+    const user = userEvent.setup();
+    renderSession();
+    await user.click(
+      await screen.findByRole("button", { name: "3投の結果を入力" })
+    );
+    // 1投目: 矢速付きで確定した後、Undoで戻って矢速なしで再入力
+    await user.click(await screen.findByRole("button", { name: "トリプル" }));
+    await user.click(screen.getByRole("button", { name: "20" }));
+    await user.type(screen.getByLabelText("矢速(km/h・任意)"), "64.2");
+    await user.click(screen.getByRole("button", { name: "確認" }));
+    expect(await screen.findByText("2投目")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "取り消す" }));
+    expect(await screen.findByText("1投目")).toBeInTheDocument();
+    await inputT20(user);
+    await inputT20(user);
+    await inputT20(user);
+    expect(await screen.findByText("セット内容の確認")).toBeInTheDocument();
+    const speedInputs = screen.getAllByLabelText("矢速(km/h・任意)");
+    expect((speedInputs[0] as HTMLInputElement).value).toBe("");
+    await user.click(screen.getByRole("button", { name: "次のセットへ" }));
+    expect(await screen.findByText("中間の自己評価")).toBeInTheDocument();
+    const throws = await getThrows(sessionId);
+    expect(throws[0]?.speedKmh).toBeUndefined();
+  });
+
   it("Undoで前の投擲へ戻れる", async () => {
     const user = userEvent.setup();
     renderSession();

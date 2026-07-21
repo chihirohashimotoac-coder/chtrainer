@@ -25,17 +25,26 @@ interface SimpleInputProps {
   profile: BoardProfile;
   onConfirm: (landing: LandingRecord, speedKmh?: number) => void;
   onCancel?: () => void;
+  /** 矢速欄の初期値(再入力・編集時に既存値をプリフィル) */
+  initialSpeedKmh?: number;
 }
 
 /**
  * 簡易入力: ナンバー+リング種別を選択する。
  * 座標はエリア代表点による概算値として記録される。
  */
-export function SimpleInput({ profile, onConfirm, onCancel }: SimpleInputProps) {
+export function SimpleInput({
+  profile,
+  onConfirm,
+  onCancel,
+  initialSpeedKmh,
+}: SimpleInputProps) {
   const s = t();
   const [number, setNumber] = useState<number | null>(null);
   const [ring, setRing] = useState<Ring | "outboard_menu" | null>(null);
-  const [speed, setSpeed] = useState("");
+  const [speed, setSpeed] = useState(
+    initialSpeedKmh != null ? String(initialSpeedKmh) : ""
+  );
 
   /** 任意入力の矢速を添えて着弾を確定する */
   const emit = (landing: LandingRecord) =>

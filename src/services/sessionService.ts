@@ -134,11 +134,13 @@ export async function recalcAndSaveStatistics(
 /**
  * 投擲1件の着弾を修正する。
  * 派生データを再計算し、次の投擲の previousThrowWasHit も更新、統計を再計算する。
+ * speedKmh: undefined=既存値を保持 / null=クリア / 数値=更新
  */
 export async function updateThrowLanding(
   record: ThrowRecord,
   landing: LandingRecord,
-  note?: string
+  note?: string,
+  speedKmh?: number | null
 ): Promise<void> {
   const session = await getSession(record.sessionId);
   if (!session) throw new Error("session not found");
@@ -157,6 +159,7 @@ export async function updateThrowLanding(
     landing,
     derived,
     ...(note !== undefined ? { note: note || undefined } : {}),
+    ...(speedKmh !== undefined ? { speedKmh: speedKmh ?? undefined } : {}),
   };
   await saveThrow(updated);
   const next = index >= 0 ? all[index + 1] : undefined;
