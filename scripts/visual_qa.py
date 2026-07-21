@@ -14,7 +14,7 @@ def seed_completed_session(page) -> None:
     page.evaluate(
         """
         async () => {
-          const open = indexedDB.open("darts-training-analyzer", 3);
+          const open = indexedDB.open("darts-training-analyzer");
           const db = await new Promise((resolve, reject) => {
             open.onsuccess = () => resolve(open.result);
             open.onerror = () => reject(open.error);
@@ -92,7 +92,7 @@ def seed_active_session(page) -> None:
     page.evaluate(
         """
         async () => {
-          const open = indexedDB.open("darts-training-analyzer", 3);
+          const open = indexedDB.open("darts-training-analyzer");
           const db = await new Promise((resolve, reject) => { open.onsuccess = () => resolve(open.result); open.onerror = () => reject(open.error); });
           const t20 = { id: "qa-active-t20", label: "T20", type: "exact_segment", number: 20, ring: "triple", evaluationKind: "cricket_marks", representativePoint: { x: 0, y: 0.6 } };
           const t19 = { ...t20, id: "qa-active-t19", label: "T19", number: 19 };
