@@ -3,6 +3,7 @@ import type {
   EquipmentSnapshot,
   MissDirection,
   PlayerProfile,
+  PlayerRating,
   ScoringStyle,
   SelfAssessment,
   SessionStatistics,
@@ -14,6 +15,11 @@ import {
   type EffectivePatternMetadata,
 } from "./patternMetadata";
 import { compareStatistics } from "../domain/compare";
+import {
+  RATING_SYSTEM_LABELS,
+  formatRating,
+  ratingRowOf,
+} from "../config/ratingTable";
 import { ALL_DIRECTIONS } from "../domain/stats";
 import { fmtNum, fmtNumDiff, fmtRate, fmtRateDiff, fmtDateTime, fmtElapsed } from "../utils/format";
 import { t } from "../i18n/ja";
@@ -784,6 +790,51 @@ function comparisonSection(input: MarkdownInput): string {
   return out.join("\n");
 }
 
+/**
+ * 自己申告レーティングを、AIが具体的に扱える参照(PPD・MPRの目安と目標ギャップ)へ変換する。
+ * これは判定ではなく、非公式の対応表に基づく参考値であることを明記する。
+ */
+function ratingReferenceLines(
+  current: PlayerRating | undefined,
+  target: PlayerRating | undefined
+): string[] {
+  if (!current && !target) return [];
+  const out: string[] = [];
+  const describe = (label: string, r: PlayerRating): string | undefined => {
+    const row = ratingRowOf(r);
+    if (!row) return `- ${label}: ${formatRating(r)}`;
+    const cls = row.className ? ` / クラス ${row.className}` : "";
+    return `- ${label}: ${formatRating(r)}(目安 PPD ${row.ppd.toFixed(2)}以上・MPR ${row.mpr.toFixed(2)}以上${cls})`;
+  };
+  if (current) {
+    const line = describe("現在レーティング", current);
+    if (line) out.push(line);
+  }
+  if (target) {
+    const line = describe("目標レーティング", target);
+    if (line) out.push(line);
+  }
+  // 同一体系で現在<目標なら、目標到達に必要なPPD・MPRの上げ幅を明示する
+  if (
+    current &&
+    target &&
+    current.system === target.system &&
+    target.value > current.value
+  ) {
+    const cur = ratingRowOf(current);
+    const tgt = ratingRowOf(target);
+    if (cur && tgt) {
+      out.push(
+        `- 目標までの目安ギャップ(${RATING_SYSTEM_LABELS[current.system]} Rt${current.value}→Rt${target.value}): 01のPPDを約+${(tgt.ppd - cur.ppd).toFixed(2)}、クリケットのMPRを約+${(tgt.mpr - cur.mpr).toFixed(2)}`
+      );
+    }
+  }
+  out.push(
+    "- ※レーティングの目安値(PPD・MPR)は非公式の対応表による参考値であり、公式の算出方式とは異なります。断定に使わず、目標との距離感の把握に用いてください。実戦のPPD・MPRは試合データがなければ算出できないため、練習データからは近い指標(クリケットのマーク換算=MPR相当等)で傾向を述べてください。"
+  );
+  return out;
+}
+
 /** AI分析依頼Markdown全体を生成する */
 export function buildAnalysisMarkdown(input: MarkdownInput): string {
   const { session, stats } = input;
@@ -797,6 +848,8 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
         goal: snapshot.goal,
         currentLevel: snapshot.currentLevel,
         targetLevel: snapshot.targetLevel,
+        currentRating: snapshot.currentRating,
+        targetRating: snapshot.targetRating,
         concern: snapshot.concern,
       }
     : input.player;
@@ -865,9 +918,17 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   out.push(`- 今日の調子: ${CONDITION_LABELS[session.dailyCondition] ?? session.dailyCondition}${session.dailyConditionNote ? ` (${session.dailyConditionNote})` : ""}`);
   if (player) out.push(`- プレイヤー: ${player.displayName}`);
   out.push("");
+  const ratingLines = ratingReferenceLines(
+    player?.currentRating,
+    player?.targetRating
+  );
   if (
     player &&
-    (player.goal || player.currentLevel || player.targetLevel || player.concern)
+    (player.goal ||
+      player.currentLevel ||
+      player.targetLevel ||
+      player.concern ||
+      ratingLines.length > 0)
   ) {
     out.push("## ユーザーの目的・背景");
     out.push("");
@@ -875,6 +936,7 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
       out.push(`- 目的: ${GOAL_LABELS[player.goal] ?? player.goal}`);
     if (player.currentLevel) out.push(`- 現在のレベル(自己申告): ${player.currentLevel}`);
     if (player.targetLevel) out.push(`- 目標レベル: ${player.targetLevel}`);
+    for (const line of ratingLines) out.push(line);
     if (player.concern) out.push(`- 主な悩み・重点課題: ${player.concern}`);
     out.push("");
     out.push("回答は、この目的と悩みに直接応える形で優先順位をつけてください。一般論よりも、この目的に対する具体的な示唆を優先してください。");
