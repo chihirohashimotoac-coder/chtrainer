@@ -141,6 +141,21 @@ export function isExactHit(target: TargetDefinition, landing: LandingRecord): bo
   }
 }
 
+/**
+ * グルーピング専用(命中を評価しない)ターゲットかどうか。
+ * evaluationKind=grouping_only、または evaluationKind 未設定の旧R1データ
+ * (エリアを持たない custom_selection のフリーターゲット)を判定する。
+ * CSV・Markdown・統計・派生計算で命中判定項目をN/A扱いするための共通判定。
+ */
+export function isGroupingOnlyTarget(target: TargetDefinition): boolean {
+  if (target.evaluationKind != null) {
+    return target.evaluationKind === "grouping_only";
+  }
+  return (
+    target.type === "custom_selection" && (target.areas?.length ?? 0) === 0
+  );
+}
+
 /** 2つのターゲットが同一の狙いかどうか(ターゲット変更判定用) */
 export function isSameTarget(a: TargetDefinition, b: TargetDefinition): boolean {
   if (a.type !== b.type) return false;

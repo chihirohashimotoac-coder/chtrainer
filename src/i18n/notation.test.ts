@@ -10,8 +10,14 @@ describe("表記の回帰確認(ファットブル)", () => {
     expect(JSON.stringify(ja)).not.toContain("フィットブル");
   });
 
-  it("スコアリング形式の表示名はファットブル(内部値fit_bullは互換のため維持)", () => {
-    expect(ja.preSession.scoringStyles.fit_bull).toBe("ファットブル");
+  it("スコアリング形式の正式値はfat_bull・表示名はファットブル", () => {
+    expect(ja.preSession.scoringStyles.fat_bull).toBe("ファットブル");
+    expect(scoringStyleLabel("fat_bull")).toContain("ファットブル");
+    expect(scoringStyleLabel("fat_bull")).not.toContain("フィットブル");
+  });
+
+  it("旧値fit_bullは後方互換としてファットブルの表示ラベルへ正規化する", () => {
+    // fit_bull は旧誤記由来の保存値。表示・出力では fat_bull(ファットブル)扱い。
     expect(scoringStyleLabel("fit_bull")).toContain("ファットブル");
     expect(scoringStyleLabel("fit_bull")).not.toContain("フィットブル");
   });

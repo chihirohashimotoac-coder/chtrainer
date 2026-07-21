@@ -273,7 +273,7 @@ export const ja = {
     boardType: "ボード種別",
     scoringStyle: "スコアリング形式",
     scoringStyles: {
-      fit_bull: "ファットブル",
+      fat_bull: "ファットブル",
       separate_bull: "セパレートブル",
       steel: "ハード",
     },
@@ -429,6 +429,8 @@ export const ja = {
     groupingMaxPair: "最大ペア距離",
     groupingFirstHalf: "前半の平均グルーピング径",
     groupingSecondHalf: "後半の平均グルーピング径",
+    groupingHalfInfo:
+      "前半・後半は、3投すべてに詳細座標がある有効セットだけをセット番号順に並べ、その有効セット列を半分に分割します(奇数のときは前半を1セット多く)。各区間はセット内最大距離(グルーピング径)の平均で、対象セットが0件ならN/Aです。",
     groupingD1D2: "投順間距離 1→2投目(平均)",
     groupingD2D3: "投順間距離 2→3投目(平均)",
     groupingD1D3: "投順間距離 1→3投目(平均)",
@@ -523,7 +525,14 @@ export const ja = {
     baseSession: "基準セッション",
     selectSessions: "比較対象を選択",
     candidates: "おすすめの比較候補",
-    warning: "比較条件が大きく異なります(モードまたはボード種別が不一致)。参考程度にしてください。",
+    warningLead: "比較条件が異なります:",
+    diffMode: "トレーニングモードが異なります",
+    diffBoard: "ボード種別が異なります",
+    diffInput: "入力方式が異なります",
+    diffScoring: "スコアリング形式が異なります",
+    diffScoringNote:
+      "R2・R3の出題ターゲットが異なるため、同一ターゲット単位で比較してください。",
+    warningTail: "参考程度にしてください。",
     hitRateDiff: "命中率の差",
     errorDiff: "平均誤差距離の差",
     byOrderDiff: "投擲順別の差",

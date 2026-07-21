@@ -3,6 +3,7 @@ import { fixtureSession, handComputedThrows } from "../test/fixtures";
 import { calculateStatistics } from "./stats";
 import {
   compareStatistics,
+  comparisonMismatches,
   isDissimilarComparison,
   rankComparisonCandidates,
   rankDissimilarCandidates,
@@ -12,13 +13,13 @@ describe("比較候補のスコアリング形式対応", () => {
   const base = fixtureSession({
     id: "base",
     trainingMode: "skill_check",
-    scoringStyle: "fit_bull",
+    scoringStyle: "fat_bull",
     startedAt: "2026-07-01T10:00:00.000Z",
   });
   const sameStyle = fixtureSession({
     id: "same-style",
     trainingMode: "skill_check",
-    scoringStyle: "fit_bull",
+    scoringStyle: "fat_bull",
     startedAt: "2026-06-01T10:00:00.000Z",
   });
   const otherStyle = fixtureSession({
@@ -86,6 +87,91 @@ describe("比較候補のモード互換性", () => {
   it("異モードは明示用の別リスト(rankDissimilarCandidates)に出る", () => {
     const dissimilar = rankDissimilarCandidates(base, [zeroOne, sameMode]);
     expect(dissimilar.map((r) => r.session.id)).toEqual(["other-01"]);
+  });
+});
+
+describe("比較条件の差分判定(警告理由の正確化)", () => {
+  const base = fixtureSession({
+    id: "cmp-base",
+    trainingMode: "skill_check",
+    boardType: "soft",
+    inputMethod: "coordinate",
+    scoringStyle: "fat_bull",
+  });
+
+  it("同モード・同ボード・同入力で形式だけ異なる場合、形式差だけを検出する", () => {
+    const other = fixtureSession({
+      id: "cmp-scoring",
+      trainingMode: "skill_check",
+      boardType: "soft",
+      inputMethod: "coordinate",
+      scoringStyle: "separate_bull",
+    });
+    const m = comparisonMismatches(base, other);
+    expect(m).toEqual({ mode: false, board: false, input: false, scoring: true });
+    expect(isDissimilarComparison(base, other)).toBe(true);
+  });
+
+  it("モード差・ボード差・入力方式差を個別に検出する", () => {
+    expect(
+      comparisonMismatches(
+        base,
+        fixtureSession({ trainingMode: "zero_one", boardType: "soft", inputMethod: "coordinate", scoringStyle: "fat_bull" })
+      )
+    ).toEqual({ mode: true, board: false, input: false, scoring: false });
+    expect(
+      comparisonMismatches(
+        base,
+        fixtureSession({ trainingMode: "skill_check", boardType: "steel", inputMethod: "coordinate", scoringStyle: "fat_bull" })
+      )
+    ).toEqual({ mode: false, board: true, input: false, scoring: false });
+    expect(
+      comparisonMismatches(
+        base,
+        fixtureSession({ trainingMode: "skill_check", boardType: "soft", inputMethod: "simple", scoringStyle: "fat_bull" })
+      )
+    ).toEqual({ mode: false, board: false, input: true, scoring: false });
+  });
+
+  it("複数条件の差分を同時に列挙する", () => {
+    const other = fixtureSession({
+      trainingMode: "zero_one",
+      boardType: "steel",
+      inputMethod: "simple",
+      scoringStyle: "steel",
+    });
+    expect(comparisonMismatches(base, other)).toEqual({
+      mode: true,
+      board: true,
+      input: true,
+      scoring: true,
+    });
+  });
+
+  it("完全同条件では不一致を出さない", () => {
+    const same = fixtureSession({
+      id: "cmp-same",
+      trainingMode: "skill_check",
+      boardType: "soft",
+      inputMethod: "coordinate",
+      scoringStyle: "fat_bull",
+    });
+    expect(comparisonMismatches(base, same)).toEqual({
+      mode: false,
+      board: false,
+      input: false,
+      scoring: false,
+    });
+    expect(isDissimilarComparison(base, same)).toBe(false);
+  });
+
+  it("片方が形式未記録(旧データ)なら形式差では非類似としない", () => {
+    const legacy = fixtureSession({
+      trainingMode: "skill_check",
+      boardType: "soft",
+      inputMethod: "coordinate",
+    });
+    expect(comparisonMismatches(base, legacy).scoring).toBe(false);
   });
 });
 

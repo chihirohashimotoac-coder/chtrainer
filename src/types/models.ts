@@ -64,12 +64,36 @@ export type RandomVariant = "balanced" | "pure";
 
 /**
  * 01のスコアリング形式。ブルのルールにより「削りの主役ターゲット」が変わる。
- *  fit_bull: ファットブル(ブル一律50点のソフト) → 主役はBull
+ *  fat_bull: ファットブル(ブル一律50点のソフト) → 主役はBull
  *  separate_bull: インナー50/アウター25のソフト → 主役はT20
  *  steel: ハード(スティール) → 主役はT20
- * (fit_bull は旧表記「フィットブル」時代からの保存キーのため変更しない)
+ *
+ * 正式な機械可読値は fat_bull。旧誤記「フィットブル」に由来する fit_bull は
+ * 過去に保存されたデータ(IndexedDB・旧バックアップ・旧CSV)にのみ存在し、
+ * 読み込み時に normalizeScoringStyle で fat_bull へ正規化する(後方互換専用)。
  */
-export type ScoringStyle = "fit_bull" | "separate_bull" | "steel";
+export type ScoringStyle = "fat_bull" | "separate_bull" | "steel";
+
+/** 旧値 fit_bull を含む、外部から読み込む可能性のあるスコアリング形式の入力型。 */
+export type LegacyScoringStyle = ScoringStyle | "fit_bull";
+
+/**
+ * スコアリング形式を正式な機械可読値へ正規化する(後方互換専用)。
+ * 旧誤記由来の fit_bull を fat_bull として受理する。それ以外はそのまま返す。
+ * 未設定(undefined)は未設定のまま返す。
+ */
+export function normalizeScoringStyle(
+  style: LegacyScoringStyle | string | undefined
+): ScoringStyle | undefined {
+  if (style == null) return undefined;
+  if (style === "fit_bull") return "fat_bull";
+  if (style === "fat_bull" || style === "separate_bull" || style === "steel") {
+    return style;
+  }
+  // 未知の値は破棄せず、型としては ScoringStyle を要求する箇所以外で扱えるよう
+  // そのまま返す(呼び出し側の既存フォールバックに委ねる)。
+  return style as ScoringStyle;
+}
 
 /** 永続データ共通のスキーマバージョン */
 export const SCHEMA_VERSION = 3;
@@ -383,7 +407,11 @@ export interface LandingRecord {
 }
 
 export interface DerivedRecord {
-  exactHit: boolean;
+  /**
+   * 完全命中したか。命中を評価しないラウンド(grouping_only)では undefined (N/A)。
+   * 表示層は undefined を必ず N/A として扱い、false(ミス)と混同してはならない。
+   */
+  exactHit?: boolean;
   errorX?: number;
   errorY?: number;
   errorDistance?: number;

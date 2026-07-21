@@ -69,7 +69,7 @@ export const SOFT_BOARD: BoardProfile = {
     inputAreaOuter: 1.3,
   },
   segmentOrder: STANDARD_SEGMENT_ORDER,
-  defaultScoringStyle: "fit_bull",
+  defaultScoringStyle: "fat_bull",
 };
 
 export const BOARD_PROFILES: BoardProfile[] = [STEEL_BOARD, SOFT_BOARD];

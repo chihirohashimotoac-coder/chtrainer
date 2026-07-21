@@ -91,6 +91,7 @@ export function StatsView({
                   <span className="muted">{s.result.groupingSecondHalf}</span>
                   <strong>{fmtNum(grouping.secondHalfAverageDiameter)}</strong>
                 </div>
+                <p className="muted small">{s.result.groupingHalfInfo}</p>
                 <div className="list-row">
                   <span className="muted">{s.result.groupingD1D2}</span>
                   <strong>{fmtNum(grouping.interDartDistances?.d1d2)}</strong>

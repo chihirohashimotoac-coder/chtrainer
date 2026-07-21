@@ -11,6 +11,12 @@ export interface VersionEntry {
 
 export const VERSION_HISTORY: VersionEntry[] = [
   {
+    version: "1.25.0",
+    date: "2026-07-21",
+    summary:
+      "QA修正: スキル診断R1(grouping_only)は命中を評価しないため、前投命中(previous_throw_was_hit / previous_throw_was_hit_in_same_set)と命中をCSV・Markdown・JSON・AI依頼文すべてでN/Aに統一(ミス誤認を防止)。スコアリング形式の機械可読値を正式値fat_bullに統一し、旧値fit_bullは読み込み・旧バックアップ・旧CSV互換として受理(DB移行と読込時正規化)。比較警告を実データの差分(モード/ボード/入力方式/スコアリング形式)から正確に表示し、形式差は同一ターゲット単位での比較を案内。R1グルーピングの前半・後半の定義(有効セットをセット番号順に分割、奇数は前半に多く配分)を結果画面・統計ヘルプ・AI依頼文で明示",
+  },
+  {
     version: "1.24.0",
     date: "2026-07-21",
     summary:
