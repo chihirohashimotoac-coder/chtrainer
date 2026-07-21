@@ -65,6 +65,9 @@ export default function SessionsPage() {
     <div>
       <div className="top-bar">
         <h1>{s.sessions.title}</h1>
+        <Link className="btn small" to="/history/trend">
+          {s.trend.title}
+        </Link>
         <button
           className="btn small"
           onClick={() => setShowFilters((v) => !v)}

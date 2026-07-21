@@ -18,6 +18,7 @@ import ResultPage from "./pages/ResultPage";
 import ThrowsPage from "./pages/ThrowsPage";
 import SessionsPage from "./pages/SessionsPage";
 import SessionDetailPage from "./pages/SessionDetailPage";
+import TrendPage from "./pages/TrendPage";
 import ComparePage from "./pages/ComparePage";
 import ExportPage from "./pages/ExportPage";
 import BackupPage from "./pages/BackupPage";
@@ -53,7 +54,8 @@ export default function App() {
   const s = t();
   const inSession = location.pathname.startsWith("/train/session");
   const wideLayout = /^\/session\/[^/]+\/(result|throws|compare|export)$/.test(location.pathname)
-    || location.pathname === "/history";
+    || location.pathname === "/history"
+    || location.pathname === "/history/trend";
   return (
     <AppProvider>
       <SetupProvider>
@@ -76,6 +78,7 @@ export default function App() {
             <Route path="/train/pre" element={<PreSessionPage />} />
             <Route path="/train/session" element={<SessionPage />} />
             <Route path="/history" element={<SessionsPage />} />
+            <Route path="/history/trend" element={<TrendPage />} />
             <Route path="/session/:id" element={<SessionDetailPage />} />
             <Route path="/session/:id/result" element={<ResultPage />} />
             <Route path="/session/:id/throws" element={<ThrowsPage />} />
