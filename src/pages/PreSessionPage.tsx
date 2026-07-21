@@ -128,6 +128,8 @@ export default function PreSessionPage() {
         ...(player?.goal ? { goal: player.goal } : {}),
         ...(player?.currentLevel ? { currentLevel: player.currentLevel } : {}),
         ...(player?.targetLevel ? { targetLevel: player.targetLevel } : {}),
+        ...(player?.currentRating ? { currentRating: player.currentRating } : {}),
+        ...(player?.targetRating ? { targetRating: player.targetRating } : {}),
         ...(player?.concern ? { concern: player.concern } : {}),
         dartColors: player?.dartColors ?? ["#ef4444", "#3b82f6", "#22c55e"],
         boardType,

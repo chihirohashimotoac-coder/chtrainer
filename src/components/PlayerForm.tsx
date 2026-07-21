@@ -5,11 +5,14 @@ import type {
   GripPosition,
   PlayerGoal,
   PlayerProfile,
+  PlayerRating,
+  RatingSystem,
   Stance,
   TakebackDepth,
   ThrowingTempo,
 } from "../types/models";
 import { SCHEMA_VERSION } from "../types/models";
+import { ratingValuesOf } from "../config/ratingTable";
 import { newId, nowIso } from "../utils/id";
 import { t } from "../i18n/ja";
 
@@ -55,7 +58,20 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
   const [goal, setGoal] = useState<PlayerGoal | "">(initial?.goal ?? "");
   const [currentLevel, setCurrentLevel] = useState(initial?.currentLevel ?? "");
   const [targetLevel, setTargetLevel] = useState(initial?.targetLevel ?? "");
+  const [ratingSystem, setRatingSystem] = useState<RatingSystem | "">(
+    initial?.currentRating?.system ?? initial?.targetRating?.system ?? ""
+  );
+  const [currentRatingValue, setCurrentRatingValue] = useState<string>(
+    initial?.currentRating != null ? String(initial.currentRating.value) : ""
+  );
+  const [targetRatingValue, setTargetRatingValue] = useState<string>(
+    initial?.targetRating != null ? String(initial.targetRating.value) : ""
+  );
   const [concern, setConcern] = useState(initial?.concern ?? "");
+
+  const ratingOptions = ratingSystem ? ratingValuesOf(ratingSystem) : [];
+  const makeRating = (value: string): PlayerRating | undefined =>
+    ratingSystem && value ? { system: ratingSystem, value: Number(value) } : undefined;
   const [dartColors, setDartColors] = useState<[string, string, string]>(
     initial?.dartColors ?? ["#e05252", "#4f7fe0", "#f0f0f0"]
   );
@@ -88,6 +104,8 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
       ...(goal ? { goal } : {}),
       ...(currentLevel.trim() ? { currentLevel: currentLevel.trim() } : {}),
       ...(targetLevel.trim() ? { targetLevel: targetLevel.trim() } : {}),
+      ...(makeRating(currentRatingValue) ? { currentRating: makeRating(currentRatingValue) } : {}),
+      ...(makeRating(targetRatingValue) ? { targetRating: makeRating(targetRatingValue) } : {}),
       ...(concern.trim() ? { concern: concern.trim() } : {}),
       // 以下はセッション開始前設定で毎回選択するため、UIからは設定しない
       // (既存プロファイルの値、または既定値を保持)
@@ -296,6 +314,62 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
             maxLength={60}
           />
         </label>
+
+        <fieldset style={{ margin: "0.6rem 0" }}>
+          <legend>{s.player.ratingSection}</legend>
+          <p className="muted small" style={{ margin: "0 0 0.4rem" }}>
+            {s.player.ratingHint}
+          </p>
+          <label className="field" htmlFor="player-rating-system">
+            <span>{s.player.ratingSystem}</span>
+            <select
+              id="player-rating-system"
+              value={ratingSystem}
+              onChange={(e) => {
+                const next = e.target.value as RatingSystem | "";
+                setRatingSystem(next);
+                // 体系を変えると値の意味が変わるため選択済みの値はリセット
+                setCurrentRatingValue("");
+                setTargetRatingValue("");
+              }}
+            >
+              <option value="">{s.player.ratingSystemNone}</option>
+              <option value="darts_live">DARTSLIVE</option>
+              <option value="phoenix">PHOENIX</option>
+            </select>
+          </label>
+          {ratingSystem && (
+            <div className="choice-row" style={{ gap: "0.6rem" }}>
+              <label className="field" htmlFor="player-current-rating" style={{ flex: 1 }}>
+                <span>{s.player.currentRating}</span>
+                <select
+                  id="player-current-rating"
+                  value={currentRatingValue}
+                  onChange={(e) => setCurrentRatingValue(e.target.value)}
+                >
+                  <option value="">{s.player.ratingUnset}</option>
+                  {ratingOptions.map((v) => (
+                    <option key={v} value={v}>{`Rt${v}`}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="field" htmlFor="player-target-rating" style={{ flex: 1 }}>
+                <span>{s.player.targetRating}</span>
+                <select
+                  id="player-target-rating"
+                  value={targetRatingValue}
+                  onChange={(e) => setTargetRatingValue(e.target.value)}
+                >
+                  <option value="">{s.player.ratingUnset}</option>
+                  {ratingOptions.map((v) => (
+                    <option key={v} value={v}>{`Rt${v}`}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+        </fieldset>
+
         <label className="field">
           <span>{s.player.concern}</span>
           <textarea
