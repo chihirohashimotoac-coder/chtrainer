@@ -106,10 +106,10 @@ function computeDartOrderStats(throws: readonly ThrowRecord[]): DartOrderStats {
     throwCount: count,
     scorableThrows: scorable.length,
     hitCount: hits,
-    hitRate: scorable.length > 0 ? hits / scorable.length : 0,
+    hitRate: scorable.length > 0 ? hits / scorable.length : undefined,
     averageErrorDistance: mean(errorDistances(throws)),
     outboardCount: outs,
-    outboardRate: count > 0 ? outs / count : 0,
+    outboardRate: count > 0 ? outs / count : undefined,
   };
 }
 
@@ -146,10 +146,10 @@ function computeHalfStats(throws: readonly ThrowRecord[]): HalfStats {
     throwCount: count,
     scorableThrows: scorable.length,
     hitCount: hits,
-    hitRate: scorable.length > 0 ? hits / scorable.length : 0,
+    hitRate: scorable.length > 0 ? hits / scorable.length : undefined,
     averageErrorDistance: mean(errorDistances(throws)),
     outboardCount: outs,
-    outboardRate: count > 0 ? outs / count : 0,
+    outboardRate: count > 0 ? outs / count : undefined,
   };
 }
 
@@ -227,9 +227,9 @@ export function calculateCricketStats(
   const withinSet = marks.filter(({ t }) => t.derived.sameSetAsPrevious === true);
   return {
     totalMarks,
-    marksPerThreeDarts: count > 0 ? (totalMarks / count) * 3 : 0,
-    effectiveMarkRate: count > 0 ? (count - noMarkCount) / count : 0,
-    noMarkRate: count > 0 ? noMarkCount / count : 0,
+    marksPerThreeDarts: count > 0 ? (totalMarks / count) * 3 : undefined,
+    effectiveMarkRate: count > 0 ? (count - noMarkCount) / count : undefined,
+    noMarkRate: count > 0 ? noMarkCount / count : undefined,
     byTarget,
     continuity: {
       sameTarget: transitionStats(
@@ -318,7 +318,6 @@ export function calculateStatistics(
         label,
         throwCount: 0,
         hitCount: 0,
-        hitRate: 0,
         outboardCount: 0,
       };
     }
@@ -332,7 +331,8 @@ export function calculateStatistics(
       throwCount: group.length,
       scorableThrows: targetScorable.length,
       hitCount,
-      hitRate: targetScorable.length > 0 ? hitCount / targetScorable.length : 0,
+      hitRate:
+        targetScorable.length > 0 ? hitCount / targetScorable.length : undefined,
       averageErrorDistance: mean(errorDistances(group)),
       mainMissDirection: mainDirection(group),
       outboardCount: group.filter(isOutboard).length,
@@ -423,12 +423,13 @@ export function calculateStatistics(
     completedThrows: completed,
     exactHits: hits,
     scorableThrows: scorable.length,
-    scorableExactHitRate: scorable.length > 0 ? hits / scorable.length : 0,
+    scorableExactHitRate:
+      scorable.length > 0 ? hits / scorable.length : undefined,
     groupingOnlyThrows: groupingOnly.length,
     errorSampleCount: computeErrorStats(sorted).sampleCount,
-    exactHitRate: scorable.length > 0 ? hits / scorable.length : 0,
+    exactHitRate: scorable.length > 0 ? hits / scorable.length : undefined,
     outboardCount: outboards,
-    outboardRate: completed > 0 ? outboards / completed : 0,
+    outboardRate: completed > 0 ? outboards / completed : undefined,
     bounceOutCount: bounceOuts,
     coordinateInputCount: coordinateThrows.length,
     approximateInputCount: approxThrows.length,

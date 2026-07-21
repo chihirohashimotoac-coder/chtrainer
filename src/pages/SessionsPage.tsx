@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { getSessions, getStatistics } from "../db/db";
+import { recalcAndSaveStatistics } from "../services/sessionService";
 import { modeLabel } from "../export/markdown";
 import { targetSignature } from "../domain/compare";
 import { useApp } from "../state/AppContext";
@@ -29,7 +30,9 @@ export default function SessionsPage() {
       const map: Record<string, SessionStatistics> = {};
       await Promise.all(
         all.map(async (sess) => {
-          const st = await getStatistics(sess.id);
+          const st =
+            (await getStatistics(sess.id)) ??
+            (await recalcAndSaveStatistics(sess.id));
           if (st) map[sess.id] = st;
         })
       );
@@ -162,9 +165,11 @@ export default function SessionsPage() {
               </span>
             </div>
             <div className="muted small">
-              {fmtDateTime(sess.startedAt)} / {sess.plannedThrowCount}
-              {s.sets.throwsUnit} /{" "}
-              {sess.boardType === "steel" ? s.player.steel : s.player.soft}
+              {fmtDateTime(sess.startedAt)} /{" "}
+              {sess.status === "completed"
+                ? `${sess.plannedThrowCount}${s.sets.throwsUnit}`
+                : `${st?.completedThrows ?? 0}/${sess.plannedThrowCount}${s.sets.throwsUnit} (${s.sessions.progress} ${sess.plannedThrowCount > 0 ? (((st?.completedThrows ?? 0) / sess.plannedThrowCount) * 100).toFixed(1) : "0.0"}%)`}{" "}
+              / {sess.boardType === "steel" ? s.player.steel : s.player.soft}
               {equipment ? ` / ${equipment.name}` : ""}
             </div>
             <div className="muted small">

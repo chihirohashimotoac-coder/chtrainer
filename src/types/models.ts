@@ -419,14 +419,21 @@ export interface ThrowRecord {
   updatedAt: ISODateTime;
 }
 
+/**
+ * 率の値は「分母が0(未測定)の場合は undefined」で統一する。
+ * 0 は「分母が存在し、該当が0件だった」ことだけを意味する。
+ * 表示層は undefined を必ず N/A として扱い、0% と混同してはならない。
+ */
 export interface DartOrderStats {
   throwCount: number;
   scorableThrows?: number;
   hitCount: number;
-  hitRate: number;
+  /** 命中率。命中判定対象数が0なら undefined (N/A) */
+  hitRate?: number;
   averageErrorDistance?: number;
   outboardCount: number;
-  outboardRate: number;
+  /** アウトボード率。投擲数0なら undefined (N/A) */
+  outboardRate?: number;
 }
 
 export interface TargetStats {
@@ -434,7 +441,8 @@ export interface TargetStats {
   throwCount: number;
   scorableThrows?: number;
   hitCount: number;
-  hitRate: number;
+  /** 命中率。命中判定対象数が0なら undefined (N/A) */
+  hitRate?: number;
   averageErrorDistance?: number;
   mainMissDirection?: MissDirection;
   outboardCount: number;
@@ -444,10 +452,12 @@ export interface HalfStats {
   throwCount: number;
   scorableThrows?: number;
   hitCount: number;
-  hitRate: number;
+  /** 命中率。命中判定対象数が0なら undefined (N/A) */
+  hitRate?: number;
   averageErrorDistance?: number;
   outboardCount: number;
-  outboardRate: number;
+  /** アウトボード率。投擲数0なら undefined (N/A) */
+  outboardRate?: number;
 }
 
 export interface ErrorStats {
@@ -462,12 +472,12 @@ export interface ErrorStats {
 /** クリケット専用統計 (マーク換算: T=3, D=2, S=1, IB=2, OB=1) */
 export interface CricketStats {
   totalMarks: number;
-  /** 3投あたり平均マーク (MPR相当) */
-  marksPerThreeDarts: number;
-  /** 1マーク以上を得た投擲の割合 (有効マーク率) */
-  effectiveMarkRate: number;
-  /** マーク0の投擲の割合 */
-  noMarkRate: number;
+  /** 3投あたり平均マーク (MPR相当)。投擲数0なら undefined (N/A) */
+  marksPerThreeDarts?: number;
+  /** 1マーク以上を得た投擲の割合 (有効マーク率)。投擲数0なら undefined (N/A) */
+  effectiveMarkRate?: number;
+  /** マーク0の投擲の割合。投擲数0なら undefined (N/A) */
+  noMarkRate?: number;
   byTarget: Record<
     string,
     {
@@ -511,12 +521,15 @@ export interface SessionStatistics {
   completedThrows: number;
   exactHits: number;
   scorableThrows: number;
-  scorableExactHitRate: number;
+  /** 命中判定対象の完全命中率。命中判定対象数が0なら undefined (N/A) */
+  scorableExactHitRate?: number;
   groupingOnlyThrows: number;
   errorSampleCount: number;
-  exactHitRate: number;
+  /** 完全命中率。命中判定対象数が0なら undefined (N/A) */
+  exactHitRate?: number;
   outboardCount: number;
-  outboardRate: number;
+  /** アウトボード率。完了投擲数が0なら undefined (N/A) */
+  outboardRate?: number;
   bounceOutCount: number;
   coordinateInputCount: number;
   approximateInputCount: number;

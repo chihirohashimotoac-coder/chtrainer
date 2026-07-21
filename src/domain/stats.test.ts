@@ -8,9 +8,10 @@ import {
   median,
 } from "./stats";
 import { buildThrows, handComputedThrows, mixedPrecisionThrows, T20, D16 } from "../test/fixtures";
-import { STEEL_BOARD } from "../config/boardProfiles";
+import { SOFT_BOARD, STEEL_BOARD } from "../config/boardProfiles";
 import { landingFromCoordinate, landingFromSegment } from "../domain/landing";
 import { makeBullAnyTarget, makeSegmentTarget } from "../domain/targets";
+import { buildSkillCheckPlan } from "../domain/skillCheck";
 
 describe("mean / median (平均値・中央値)", () => {
   it("空配列はundefined", () => {
@@ -215,12 +216,51 @@ describe("01統計", () => {
 });
 
 describe("データ不足時の挙動", () => {
-  it("0投でもゼロ除算しない", () => {
+  it("0投なら率は0ではなくN/A(undefined)になる", () => {
     const stats = calculateStatistics("session-1", 60, []);
-    expect(stats.exactHitRate).toBe(0);
-    expect(stats.outboardRate).toBe(0);
+    expect(stats.exactHitRate).toBeUndefined();
+    expect(stats.scorableExactHitRate).toBeUndefined();
+    expect(stats.outboardRate).toBeUndefined();
     expect(stats.coordinateError.averageErrorDistance).toBeUndefined();
     expect(stats.firstHalf.throwCount).toBe(0);
+    expect(stats.firstHalf.hitRate).toBeUndefined();
+    expect(stats.byDartInSet["1"].hitRate).toBeUndefined();
+  });
+
+  it("命中判定対象が存在し命中0件なら0.0%(0)を返す", () => {
+    // T20狙いで全投S5へ外れる10投
+    const missSpecs = Array.from({ length: 10 }, () => ({
+      target: T20,
+      landing: landingFromSegment("outer_single", STEEL_BOARD, 5),
+    }));
+    const stats = calculateStatistics(
+      "session-zero",
+      10,
+      buildThrows(missSpecs, 10)
+    );
+    expect(stats.scorableThrows).toBe(10);
+    expect(stats.exactHitRate).toBe(0);
+  });
+
+  it("R1グルーピングのみのセッションは命中率が全レイヤーでN/Aになる", () => {
+    const groupingTarget = buildSkillCheckPlan(SOFT_BOARD, 20)[0]![0]!;
+    const throws = buildThrows(
+      [0, 0.01, -0.01].map((x) => ({
+        target: groupingTarget,
+        setId: "r1-set",
+        landing: landingFromCoordinate(x, 0, SOFT_BOARD),
+      })),
+      3
+    );
+    const stats = calculateStatistics("session-r1", 60, throws, "skill_check");
+    expect(stats.scorableThrows).toBe(0);
+    expect(stats.exactHitRate).toBeUndefined();
+    expect(stats.byDartInSet["1"].hitRate).toBeUndefined();
+    expect(stats.firstHalf.hitRate).toBeUndefined();
+    expect(stats.secondHalf.hitRate).toBeUndefined();
+    for (const label of Object.keys(stats.byTarget)) {
+      expect(stats.byTarget[label]?.hitRate).toBeUndefined();
+    }
   });
 
   it("セッション中断(計画60投中6投)でも統計が出る", () => {

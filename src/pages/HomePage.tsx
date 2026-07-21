@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApp } from "../state/AppContext";
 import { useSetup } from "../state/SetupContext";
-import { getSessions, getStatistics } from "../db/db";
-import { finishSession } from "../services/sessionService";
+import { getSessions, getStatistics, getThrowSets } from "../db/db";
+import { finishSession, recalcAndSaveStatistics } from "../services/sessionService";
 import type { TrainingSession } from "../types/models";
 import { fmtDateTime, fmtRate } from "../utils/format";
 import { modeLabel } from "../export/markdown";
@@ -16,7 +16,13 @@ export default function HomePage() {
   const { reset } = useSetup();
   const navigate = useNavigate();
   const [recent, setRecent] = useState<
-    { session: TrainingSession; hitRate?: number }[]
+    {
+      session: TrainingSession;
+      hitRate?: number;
+      hasStats: boolean;
+      completedSets: number;
+      completedThrows: number;
+    }[]
   >([]);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
 
@@ -26,10 +32,19 @@ export default function HomePage() {
         .filter((x) => x.status !== "active")
         .slice(0, 5);
       const withStats = await Promise.all(
-        sessions.map(async (session) => ({
-          session,
-          hitRate: (await getStatistics(session.id))?.exactHitRate,
-        }))
+        sessions.map(async (session) => {
+          const stats =
+            (await getStatistics(session.id)) ??
+            (await recalcAndSaveStatistics(session.id));
+          const sets = await getThrowSets(session.id);
+          return {
+            session,
+            hitRate: stats?.exactHitRate,
+            hasStats: stats != null && stats.scorableThrows > 0,
+            completedSets: sets.length,
+            completedThrows: stats?.completedThrows ?? 0,
+          };
+        })
       );
       setRecent(withStats);
     })();
@@ -93,7 +108,7 @@ export default function HomePage() {
 
           <h2>{s.home.recentSessions}</h2>
           {recent.length === 0 && <p className="muted">{s.home.noSessions}</p>}
-          {recent.map(({ session, hitRate }) => (
+          {recent.map(({ session, hitRate, hasStats, completedSets, completedThrows }) => (
             <Link
               key={session.id}
               to={`/session/${session.id}`}
@@ -102,16 +117,19 @@ export default function HomePage() {
             >
               <div className="list-row">
                 <strong>{modeLabel(session.trainingMode)}</strong>
-                <span className={`badge${session.status === "completed" ? " ok" : ""}`}>
+                <span className={`badge${session.status === "completed" ? " ok" : " warn"}`}>
                   {session.status === "completed"
                     ? s.sessions.completed
                     : s.sessions.aborted}
                 </span>
               </div>
               <div className="muted small">
-                {fmtDateTime(session.startedAt)} / {session.setCount}
-                {s.sets.setsUnit} / {s.sessions.hitRate}{" "}
-                {hitRate != null ? fmtRate(hitRate) : "N/A"}
+                {fmtDateTime(session.startedAt)} /{" "}
+                {session.status === "completed"
+                  ? `${session.setCount}${s.sets.setsUnit}`
+                  : `${completedSets}/${session.setCount}${s.sets.setsUnit} (${completedThrows}/${session.plannedThrowCount}${s.sets.throwsUnit})`}{" "}
+                / {s.sessions.hitRate}{" "}
+                {hasStats && hitRate != null ? fmtRate(hitRate) : "N/A"}
               </div>
             </Link>
           ))}
