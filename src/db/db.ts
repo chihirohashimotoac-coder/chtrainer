@@ -15,7 +15,7 @@ import type { BackupData } from "../export/backup";
 import { nowIso } from "../utils/id";
 
 /** IndexedDBのスキーマバージョン(データ移行用) */
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const DB_NAME = "darts-training-analyzer";
 
 interface DtaDb extends DBSchema {
@@ -71,6 +71,11 @@ export function getDb(): Promise<IDBPDatabase<DtaDb>> {
         if (oldVersion < 3) {
           // v3 adds per-target scorable counts and detailed grouping reasons.
           // Statistics are derived, so only the cache is cleared; source throws remain untouched.
+          void transaction.objectStore("sessionStatistics").clear();
+        }
+        if (oldVersion < 4) {
+          // v4: 分母0の率は0ではなくundefined(N/A)へ変更。旧キャッシュには
+          // hitRate:0が焼き込まれているため破棄し、参照時に再計算させる。
           void transaction.objectStore("sessionStatistics").clear();
         }
       },
@@ -210,16 +215,26 @@ export async function saveThrowSet(set: ThrowSet): Promise<void> {
   await db.put("throwSets", set);
 }
 
+/**
+ * 1セット分を単一トランザクションで保存する。
+ * 同じ set.id の既存投擲は先に削除してから挿入するため、
+ * 同一セットを何度保存しても二重保存にならない(置換保存)。
+ */
 export async function saveCommittedSet(
   set: ThrowSet,
   records: ThrowRecord[]
 ): Promise<void> {
   const db = await getDb();
   const tx = db.transaction(["throwSets", "throws"], "readwrite");
+  const throwStore = tx.objectStore("throws");
+  const existing = await throwStore.index("bySession").getAll(set.sessionId);
+  for (const record of existing) {
+    if (record.setId === set.id) await throwStore.delete(record.id);
+  }
   await tx.objectStore("throwSets").put(set);
   const now = nowIso();
   for (const r of records) {
-    await tx.objectStore("throws").put({ ...r, updatedAt: now });
+    await throwStore.put({ ...r, updatedAt: now });
   }
   await tx.done;
 }

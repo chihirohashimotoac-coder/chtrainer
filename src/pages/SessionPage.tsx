@@ -64,6 +64,10 @@ export default function SessionPage() {
   const [confirmAbort, setConfirmAbort] = useState(false);
   const [saving, setSaving] = useState(false);
   const setStartedAt = useRef<string | undefined>(undefined);
+  /** 現在のセットが自動保存済みの場合、そのセットID(置換保存に使う) */
+  const savedSetIdRef = useRef<string | null>(null);
+  /** 自動保存を直列化するチェーン(操作順のままIndexedDBへ反映する) */
+  const persistChain = useRef<Promise<void>>(Promise.resolve());
 
   // セッション復元
   useEffect(() => {
@@ -139,19 +143,64 @@ export default function SessionPage() {
     setStep("input");
   };
 
+  /**
+   * 3投が揃った時点でセット全体をIndexedDBへ保存する(確認画面表示と同時)。
+   * 「次のセットへ」は保存トリガーではなく、以後の修正は同じセットIDへの
+   * 置換保存になるため二重保存されない。中断・リロード後もこの保存が残る。
+   */
+  const persistSet = (
+    landingsArr: (LandingRecord | null)[],
+    notesArr: string[],
+    speedsArr: string[]
+  ): Promise<void> => {
+    const current = session;
+    if (!current || landingsArr.some((l) => l == null)) {
+      return persistChain.current;
+    }
+    const darts: PendingDart[] = landingsArr.map((landing, i) => {
+      const speedKmh = parseSpeedKmh(speedsArr[i] ?? "");
+      return {
+        dartInSet: (i + 1) as 1 | 2 | 3,
+        target: targets[i] as TargetDefinition,
+        landing: landing as LandingRecord,
+        ...(speedKmh != null ? { speedKmh } : {}),
+        ...(notesArr[i]?.trim() ? { note: notesArr[i]?.trim() } : {}),
+      };
+    });
+    const startedAt = setStartedAt.current;
+    const capturedSetNumber = setNumber;
+    persistChain.current = persistChain.current
+      .then(async () => {
+        const { throwSet } = await commitSet(
+          current,
+          capturedSetNumber,
+          darts,
+          player,
+          startedAt,
+          savedSetIdRef.current ?? undefined
+        );
+        savedSetIdRef.current = throwSet.id;
+      })
+      .catch(() => {
+        // 自動保存の失敗はここでは通知しない(確定操作時に再試行され、
+        // そこで失敗すればエラー表示される)
+      });
+    return persistChain.current;
+  };
+
   const handleLanding = (landing: LandingRecord, speedKmh?: number) => {
     feedback(player);
-    setLandings((prev) => {
-      const next = [...prev];
-      next[dartIndex] = landing;
-      return next;
-    });
+    const nextLandings = [...landings];
+    nextLandings[dartIndex] = landing;
+    setLandings(nextLandings);
     // 矢速は入力画面の欄をプリフィルした上で、確定時の欄の値を常に正とする(空で確定=クリア)
-    setSpeeds((prev) => {
-      const next = [...prev];
-      next[dartIndex] = speedKmh != null ? String(speedKmh) : "";
-      return next;
-    });
+    const nextSpeeds = [...speeds];
+    nextSpeeds[dartIndex] = speedKmh != null ? String(speedKmh) : "";
+    setSpeeds(nextSpeeds);
+    // 3投揃った時点で保存(修正で戻ってきた場合も最終状態で置換保存)
+    if (nextLandings.every((l) => l != null)) {
+      void persistSet(nextLandings, notes, nextSpeeds);
+    }
     if (returnToConfirm) {
       setReturnToConfirm(false);
       setStep("confirm");
@@ -187,27 +236,24 @@ export default function SessionPage() {
   };
 
   const swapDarts = (i: number, j: number) => {
-    setLandings((prev) => {
-      const next = [...prev];
-      const a = next[i] ?? null;
-      next[i] = next[j] ?? null;
-      next[j] = a;
-      return next;
-    });
-    setNotes((prev) => {
-      const next = [...prev];
-      const a = next[i] ?? "";
-      next[i] = next[j] ?? "";
-      next[j] = a;
-      return next;
-    });
-    setSpeeds((prev) => {
-      const next = [...prev];
-      const a = next[i] ?? "";
-      next[i] = next[j] ?? "";
-      next[j] = a;
-      return next;
-    });
+    const nextLandings = [...landings];
+    const landingTmp = nextLandings[i] ?? null;
+    nextLandings[i] = nextLandings[j] ?? null;
+    nextLandings[j] = landingTmp;
+    setLandings(nextLandings);
+    const nextNotes = [...notes];
+    const noteTmp = nextNotes[i] ?? "";
+    nextNotes[i] = nextNotes[j] ?? "";
+    nextNotes[j] = noteTmp;
+    setNotes(nextNotes);
+    const nextSpeeds = [...speeds];
+    const speedTmp = nextSpeeds[i] ?? "";
+    nextSpeeds[i] = nextSpeeds[j] ?? "";
+    nextSpeeds[j] = speedTmp;
+    setSpeeds(nextSpeeds);
+    if (nextLandings.every((l) => l != null)) {
+      void persistSet(nextLandings, nextNotes, nextSpeeds);
+    }
   };
 
   const commitCurrentSet = useCallback(async () => {
@@ -215,6 +261,8 @@ export default function SessionPage() {
     if (landings.some((l) => l == null)) return;
     setSaving(true);
     try {
+      // 進行中の自動保存を待ってから、メモ・矢速を含む最終状態で置換保存する
+      await persistChain.current;
       const darts: PendingDart[] = landings.map((landing, i) => {
         const speedKmh = parseSpeedKmh(speeds[i] ?? "");
         return {
@@ -225,7 +273,15 @@ export default function SessionPage() {
           ...(notes[i]?.trim() ? { note: notes[i]?.trim() } : {}),
         };
       });
-      await commitSet(session, setNumber, darts, player, setStartedAt.current);
+      await commitSet(
+        session,
+        setNumber,
+        darts,
+        player,
+        setStartedAt.current,
+        savedSetIdRef.current ?? undefined
+      );
+      savedSetIdRef.current = null;
       setStartedAt.current = undefined;
       setLandings([null, null, null]);
       setNotes(["", "", ""]);
@@ -558,6 +614,13 @@ export default function SessionPage() {
         cancelLabel={s.throwing.continueSession}
         onCancel={() => setConfirmAbort(false)}
         onConfirm={async () => {
+          // 確認画面まで進んだセット(3投確定済み)は、メモ・矢速の最終状態を
+          // 含めて保存してから中断する。未確定の投擲(1〜2投のみ)は保存しない。
+          if (landings.every((l) => l != null)) {
+            await persistSet(landings, notes, speeds);
+          } else {
+            await persistChain.current;
+          }
           await finishSession(session, "aborted");
           await refresh();
           navigate("/", { replace: true });
