@@ -257,6 +257,7 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
         <div className="choice-row">
           {(
             [
+              ["rating", s.player.goalRating],
               ["recovery", s.player.goalRecovery],
               ["zero_one", s.player.goalZeroOne],
               ["cricket", s.player.goalCricket],

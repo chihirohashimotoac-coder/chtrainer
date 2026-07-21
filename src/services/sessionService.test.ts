@@ -145,6 +145,37 @@ describe("session commit/export flow", () => {
     expect(after[3]?.derived.previousThrowWasHitInSameSet).toBeUndefined();
   });
 
+  it("updateThrowLandingで矢速を保持・更新・クリアできる", async () => {
+    const session = fixtureSession({ id: "session-speed-edit" });
+    await saveSession(session);
+    const rep = T20.representativePoint;
+    await commitSet(
+      session,
+      1,
+      [1, 2, 3].map((dartInSet) => ({
+        dartInSet: dartInSet as 1 | 2 | 3,
+        target: T20,
+        landing: landingFromCoordinate(rep.x, rep.y, STEEL_BOARD),
+        ...(dartInSet === 1 ? { speedKmh: 60 } : {}),
+      })),
+      undefined,
+      session.startedAt
+    );
+    const landing = landingFromCoordinate(rep.x, rep.y, STEEL_BOARD);
+    let throws = await getThrows(session.id);
+    // undefined = 既存値を保持
+    await updateThrowLanding(throws[0]!, landing);
+    // 数値 = 更新
+    await updateThrowLanding(throws[1]!, landing, undefined, 58.9);
+    throws = await getThrows(session.id);
+    expect(throws[0]?.speedKmh).toBe(60);
+    expect(throws[1]?.speedKmh).toBe(58.9);
+    // null = クリア
+    await updateThrowLanding(throws[0]!, landing, undefined, null);
+    throws = await getThrows(session.id);
+    expect(throws[0]?.speedKmh).toBeUndefined();
+  });
+
   it("R4切替パターンのメタデータと同一セット内切替だけを保存する", async () => {
     const targets = buildSkillCheckPlan(SOFT_BOARD, 20, "fit_bull")[17]!;
     const session = fixtureSession({
