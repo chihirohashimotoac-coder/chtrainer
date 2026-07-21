@@ -11,7 +11,7 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     for (let i = 0; i < 5; i++) {
       expect(plan[i]?.every((x) => x.label === "1投目の着弾点")).toBe(true);
     }
-    // R2: スコアリング (フィットブルの主役はBull)
+    // R2: スコアリング (ファットブルの主役はBull)
     for (let i = 5; i < 10; i++) {
       expect(plan[i]?.every((x) => x.label === "Bull")).toBe(true);
     }
@@ -79,7 +79,7 @@ describe("buildSkillCheckPlan (スキル診断の4ラウンド)", () => {
     }
   });
 
-  it("scoringStyle省略時はフィットブル配列(旧バージョン互換)", () => {
+  it("scoringStyle省略時はファットブル配列(旧バージョン互換)", () => {
     const legacy = buildSkillCheckPlan(STEEL_BOARD, 20);
     expect(legacy[5]?.[0]?.label).toBe("Bull");
     expect(legacy[10]?.map((x) => x.label)).toEqual(["T20", "T20", "T20"]);

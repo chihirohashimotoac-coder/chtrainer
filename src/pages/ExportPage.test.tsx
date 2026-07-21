@@ -22,7 +22,7 @@ describe("ExportPage (AI出力設定)", () => {
     );
   }
 
-  it("全データ埋め込みが標準で、Markdownを生成できる", async () => {
+  it("全データ埋め込みが標準で、AIへ渡すテキストを生成できる", async () => {
     const user = userEvent.setup();
     renderPage();
     const embedButton = await screen.findByRole("button", {
@@ -30,11 +30,11 @@ describe("ExportPage (AI出力設定)", () => {
     });
     expect(embedButton).toHaveAttribute("aria-pressed", "true");
 
-    await user.click(screen.getByRole("button", { name: "Markdownを生成" }));
+    await user.click(screen.getByRole("button", { name: "AIへ渡すテキストを生成" }));
     const preview = await screen.findByText(/# ダーツ投擲データ分析依頼/);
     expect(preview).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Markdownをコピー" })
+      screen.getByRole("button", { name: "AIへ渡すテキストをコピー" })
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: ".mdファイルを保存" })
@@ -56,10 +56,10 @@ describe("ExportPage (AI出力設定)", () => {
     });
     renderPage();
     await user.click(
-      await screen.findByRole("button", { name: "Markdownを生成" })
+      await screen.findByRole("button", { name: "AIへ渡すテキストを生成" })
     );
     await screen.findByText(/# ダーツ投擲データ分析依頼/);
-    await user.click(screen.getByRole("button", { name: "Markdownをコピー" }));
+    await user.click(screen.getByRole("button", { name: "AIへ渡すテキストをコピー" }));
 
     expect(writeText).toHaveBeenCalledTimes(1);
     const copied = writeText.mock.calls[0]?.[0] as string;
@@ -79,7 +79,7 @@ describe("ExportPage (AI出力設定)", () => {
     });
     await user.click(summaryButton);
     expect(summaryButton).toHaveAttribute("aria-pressed", "true");
-    await user.click(screen.getByRole("button", { name: "Markdownを生成" }));
+    await user.click(screen.getByRole("button", { name: "AIへ渡すテキストを生成" }));
     const preview = await screen.findByText(/CSVファイルを参照/);
     expect(preview).toBeInTheDocument();
   });

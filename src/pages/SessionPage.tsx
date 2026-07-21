@@ -22,6 +22,7 @@ import type {
   TrainingSession,
 } from "../types/models";
 import { nowIso } from "../utils/id";
+import { parseSpeedKmh } from "../utils/speed";
 import { t } from "../i18n/ja";
 
 type Step = "throw" | "input" | "confirm" | "middle" | "after";
@@ -56,6 +57,7 @@ export default function SessionPage() {
     null,
   ]);
   const [notes, setNotes] = useState<string[]>(["", "", ""]);
+  const [speeds, setSpeeds] = useState<string[]>(["", "", ""]);
   const [returnToConfirm, setReturnToConfirm] = useState(false);
   const [inputMethod, setInputMethod] = useState<InputMethod>("coordinate");
   const [swapSelection, setSwapSelection] = useState<number | null>(null);
@@ -137,11 +139,17 @@ export default function SessionPage() {
     setStep("input");
   };
 
-  const handleLanding = (landing: LandingRecord) => {
+  const handleLanding = (landing: LandingRecord, speedKmh?: number) => {
     feedback(player);
     setLandings((prev) => {
       const next = [...prev];
       next[dartIndex] = landing;
+      return next;
+    });
+    // 矢速は入力画面の欄をプリフィルした上で、確定時の欄の値を常に正とする(空で確定=クリア)
+    setSpeeds((prev) => {
+      const next = [...prev];
+      next[dartIndex] = speedKmh != null ? String(speedKmh) : "";
       return next;
     });
     if (returnToConfirm) {
@@ -162,6 +170,11 @@ export default function SessionPage() {
       setLandings((prev) => {
         const next = [...prev];
         next[prevIndex] = null;
+        return next;
+      });
+      setSpeeds((prev) => {
+        const next = [...prev];
+        next[prevIndex] = "";
         return next;
       });
       setDartIndex(prevIndex);
@@ -188,6 +201,13 @@ export default function SessionPage() {
       next[j] = a;
       return next;
     });
+    setSpeeds((prev) => {
+      const next = [...prev];
+      const a = next[i] ?? "";
+      next[i] = next[j] ?? "";
+      next[j] = a;
+      return next;
+    });
   };
 
   const commitCurrentSet = useCallback(async () => {
@@ -195,16 +215,21 @@ export default function SessionPage() {
     if (landings.some((l) => l == null)) return;
     setSaving(true);
     try {
-      const darts: PendingDart[] = landings.map((landing, i) => ({
-        dartInSet: (i + 1) as 1 | 2 | 3,
-        target: targets[i] as TargetDefinition,
-        landing: landing as LandingRecord,
-        ...(notes[i]?.trim() ? { note: notes[i]?.trim() } : {}),
-      }));
+      const darts: PendingDart[] = landings.map((landing, i) => {
+        const speedKmh = parseSpeedKmh(speeds[i] ?? "");
+        return {
+          dartInSet: (i + 1) as 1 | 2 | 3,
+          target: targets[i] as TargetDefinition,
+          landing: landing as LandingRecord,
+          ...(speedKmh != null ? { speedKmh } : {}),
+          ...(notes[i]?.trim() ? { note: notes[i]?.trim() } : {}),
+        };
+      });
       await commitSet(session, setNumber, darts, player, setStartedAt.current);
       setStartedAt.current = undefined;
       setLandings([null, null, null]);
       setNotes(["", "", ""]);
+      setSpeeds(["", "", ""]);
       setSwapSelection(null);
 
       const isMiddle =
@@ -234,7 +259,7 @@ export default function SessionPage() {
     } finally {
       setSaving(false);
     }
-  }, [session, saving, landings, notes, targets, setNumber, player, s]);
+  }, [session, saving, landings, notes, speeds, targets, setNumber, player, s]);
 
   const submitMiddleAssessment = async (assessment: SelfAssessment) => {
     if (!session) return;
@@ -390,12 +415,14 @@ export default function SessionPage() {
               key={`${setNumber}-${dartIndex}`}
               profile={profile}
               onConfirm={handleLanding}
+              initialSpeedKmh={parseSpeedKmh(speeds[dartIndex] ?? "")}
             />
           ) : (
             <SimpleInput
               key={`${setNumber}-${dartIndex}`}
               profile={profile}
               onConfirm={handleLanding}
+              initialSpeedKmh={parseSpeedKmh(speeds[dartIndex] ?? "")}
             />
           )}
         </div>
@@ -454,6 +481,24 @@ export default function SessionPage() {
                     {s.throwing.swapOrder}
                   </button>
                 </div>
+                <label className="field" style={{ margin: "0.3rem 0 0" }}>
+                  <span>{s.input.speedLabel}</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step={0.1}
+                    value={speeds[i] ?? ""}
+                    onChange={(e) =>
+                      setSpeeds((prev) => {
+                        const next = [...prev];
+                        next[i] = e.target.value;
+                        return next;
+                      })
+                    }
+                    placeholder={s.input.speedPlaceholder}
+                  />
+                </label>
                 <label className="field" style={{ margin: "0.3rem 0 0" }}>
                   <span>{s.throwing.throwNote}</span>
                   <input
