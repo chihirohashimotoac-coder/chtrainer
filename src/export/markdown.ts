@@ -164,7 +164,7 @@ export const ANALYSIS_INSTRUCTIONS = `以下の順序とルールで、統計の
 ## 分析の姿勢
 - この分析の最大の価値は、ユーザー自身が気付いていないクセ・傾向・改善点を発見して言語化することです。投順、方向偏り、前後半、修正パターン、自己評価との関係などデータを多角的に突き合わせ、本人が言語化していないパターンを積極的に指摘してください。
 - 重要な指摘は【事実】【統計的傾向】【原因仮説】【分析不能】【追加確認が必要】のいずれかで区別してください。区別した上で、原因仮説は「最有力はどれか」まで順位付けして踏み込んでください。候補の大量列挙や両論併記で終わらせないでください。
-- 重要な指摘には「確からしさ：高 / 中 / 低」を添えてください(複数セット・複数指標で再現=高、1指標で一定傾向=中、少数または間接推測=低)。必要データがない項目だけを分析不能としてください。
+- 重要な指摘には「確からしさ：高 / 中 / 低」を添えてください(複数セット・複数指標で再現=高、1指標で一定傾向=中、少数または間接推測=低)。必要データがない項目だけを分析不能としてください。標本が少ない項目(目安: 該当10投未満、または中断により予定の半分未満しか完了していない)は、傾向が明確でも確からしさを「高」にしないでください。
 - 数値の裏付けがない指摘を、データがあるかのように述べないでください。統計的有意差は計算していないため「有意」という表現は使わず、1投しかない個別ターゲットを得意・不得意と評価しないでください。
 
 ## 安全ルール(必ず守る)
@@ -172,9 +172,10 @@ export const ANALYSIS_INSTRUCTIONS = `以下の順序とルールで、統計の
 - 復調・イップス目的では命中結果と投擲プロセスを分け、止まらず投げられた割合を主要改善指標として時間変化を評価してください。不安またはリリースの怖さが悪化した場合は休憩か終了を提案し、リリース動作を過度に意識させる提案は禁止です。
 - 初心者、または専門用語に詳しくないと記録されたユーザーには、専門用語の初出時に括弧で短い説明を付けてください。
 - プロ志望でも練習データだけからプロレベル、試験合格、公式レーティングの到達を保証しないでください。試合データがなければ試合適応性は追加質問または分析不能としてください。
+- 練習データ(Bull反復・同一ターゲット反復・スキル診断等)から公式のPPD・MPR・レーティング(DARTSLIVE/PHOENIX等)を算出・宣言しないでください。これらは実戦のゲーム集計でのみ決まります。レーティングの参考値が依頼文に含まれる場合も、非公式の距離感としてのみ扱ってください。
 
 ## データの読み方
-- 着弾データだけからグリップ、スタンス、肘、肩、手首、リリース等の真因を確定することはできません。フォーム情報も自己申告の背景です。ただし萎縮する必要はありません。最有力の身体・動作要因を原因仮説として明確に挙げ、本人がそれを確認する方法までセットで示してください。
+- 着弾データだけからグリップ、スタンス、肘、肩、手首、リリース等の真因を確定することはできません。フォーム情報も自己申告の背景です。身体・動作要因を原因仮説として挙げるのは、対応するデータ上の傾向(例: 3投目だけ右へ散る)と、本人が確認できる方法(例: 3投目のグリップ圧を意識して15投比較)をセットで示せる場合だけにしてください。その条件を満たす場合は萎縮せず、最有力の仮説として明確に挙げてください。フォーム情報が記録されていない場合は、身体・動作要因を断定的な最有力候補にせず、まず追加質問で確認してください。
 - same_set_as_previous=false の投擲はセットの1投目です。前投命中・ターゲット変更をN/Aとして、切替直後、命中後の再現性、ミス後の修正の集計から除外してください。previous_throw_was_hit_in_same_set と same_target_as_previous を優先してください。
 - クリケットのセット内切替サンプルが0投なら、切替能力を推測せず「未測定・分析不能」と明記してください。
 - 矢速(speed_kmh)は任意入力のため一部の投擲にしか記録されていない場合があります。記録がある投擲だけで、矢速と精度・ミス方向・投順の関係を傾向として分析してください。
@@ -440,7 +441,7 @@ function errorStatsBlock(
   return lines.join("\n");
 }
 
-function statsSection(stats: SessionStatistics): string {
+function statsSection(stats: SessionStatistics, session?: TrainingSession): string {
   const s = stats;
   const out: string[] = [];
   const overallScorable = s.scorableThrows ?? s.completedThrows;
@@ -460,15 +461,30 @@ function statsSection(stats: SessionStatistics): string {
   if (s.grouping) {
     out.push("### グルーピング実測値");
     out.push("");
+    out.push("(グルーピング径=セット内3投の全ペア距離の最大値、距離は外側ダブル半径=1.0の正規化座標。3投すべてに詳細座標があるセットのみ対象)");
+    out.push("");
     if (s.grouping.status === "unavailable_non_coordinate") {
       out.push("- 分析不能: 有効な詳細座標3投セットがありません。");
     } else if (s.grouping.status === "insufficient_data") {
       out.push("- 分析不能: 詳細座標の有効な3投セットが不足しています。");
     } else {
       out.push(`- 有効セット数: ${s.grouping.validSetCount}`);
+      out.push(`- 評価対象投擲数: ${s.grouping.groupingThrowCount ?? s.grouping.validSetCount * 3}`);
+      out.push(`- 平均グルーピング径(セット内最大距離の平均): ${fmtNum(s.grouping.averageDiameter)}`);
+      out.push(`- 中央値グルーピング径: ${fmtNum(s.grouping.medianDiameter)}`);
       out.push(`- 平均ペア距離: ${fmtNum(s.grouping.averagePairDistance)}`);
       out.push(`- 最大ペア距離: ${fmtNum(s.grouping.maximumPairDistance)}`);
       out.push(`- 中央値ペア距離: ${fmtNum(s.grouping.medianPairDistance)}`);
+      out.push(`- 前半の平均グルーピング径: ${fmtNum(s.grouping.firstHalfAverageDiameter)} / 後半: ${fmtNum(s.grouping.secondHalfAverageDiameter)}`);
+      out.push(`- 投順間平均距離: 1→2投目 ${fmtNum(s.grouping.interDartDistances?.d1d2)} / 2→3投目 ${fmtNum(s.grouping.interDartDistances?.d2d3)} / 1→3投目 ${fmtNum(s.grouping.interDartDistances?.d1d3)}`);
+      if ((s.grouping.perSet?.length ?? 0) > 0) {
+        out.push("");
+        out.push("| セット(実施順) | 3投間最大距離 | 3投間平均距離 |");
+        out.push("|---:|---:|---:|");
+        s.grouping.perSet?.forEach((row, index) => {
+          out.push(`| ${index + 1} | ${fmtNum(row.maxPairDistance)} | ${fmtNum(row.averagePairDistance)} |`);
+        });
+      }
     }
     const reasonLabels: Record<string, string> = {
       no_valid_three_dart_coordinate_set: "有効な詳細座標3投セットがない",
@@ -575,7 +591,11 @@ function statsSection(stats: SessionStatistics): string {
     if (z.doubleThrowCount > 0)
       out.push(`- ダブル命中率: ${fmtRate(z.doubleHitRate)} (${z.doubleThrowCount}投)`);
     if (z.allHitSetRate != null)
-      out.push(`- 3投すべて命中したセット率(フィニッシュ成立率): ${fmtRate(z.allHitSetRate)}`);
+      out.push(
+        session?.arrangement === "fixed_three"
+          ? `- フィニッシュ成立率(3投すべて命中したセット率): ${fmtRate(z.allHitSetRate)}`
+          : `- 3投すべてターゲットに命中したセット率: ${fmtRate(z.allHitSetRate)}(同一ターゲット反復のためチェックアウト成立率ではない)`
+      );
     out.push("");
   }
   out.push("### アウトボードとバウンスアウト");
@@ -878,6 +898,12 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   }
   out.push("## セッション概要");
   out.push("");
+  // 中断セッションは予定投擲数と完了投擲数を最初に明示する
+  if (session.status === "completed") {
+    out.push(`- セッション状態: 完了(予定${session.plannedThrowCount}投中${stats.completedThrows}投を実施)`);
+  } else {
+    out.push(`- ⚠️ セッション状態: 中断(予定${session.plannedThrowCount}投中${stats.completedThrows}投で中断)。完了分のデータだけで分析し、標本の少なさを確からしさへ反映してください`);
+  }
   if (!snapshot) {
     out.push("- ⚠️ このセッションには開始時プロフィールのスナップショットがなく、現在プロフィールを参照している");
   }
@@ -968,7 +994,7 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   out.push("");
   out.push("## アプリ算出の基本統計");
   out.push("");
-  out.push(statsSection(stats));
+  out.push(statsSection(stats, session));
   out.push(skillDoubleStatsSection(input.throws));
   out.push("## 過去セッションとの比較");
   out.push("");

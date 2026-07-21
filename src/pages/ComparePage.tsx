@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getSession, getSessions, getStatistics } from "../db/db";
+import { recalcAndSaveStatistics } from "../services/sessionService";
 import {
   compareStatistics,
   isDissimilarComparison,
   rankComparisonCandidates,
+  rankDissimilarCandidates,
 } from "../domain/compare";
 import { modeLabel } from "../export/markdown";
 import type { SessionStatistics, TrainingSession } from "../types/models";
@@ -19,13 +21,16 @@ export default function ComparePage() {
   const [others, setOthers] = useState<TrainingSession[]>([]);
   const [statsMap, setStatsMap] = useState<Record<string, SessionStatistics>>({});
   const [selected, setSelected] = useState<string[]>([]);
+  const [showDissimilar, setShowDissimilar] = useState(false);
 
   useEffect(() => {
     if (!id) return;
     void (async () => {
       const sess = await getSession(id);
       setBase(sess);
-      setBaseStats(await getStatistics(id));
+      setBaseStats(
+        (await getStatistics(id)) ?? (await recalcAndSaveStatistics(id))
+      );
       const all = (await getSessions()).filter(
         (x) => x.id !== id && x.status !== "active"
       );
@@ -33,7 +38,9 @@ export default function ComparePage() {
       const map: Record<string, SessionStatistics> = {};
       await Promise.all(
         all.map(async (x) => {
-          const st = await getStatistics(x.id);
+          const st =
+            (await getStatistics(x.id)) ??
+            (await recalcAndSaveStatistics(x.id));
           if (st) map[x.id] = st;
         })
       );
@@ -43,6 +50,10 @@ export default function ComparePage() {
 
   const candidates = useMemo(
     () => (base ? rankComparisonCandidates(base, others) : []),
+    [base, others]
+  );
+  const dissimilar = useMemo(
+    () => (base ? rankDissimilarCandidates(base, others) : []),
     [base, others]
   );
 
@@ -68,7 +79,9 @@ export default function ComparePage() {
       </div>
 
       <h2>{s.compare.candidates}</h2>
-      {candidates.length === 0 && <p className="muted">{s.sessions.empty}</p>}
+      {candidates.length === 0 && (
+        <p className="muted">{s.compare.noSameMode}</p>
+      )}
       {candidates.map(({ session: cand, reasons }) => {
         const isSelected = selected.includes(cand.id);
         const hasStats = statsMap[cand.id] != null;
@@ -95,6 +108,43 @@ export default function ComparePage() {
           </button>
         );
       })}
+
+      {dissimilar.length > 0 && (
+        <button
+          className="btn small"
+          onClick={() => setShowDissimilar((v) => !v)}
+          aria-expanded={showDissimilar}
+        >
+          {showDissimilar
+            ? s.compare.hideDissimilar
+            : s.compare.showDissimilar}
+        </button>
+      )}
+      {showDissimilar && (
+        <>
+          <p className="muted small">{s.compare.dissimilarHint}</p>
+          {dissimilar.map(({ session: cand }) => {
+            const isSelected = selected.includes(cand.id);
+            const hasStats = statsMap[cand.id] != null;
+            return (
+              <button
+                key={cand.id}
+                className={`card selectable${isSelected ? " selected" : ""}`}
+                style={{ display: "block", width: "100%", textAlign: "left" }}
+                onClick={() => hasStats && toggle(cand.id)}
+                disabled={!hasStats}
+                aria-pressed={isSelected}
+              >
+                <div className="list-row">
+                  <strong>{modeLabel(cand.trainingMode)}</strong>
+                  <span className="muted small">{fmtDateTime(cand.startedAt)}</span>
+                </div>
+                <div className="warn-box">{s.compare.warning}</div>
+              </button>
+            );
+          })}
+        </>
+      )}
 
       {selected.length === 0 && <p className="muted">{s.compare.noSelection}</p>}
 

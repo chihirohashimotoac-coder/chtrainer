@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import SessionPage from "./SessionPage";
 import { AppProvider } from "../state/AppContext";
 import {
+  getSession,
+  getThrowSets,
   getThrows,
   saveAppSettings,
   savePlayer,
@@ -122,6 +124,119 @@ describe("SessionPage (3投入力フロー)", () => {
     expect(throws).toHaveLength(3);
     expect(throws.every((x) => x.derived.exactHit)).toBe(true);
     expect(throws[0]?.dartColor).toBe("#e05252");
+  });
+
+  it("3投確定と同時にセットが保存され、次のセットへで二重保存されない", async () => {
+    const user = userEvent.setup();
+    renderSession();
+    await user.click(
+      await screen.findByRole("button", { name: "3投の結果を入力" })
+    );
+    await inputT20(user);
+    await inputT20(user);
+    await inputT20(user);
+    // 確認画面が表示された時点でIndexedDBへ保存済み(「次のセットへ」は未押下)
+    expect(await screen.findByText("セット内容の確認")).toBeInTheDocument();
+    await waitFor(async () => {
+      expect(await getThrows(sessionId)).toHaveLength(3);
+    });
+    expect(await getThrowSets(sessionId)).toHaveLength(1);
+    // 次のセットへ進んでも同じセットが二重保存されない
+    await user.click(screen.getByRole("button", { name: "次のセットへ" }));
+    expect(await screen.findByText("中間の自己評価")).toBeInTheDocument();
+    expect(await getThrows(sessionId)).toHaveLength(3);
+    expect(await getThrowSets(sessionId)).toHaveLength(1);
+  });
+
+  it("セット確認画面から中断しても3投が保存され、再開は次のセットから始まる", async () => {
+    const user = userEvent.setup();
+    const view = renderSession();
+    await user.click(
+      await screen.findByRole("button", { name: "3投の結果を入力" })
+    );
+    await inputT20(user);
+    await inputS5(user);
+    await inputT20(user);
+    expect(await screen.findByText("セット内容の確認")).toBeInTheDocument();
+    // 「次のセットへ」を押さずに中断する
+    await user.click(screen.getByRole("button", { name: "中断する" }));
+    const confirmButtons = await screen.findAllByRole("button", {
+      name: "中断する",
+    });
+    await user.click(confirmButtons[confirmButtons.length - 1] as HTMLElement);
+    expect(await screen.findByText("ホーム画面")).toBeInTheDocument();
+
+    // 3投とも保存されている(着弾内容も最終状態)
+    const throws = await getThrows(sessionId);
+    expect(throws).toHaveLength(3);
+    expect(throws.map((x) => x.landing.number)).toEqual([20, 5, 20]);
+    expect((await getSession(sessionId))?.status).toBe("aborted");
+
+    // 再開(リロード相当で再マウント)すると、中間評価(セット1完了直後)を経て
+    // 次のセット(2/2)から始まる。セットが飛ばないこと
+    await saveSession({
+      ...(await getSession(sessionId))!,
+      status: "active",
+      endedAt: undefined,
+    } as never);
+    view.unmount();
+    const user2 = userEvent.setup();
+    renderSession();
+    expect(await screen.findByText("中間の自己評価")).toBeInTheDocument();
+    await user2.click(screen.getByRole("button", { name: "次へ" }));
+    expect(await screen.findByText(/2 \/ 2/)).toBeInTheDocument();
+  });
+
+  it("確認画面での修正・投順入替の最終状態が中断時に保存される", async () => {
+    const user = userEvent.setup();
+    renderSession();
+    await user.click(
+      await screen.findByRole("button", { name: "3投の結果を入力" })
+    );
+    await inputS5(user); // 1投目 S5
+    await inputT20(user); // 2投目 T20
+    await inputT20(user); // 3投目 T20
+    expect(await screen.findByText("セット内容の確認")).toBeInTheDocument();
+    // 1投目を修正(S5→T20)
+    await user.click(screen.getByRole("button", { name: "1投目を修正" }));
+    await inputT20(user);
+    expect(await screen.findByText("セット内容の確認")).toBeInTheDocument();
+    // 中断
+    await user.click(screen.getByRole("button", { name: "中断する" }));
+    const confirmButtons = await screen.findAllByRole("button", {
+      name: "中断する",
+    });
+    await user.click(confirmButtons[confirmButtons.length - 1] as HTMLElement);
+    expect(await screen.findByText("ホーム画面")).toBeInTheDocument();
+    const throws = await getThrows(sessionId);
+    expect(throws).toHaveLength(3);
+    // 修正後の最終状態(全部T20)が保存され、二重保存もない
+    expect(throws.map((x) => x.landing.number)).toEqual([20, 20, 20]);
+    expect(await getThrowSets(sessionId)).toHaveLength(1);
+  });
+
+  it("中間評価セット完了後の再開でも次のセットが飛ばない", async () => {
+    const user = userEvent.setup();
+    const view = renderSession();
+    // setCount=2 → セット1完了直後が中間評価
+    await user.click(
+      await screen.findByRole("button", { name: "3投の結果を入力" })
+    );
+    await inputT20(user);
+    await inputT20(user);
+    await inputT20(user);
+    // 確認画面で自動保存されるのを待ってからリロード相当の再マウント
+    expect(await screen.findByText("セット内容の確認")).toBeInTheDocument();
+    await waitFor(async () => {
+      expect(await getThrowSets(sessionId)).toHaveLength(1);
+    });
+    view.unmount();
+    renderSession();
+    // 再開時は中間評価が表示され、提出後はセット2(スキップなし)から始まる
+    expect(await screen.findByText("中間の自己評価")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "次へ" }));
+    expect(await screen.findByText(/2 \/ 2/)).toBeInTheDocument();
+    expect(await screen.findByText("T20")).toBeInTheDocument();
   });
 
   it("矢速を任意入力でき、入力した投擲だけに保存される", async () => {

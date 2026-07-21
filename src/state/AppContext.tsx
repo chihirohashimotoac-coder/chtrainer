@@ -59,6 +59,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // ブラウザによるIndexedDBの自動退避(データ消失)を防ぐため永続化を要求する。
+    // 拒否されても動作は変わらない(ベストエフォート)。
+    if (typeof navigator !== "undefined" && navigator.storage?.persist) {
+      void navigator.storage.persist().catch(() => undefined);
+    }
     void refresh();
   }, [refresh]);
 

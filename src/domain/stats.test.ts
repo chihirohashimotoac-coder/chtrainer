@@ -8,9 +8,10 @@ import {
   median,
 } from "./stats";
 import { buildThrows, handComputedThrows, mixedPrecisionThrows, T20, D16 } from "../test/fixtures";
-import { STEEL_BOARD } from "../config/boardProfiles";
+import { SOFT_BOARD, STEEL_BOARD } from "../config/boardProfiles";
 import { landingFromCoordinate, landingFromSegment } from "../domain/landing";
 import { makeBullAnyTarget, makeSegmentTarget } from "../domain/targets";
+import { buildSkillCheckPlan } from "../domain/skillCheck";
 
 describe("mean / median (平均値・中央値)", () => {
   it("空配列はundefined", () => {
@@ -215,12 +216,97 @@ describe("01統計", () => {
 });
 
 describe("データ不足時の挙動", () => {
-  it("0投でもゼロ除算しない", () => {
+  it("0投なら率は0ではなくN/A(undefined)になる", () => {
     const stats = calculateStatistics("session-1", 60, []);
-    expect(stats.exactHitRate).toBe(0);
-    expect(stats.outboardRate).toBe(0);
+    expect(stats.exactHitRate).toBeUndefined();
+    expect(stats.scorableExactHitRate).toBeUndefined();
+    expect(stats.outboardRate).toBeUndefined();
     expect(stats.coordinateError.averageErrorDistance).toBeUndefined();
     expect(stats.firstHalf.throwCount).toBe(0);
+    expect(stats.firstHalf.hitRate).toBeUndefined();
+    expect(stats.byDartInSet["1"].hitRate).toBeUndefined();
+  });
+
+  it("命中判定対象が存在し命中0件なら0.0%(0)を返す", () => {
+    // T20狙いで全投S5へ外れる10投
+    const missSpecs = Array.from({ length: 10 }, () => ({
+      target: T20,
+      landing: landingFromSegment("outer_single", STEEL_BOARD, 5),
+    }));
+    const stats = calculateStatistics(
+      "session-zero",
+      10,
+      buildThrows(missSpecs, 10)
+    );
+    expect(stats.scorableThrows).toBe(10);
+    expect(stats.exactHitRate).toBe(0);
+  });
+
+  it("R1グルーピング統計: セット別距離・径・前後半・投順間距離を計算する", () => {
+    const groupingTarget = buildSkillCheckPlan(SOFT_BOARD, 20)[0]![0]!;
+    // セットA: (0,0)(0.3,0)(0,0.4) → ペア距離 0.3 / 0.5 / 0.4
+    // セットB: (0,0)(0.1,0)(0,0.1) → ペア距離 0.1 / √0.02 / 0.1
+    const coords: [number, number][][] = [
+      [
+        [0, 0],
+        [0.3, 0],
+        [0, 0.4],
+      ],
+      [
+        [0, 0],
+        [0.1, 0],
+        [0, 0.1],
+      ],
+    ];
+    const throws = buildThrows(
+      coords.flatMap((set, setIndex) =>
+        set.map(([x, y]) => ({
+          target: groupingTarget,
+          setId: `g-set-${setIndex}`,
+          landing: landingFromCoordinate(x, y, SOFT_BOARD),
+        }))
+      ),
+      6
+    );
+    const stats = calculateStatistics("session-g", 6, throws, "skill_check");
+    const g = stats.grouping!;
+    expect(g.validSetCount).toBe(2);
+    expect(g.groupingThrowCount).toBe(6);
+    expect(g.perSet).toHaveLength(2);
+    expect(g.perSet![0]!.maxPairDistance).toBeCloseTo(0.5);
+    expect(g.perSet![0]!.averagePairDistance).toBeCloseTo(0.4);
+    const dB = Math.hypot(0.1, 0.1);
+    expect(g.perSet![1]!.maxPairDistance).toBeCloseTo(dB);
+    // グルーピング径 = セット内最大距離。平均・中央値・前後半
+    expect(g.averageDiameter).toBeCloseTo((0.5 + dB) / 2);
+    expect(g.medianDiameter).toBeCloseTo((0.5 + dB) / 2);
+    expect(g.firstHalfAverageDiameter).toBeCloseTo(0.5);
+    expect(g.secondHalfAverageDiameter).toBeCloseTo(dB);
+    // 投順間距離(1→2, 2→3, 1→3 の各セット平均)
+    expect(g.interDartDistances?.d1d2).toBeCloseTo((0.3 + 0.1) / 2);
+    expect(g.interDartDistances?.d2d3).toBeCloseTo((0.5 + dB) / 2);
+    expect(g.interDartDistances?.d1d3).toBeCloseTo((0.4 + 0.1) / 2);
+  });
+
+  it("R1グルーピングのみのセッションは命中率が全レイヤーでN/Aになる", () => {
+    const groupingTarget = buildSkillCheckPlan(SOFT_BOARD, 20)[0]![0]!;
+    const throws = buildThrows(
+      [0, 0.01, -0.01].map((x) => ({
+        target: groupingTarget,
+        setId: "r1-set",
+        landing: landingFromCoordinate(x, 0, SOFT_BOARD),
+      })),
+      3
+    );
+    const stats = calculateStatistics("session-r1", 60, throws, "skill_check");
+    expect(stats.scorableThrows).toBe(0);
+    expect(stats.exactHitRate).toBeUndefined();
+    expect(stats.byDartInSet["1"].hitRate).toBeUndefined();
+    expect(stats.firstHalf.hitRate).toBeUndefined();
+    expect(stats.secondHalf.hitRate).toBeUndefined();
+    for (const label of Object.keys(stats.byTarget)) {
+      expect(stats.byTarget[label]?.hitRate).toBeUndefined();
+    }
   });
 
   it("セッション中断(計画60投中6投)でも統計が出る", () => {
