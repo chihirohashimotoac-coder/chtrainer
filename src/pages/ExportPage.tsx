@@ -73,7 +73,8 @@ export default function ExportPage() {
         .reverse();
       const trend: { session: TrainingSession; stats: SessionStatistics }[] = [];
       for (const x of sameMode) {
-        const st = await getStatistics(x.id);
+        const st =
+          (await getStatistics(x.id)) ?? (await recalcAndSaveStatistics(x.id));
         if (st) trend.push({ session: x, stats: st });
       }
       setRecentSessions(trend);
@@ -82,7 +83,9 @@ export default function ExportPage() {
       const map: Record<string, SessionStatistics> = {};
       await Promise.all(
         ranked.map(async (r) => {
-          const st = await getStatistics(r.session.id);
+          const st =
+            (await getStatistics(r.session.id)) ??
+            (await recalcAndSaveStatistics(r.session.id));
           if (st) map[r.session.id] = st;
         })
       );
