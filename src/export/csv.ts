@@ -1,4 +1,6 @@
 import type { ThrowRecord, TrainingSession } from "../types/models";
+import { normalizeScoringStyle } from "../types/models";
+import { isGroupingOnlyTarget } from "../domain/targets";
 import { effectiveR4PatternMetadata } from "./patternMetadata";
 
 export const CSV_COLUMNS = [
@@ -68,9 +70,7 @@ export interface SetNumberLookup {
 }
 
 function isGroupingOnly(record: ThrowRecord): boolean {
-  return record.target.evaluationKind === "grouping_only" ||
-    (record.target.type === "custom_selection" &&
-      (record.target.areas?.length ?? 0) === 0);
+  return isGroupingOnlyTarget(record.target);
 }
 
 /** セッションの全投擲をCSV文字列(BOMなし)に変換する */
@@ -89,14 +89,22 @@ export function buildSessionCsv(
   const before = assessment("before");
   const middle = assessment("middle");
   const after = assessment("after");
+  // 外部向けの機械可読値は正式値へ正規化する(旧 fit_bull → fat_bull)。
+  const scoringStyle = normalizeScoringStyle(session.scoringStyle);
   for (const t of sorted) {
     const pattern = effectivePatterns.get(t.setId);
+    // グルーピング専用(R1)は命中を評価しないため、命中判定に依存する項目は空欄(N/A)。
+    const groupingOnly = isGroupingOnly(t);
+    const previousHitCell =
+      !groupingOnly && t.derived.sameSetAsPrevious
+        ? t.derived.previousThrowWasHitInSameSet
+        : undefined;
     const row = [
       cell(session.id),
       cell(session.startedAt),
       cell(session.trainingMode),
       cell(session.boardType),
-      cell(session.scoringStyle),
+      cell(scoringStyle),
       cell(before?.uninterruptedThrowRate),
       cell(before?.releaseStopTiming),
       cell(middle?.uninterruptedThrowRate),
@@ -112,7 +120,7 @@ export function buildSessionCsv(
       cell(t.target.ring),
       cell(t.landing.number),
       cell(t.landing.ring),
-      cell(isGroupingOnly(t) ? undefined : t.derived.exactHit),
+      cell(groupingOnly ? undefined : t.derived.exactHit),
       cell(t.landing.x),
       cell(t.landing.y),
       cell(t.derived.errorX),
@@ -127,9 +135,9 @@ export function buildSessionCsv(
       cell(pattern?.patternKind ?? t.target.patternKind),
       cell(pattern?.analysisCategory ?? t.target.analysisCategory),
       cell(pattern?.source),
-      cell(t.derived.sameSetAsPrevious ? t.derived.previousThrowWasHitInSameSet : undefined),
+      cell(previousHitCell),
       cell(t.derived.sameSetAsPrevious),
-      cell(t.derived.sameSetAsPrevious ? t.derived.previousThrowWasHitInSameSet : undefined),
+      cell(previousHitCell),
       cell(t.derived.sameSetAsPrevious ? t.derived.sameTargetAsPrevious : undefined),
       cell(t.derived.sameSetAsPrevious ? t.derived.targetChangedFromPrevious : undefined),
       cell(t.speedKmh),

@@ -10,7 +10,8 @@ import {
   handComputedThrows,
   T20,
 } from "../test/fixtures";
-import { landingFromCoordinate } from "../domain/landing";
+import { landingFromCoordinate, landingBounceOut } from "../domain/landing";
+import { fmtNum } from "../utils/format";
 import { SOFT_BOARD, STEEL_BOARD } from "../config/boardProfiles";
 import { BACKUP_VERSION } from "../config/constants";
 import { buildAnalysisZip } from "./zip";
@@ -381,8 +382,89 @@ describe("Markdown生成", () => {
     expect(exactHit).toBe("");
   });
 
+  it("R1の前投命中はセット全投でN/A(CSV空欄・Markdown N/A・×を出さない)", () => {
+    const groupingTarget = buildSkillCheckPlan(SOFT_BOARD, 20, "fat_bull")[0]![0]!;
+    // 2セット(6投)のR1グルーピング。2・3投目は同一セット内の後続投擲。
+    const groupingThrows = buildThrows(
+      [0, 0.01, -0.01, 0.2, 0.21, 0.19].map((x, i) => ({
+        target: groupingTarget,
+        setId: `r1-set-${Math.floor(i / 3) + 1}`,
+        landing: landingFromCoordinate(x, 0, SOFT_BOARD),
+      })),
+      6
+    );
+    const r1Session = fixtureSession({
+      trainingMode: "skill_check",
+      scoringStyle: "fat_bull",
+      plannedThrowCount: 6,
+      setCount: 2,
+    });
+    const setOf = (setId: string) => Number(setId.replace("r1-set-", ""));
+
+    // CSV: exact_hit / previous_throw_was_hit / previous_throw_was_hit_in_same_set は全行空欄。
+    const csv = buildSessionCsv(r1Session, groupingThrows, setOf);
+    const rows = csv.trim().split("\r\n").slice(1);
+    const iExact = CSV_COLUMNS.indexOf("exact_hit");
+    const iPrev = CSV_COLUMNS.indexOf("previous_throw_was_hit");
+    const iPrevSame = CSV_COLUMNS.indexOf("previous_throw_was_hit_in_same_set");
+    const iSameSet = CSV_COLUMNS.indexOf("same_set_as_previous");
+    for (const row of rows) {
+      const cols = row.split(",");
+      expect(cols[iExact]).toBe("");
+      expect(cols[iPrev]).toBe("");
+      expect(cols[iPrevSame]).toBe("");
+    }
+    // same_set_as_previous は実関係を保持(2・3投目は true)。
+    expect(rows[1]!.split(",")[iSameSet]).toBe("true");
+    expect(rows[2]!.split(",")[iSameSet]).toBe("true");
+
+    // Markdown 投擲一覧: previous_throw_was_hit_in_same_set 列に「×」を出さない。
+    const md = buildAnalysisMarkdown({
+      session: r1Session,
+      player: undefined,
+      equipment: undefined,
+      stats: calculateStatistics("r1", 6, groupingThrows, "skill_check"),
+      throws: groupingThrows,
+      setNumberOf: setOf,
+      comparisons: [],
+      embedAllThrows: true,
+    });
+    // 投擲一覧の行だけを抽出する(精度ラベル「座標」を含むのは投擲一覧行のみ)。
+    const throwRows = md
+      .split("\n")
+      .filter((line) => line.includes("1投目の着弾点") && line.includes("座標"));
+    expect(throwRows.length).toBe(6);
+    for (const row of throwRows) {
+      // 命中列・前投命中列はN/A。× は現れない。
+      expect(row).not.toContain(" × ");
+    }
+  });
+
+  it("R2など通常ラウンドの前投命中は従来どおりtrue/falseを保持する", () => {
+    // T20を同一セットで3投(1投目命中→2投目の前投命中=true)。
+    const rep = T20.representativePoint;
+    const scoringThrows = buildThrows(
+      [
+        { target: T20, landing: landingFromCoordinate(rep.x, rep.y, STEEL_BOARD), setId: "r2-set-1" },
+        { target: T20, landing: landingFromCoordinate(rep.x + 0.5, rep.y, STEEL_BOARD), setId: "r2-set-1" },
+        { target: T20, landing: landingFromCoordinate(rep.x, rep.y, STEEL_BOARD), setId: "r2-set-1" },
+      ],
+      3
+    );
+    const csv = buildSessionCsv(
+      fixtureSession({ trainingMode: "skill_check", scoringStyle: "fat_bull", plannedThrowCount: 3, setCount: 1 }),
+      scoringThrows,
+      () => 1
+    );
+    const rows = csv.trim().split("\r\n").slice(1);
+    const iPrevSame = CSV_COLUMNS.indexOf("previous_throw_was_hit_in_same_set");
+    // 2投目: 前投(1投目)は命中 → true。3投目: 前投(2投目)は外れ → false。
+    expect(rows[1]!.split(",")[iPrevSame]).toBe("true");
+    expect(rows[2]!.split(",")[iPrevSame]).toBe("false");
+  });
+
   it("投順別表は総投擲数と命中率の分母を分けて表示する", () => {
-    const plan = buildSkillCheckPlan(SOFT_BOARD, 20, "fit_bull");
+    const plan = buildSkillCheckPlan(SOFT_BOARD, 20, "fat_bull");
     const skillThrows = buildThrows(
       plan.flatMap((targets, setIndex) =>
         targets.map((target) => ({
@@ -402,7 +484,7 @@ describe("Markdown生成", () => {
       session: fixtureSession({
         id: "skill-denominator",
         trainingMode: "skill_check",
-        scoringStyle: "fit_bull",
+        scoringStyle: "fat_bull",
         plannedThrowCount: 60,
         setCount: 20,
       }),
@@ -419,7 +501,7 @@ describe("Markdown生成", () => {
   });
 
   it("旧R4は観測ターゲット列から安全に補完し未測定パターンを明示する", () => {
-    const current = buildSkillCheckPlan(SOFT_BOARD, 20, "fit_bull")[15]!;
+    const current = buildSkillCheckPlan(SOFT_BOARD, 20, "fat_bull")[15]!;
     const legacyTargets = current.map((target) => ({
       ...target,
       patternId: undefined,
@@ -537,7 +619,7 @@ describe("Markdown生成", () => {
       });
     const fitBull = build({
       trainingMode: "skill_check",
-      scoringStyle: "fit_bull",
+      scoringStyle: "fat_bull",
     });
     expect(fitBull).toContain("ファットブル");
     expect(fitBull).toContain("01の削りの主役ターゲットはBull");
@@ -655,6 +737,134 @@ describe("ZIP出力", () => {
     expect(csvBack).toContain(session.id);
     expect(csvBack).toContain("speed_kmh");
     expect(csvBack).toContain("64.2");
+  });
+});
+
+describe("R1グルーピングの前半・後半は結果画面とAI Markdownで同じ共通値を使う", () => {
+  const groupingTarget = buildSkillCheckPlan(SOFT_BOARD, 20, "fat_bull")[0]![0]!;
+  // 有効セット3件(径 0.2 / 0.4 / 0.6)+ 途中に対象外1件。
+  const sets: (number | "excluded")[] = [0.2, "excluded", 0.4, 0.6];
+  const specs = sets.flatMap((set, i) => {
+    const setId = `g-${i + 1}`;
+    if (set === "excluded") {
+      return [
+        { target: groupingTarget, setId, landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+        { target: groupingTarget, setId, landing: landingBounceOut() },
+        { target: groupingTarget, setId, landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+      ];
+    }
+    return [
+      { target: groupingTarget, setId, landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+      { target: groupingTarget, setId, landing: landingFromCoordinate(set, 0, SOFT_BOARD) },
+      { target: groupingTarget, setId, landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+    ];
+  });
+  const gThrows = buildThrows(specs, specs.length);
+  const gStats = calculateStatistics("g-md", specs.length, gThrows, "skill_check");
+
+  it("Markdownの前半・後半値は stats.grouping の共通フィールドを3桁丸めで表示する", () => {
+    const md = buildAnalysisMarkdown({
+      session: fixtureSession({ trainingMode: "skill_check", scoringStyle: "fat_bull", plannedThrowCount: specs.length, setCount: sets.length }),
+      player: undefined,
+      equipment: undefined,
+      stats: gStats,
+      throws: gThrows,
+      setNumberOf: (setId) => Number(setId.replace("g-", "")),
+      comparisons: [],
+      embedAllThrows: true,
+    });
+    // 有効セット3件 → 前半[0.2,0.4]=0.3 / 後半[0.6]
+    expect(gStats.grouping?.validSetCount).toBe(3);
+    const first = fmtNum(gStats.grouping?.firstHalfAverageDiameter);
+    const second = fmtNum(gStats.grouping?.secondHalfAverageDiameter);
+    // StatsView(結果画面)も同じ stats.grouping.*AverageDiameter を fmtNum で表示する。
+    expect(md).toContain(`前半の平均グルーピング径: ${first} / 後半: ${second}`);
+    expect(first).toBe("0.300");
+  });
+});
+
+describe("スコアリング形式の機械可読値 fat_bull への統一と後方互換", () => {
+  const readZipMetadata = async (blob: Blob): Promise<Record<string, unknown>> => {
+    const bytes = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as ArrayBuffer);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsArrayBuffer(blob);
+    });
+    const zip = await JSZip.loadAsync(bytes);
+    return JSON.parse(
+      (await zip.file("metadata.json")?.async("string")) ?? "{}"
+    ) as Record<string, unknown>;
+  };
+
+  it("新規ファットブルセッションのCSV scoring_style は fat_bull", () => {
+    const styled = fixtureSession({
+      trainingMode: "skill_check",
+      scoringStyle: "fat_bull",
+    });
+    const csv = buildSessionCsv(styled, throws, setNumberOf);
+    const col = CSV_COLUMNS.indexOf("scoring_style");
+    const value = (csv.trim().split("\r\n")[1] ?? "").split(",")[col];
+    expect(value).toBe("fat_bull");
+  });
+
+  it("ZIP内 metadata.json の scoringStyle は fat_bull", async () => {
+    const styled = fixtureSession({
+      trainingMode: "skill_check",
+      scoringStyle: "fat_bull",
+    });
+    const csv = buildSessionCsv(styled, throws, setNumberOf);
+    const metadata = await readZipMetadata(
+      await buildAnalysisZip("# analysis", csv, styled)
+    );
+    expect(metadata["scoringStyle"]).toBe("fat_bull");
+  });
+
+  it("AI Markdown はファットブル(日本語表示)", () => {
+    const md = buildAnalysisMarkdown({
+      session: fixtureSession({ trainingMode: "skill_check", scoringStyle: "fat_bull" }),
+      player: undefined,
+      equipment: undefined,
+      stats,
+      throws,
+      setNumberOf,
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    expect(md).toContain("- スコアリング形式: ファットブル");
+    expect(md).not.toContain("フィットブル");
+  });
+
+  it("旧値 fit_bull のセッションは出力時に fat_bull(ファットブル)へ正規化される", () => {
+    // 旧データはDB移行・読込正規化で fat_bull になるが、万一残っていても
+    // 出力境界(CSV・ZIP・Markdown)で正規化される(後方互換)。
+    const legacy = fixtureSession({ trainingMode: "skill_check" });
+    // 型に存在しない旧値を後方互換テストとして注入する。
+    (legacy as { scoringStyle: string }).scoringStyle = "fit_bull";
+    const csv = buildSessionCsv(legacy, throws, setNumberOf);
+    const col = CSV_COLUMNS.indexOf("scoring_style");
+    expect((csv.trim().split("\r\n")[1] ?? "").split(",")[col]).toBe("fat_bull");
+    const md = buildAnalysisMarkdown({
+      session: legacy,
+      player: undefined,
+      equipment: undefined,
+      stats,
+      throws,
+      setNumberOf,
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    expect(md).toContain("- スコアリング形式: ファットブル");
+    expect(md).not.toContain("フィットブル");
+  });
+
+  it("セパレートブル・ハードは影響を受けない", () => {
+    for (const style of ["separate_bull", "steel"] as const) {
+      const styled = fixtureSession({ trainingMode: "skill_check", scoringStyle: style });
+      const csv = buildSessionCsv(styled, throws, setNumberOf);
+      const col = CSV_COLUMNS.indexOf("scoring_style");
+      expect((csv.trim().split("\r\n")[1] ?? "").split(",")[col]).toBe(style);
+    }
   });
 });
 
