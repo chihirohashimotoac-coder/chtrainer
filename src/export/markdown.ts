@@ -66,7 +66,7 @@ const ARRANGEMENT_LABELS: Record<string, string> = {
 };
 
 const SCORING_STYLE_LABELS: Record<string, string> = {
-  fit_bull: "フィットブル(ブル一律50点のソフト・削りの主役はBull)",
+  fit_bull: "ファットブル(ブル一律50点のソフト・削りの主役はBull)",
   separate_bull: "セパレートブル(内50/外25のソフト・削りの主役はT20)",
   steel: "ハード(スティール・削りの主役はT20)",
 };
@@ -82,7 +82,8 @@ const EYE_LABELS: Record<string, string> = {
 };
 
 const GOAL_LABELS: Record<string, string> = {
-  recovery: "復調(以前の実力に戻る)",
+  rating: "実力・レーティング向上",
+  recovery: "復調・イップス(以前の実力に戻る)",
   zero_one: "01ゲームの強化",
   cricket: "クリケットの強化",
   pro: "プロ志望(競技力向上)",
@@ -147,20 +148,30 @@ function landingLabel(throwRecord: ThrowRecord): string {
 }
 
 /** AI分析依頼文(分析指示ブロック) */
-export const ANALYSIS_INSTRUCTIONS = `以下の順序とルールで、統計の言い換えではなく、ユーザーが次に何を確認し何を試すべきかまで具体診断してください。
+export const ANALYSIS_INSTRUCTIONS = `以下の順序とルールで、統計の言い換えではなく、ユーザーが次に何を確認し何を試すべきかまで踏み込んで具体的に診断してください。
 
-## 判定ラベルと安全ルール
-- すべての重要な指摘を【事実】【統計的傾向】【原因仮説】【分析不能】【追加確認が必要】のいずれかで明確に区別してください。
-- 着弾データだけからグリップ、スタンス、肘、肩、手首、リリース等を真因として断定してはいけません。フォーム情報も自己申告の背景であり、原因確定には使えません。
-- 原因はデータと関係するものだけを、優先順位付きの「原因候補・仮説」として示してください。候補の大量列挙は禁止です。
+## リスクヘッジの置き方(最初に読むこと)
+- 回答の冒頭に「この分析はAIによる予測・仮説であり、断定するものではありません」という趣旨の注意書きを1〜2文だけ置いてください。
+- 回答の末尾にも同趣旨の短い注意書きを1回だけ置いてください。
+- リスクヘッジはこの冒頭と末尾の2か所だけで十分です。本文の各項目では免責の繰り返しや「あくまで可能性ですが」「一概には言えませんが」等のぼかし表現を使わず、最も可能性が高い見立てを明確に、歯切れよく述べてください。冒頭と末尾に注意書きがあるため、本文が踏み込んだ表現になっても問題ありません。
+
+## 分析の姿勢
+- この分析の最大の価値は、ユーザー自身が気付いていないクセ・傾向・改善点を発見して言語化することです。投順、方向偏り、前後半、修正パターン、自己評価との関係などデータを多角的に突き合わせ、本人が言語化していないパターンを積極的に指摘してください。
+- 重要な指摘は【事実】【統計的傾向】【原因仮説】【分析不能】【追加確認が必要】のいずれかで区別してください。区別した上で、原因仮説は「最有力はどれか」まで順位付けして踏み込んでください。候補の大量列挙や両論併記で終わらせないでください。
+- 重要な指摘には「確からしさ：高 / 中 / 低」を添えてください(複数セット・複数指標で再現=高、1指標で一定傾向=中、少数または間接推測=低)。必要データがない項目だけを分析不能としてください。
+- 数値の裏付けがない指摘を、データがあるかのように述べないでください。統計的有意差は計算していないため「有意」という表現は使わず、1投しかない個別ターゲットを得意・不得意と評価しないでください。
+
+## 安全ルール(必ず守る)
 - 医学的診断、心理的診断、性格診断は禁止です。復調・イップス傾向でも症状名や人格を診断しないでください。
+- 復調・イップス目的では命中結果と投擲プロセスを分け、止まらず投げられた割合を主要改善指標として時間変化を評価してください。不安またはリリースの怖さが悪化した場合は休憩か終了を提案し、リリース動作を過度に意識させる提案は禁止です。
 - 初心者、または専門用語に詳しくないと記録されたユーザーには、専門用語の初出時に括弧で短い説明を付けてください。
-- プロ志望でも練習データだけからプロレベル、試験合格、レーティングを断定しないでください。試合データがなければ試合適応性は追加質問または分析不能としてください。
-- 重要な指摘には「確からしさ：高 / 中 / 低 / 分析不能」を表示してください。複数セット・複数指標で再現=高、1指標で一定傾向=中、少数または間接推測=低、必要データなし=分析不能を目安にしてください。
-- 統計的有意差を計算していないため「有意」という表現は禁止です。1投しかない個別ターゲットを得意・不得意と断定しないでください。
+- プロ志望でも練習データだけからプロレベル、試験合格、公式レーティングの到達を保証しないでください。試合データがなければ試合適応性は追加質問または分析不能としてください。
+
+## データの読み方
+- 着弾データだけからグリップ、スタンス、肘、肩、手首、リリース等の真因を確定することはできません。フォーム情報も自己申告の背景です。ただし萎縮する必要はありません。最有力の身体・動作要因を原因仮説として明確に挙げ、本人がそれを確認する方法までセットで示してください。
 - same_set_as_previous=false の投擲はセットの1投目です。前投命中・ターゲット変更をN/Aとして、切替直後、命中後の再現性、ミス後の修正の集計から除外してください。previous_throw_was_hit_in_same_set と same_target_as_previous を優先してください。
 - クリケットのセット内切替サンプルが0投なら、切替能力を推測せず「未測定・分析不能」と明記してください。
-- 復調目的では命中結果と投擲プロセスを分け、止まらず投げられた割合を主要改善指標として時間変化を評価してください。不安またはリリースの怖さが悪化した場合は休憩か終了を提案し、リリース動作を過度に意識させる提案は禁止です。
+- 矢速(speed_kmh)は任意入力のため一部の投擲にしか記録されていない場合があります。記録がある投擲だけで、矢速と精度・ミス方向・投順の関係を傾向として分析してください。
 
 ## 用語を混同しない
 - 問題点: 観測された結果（例「3投目の右方向ミスが多い」）
@@ -169,8 +180,10 @@ export const ANALYSIS_INSTRUCTIONS = `以下の順序とルールで、統計の
 - 改善方法: 仮説を検証する具体的実験（例「グリップ圧の自己評価と左右ミス率を15投ずつ比較」）
 
 ## 回答構成
+回答の一番最初に冒頭の注意書き(1〜2文)、一番最後に末尾の注意書き(1文)を置き、その間を以下の構成にしてください。
+
 ### 1. 最重要結論
-最大3点。各点に、何が問題か、根拠データ、目標への影響、確からしさ、現時点で断定できないことを含めてください。
+最大3点。各点に、何が問題か、根拠データ、目標への影響、確からしさを含め、言い切れる部分は言い切ってください。
 
 ### 2. ユーザーの問題点
 優先順の表にし、列は「優先度 / 問題点 / 根拠 / ユーザーへの影響 / 確からしさ / 不足している情報」としてください。単なる「命中率が低い」で終わらせず、1〜3投目差、命中後の再現性、ミス後の修正・過剰修正、同一ターゲット継続、セット内切替直後、方向偏り、前後半、疲労・集中・不安・リリースの怖さ、固定と切替の差をデータがある範囲で調べ、ない項目は分析不能としてください。
@@ -179,10 +192,10 @@ export const ANALYSIS_INSTRUCTIONS = `以下の順序とルールで、統計の
 最大3項目。改善目標、優先理由、改善できたと判断する基準、先に確認すべき条件、今は優先しなくてよい項目を示してください。一度に複数のフォーム要素を変更させないでください。
 
 ### 4. 原因候補・仮説
-問題点ごとに最大3件の表とし、列は「原因候補 / 根拠 / 確からしさ / 仮説と矛盾する点 / 不足データ / 正しい場合に出やすい感覚・現象 / 確認方法 / 正しかった場合の改善方法」としてください。着弾、投順、切替、自己評価と関係する候補だけを選び、「着弾だけでは判定できない」ことを明記してください。
+問題点ごとに最大3件の表とし、列は「原因候補 / 根拠 / 確からしさ / 仮説と矛盾する点 / 不足データ / 正しい場合に出やすい感覚・現象 / 確認方法 / 正しかった場合の改善方法」としてください。着弾、投順、切替、自己評価と関係する候補だけを選び、最有力の候補がどれかを明示してください。
 
 ### 5. ユーザーが気付いていない可能性がある傾向
-最大3件。「あなたは〇〇の傾向にある可能性があります」の形式で、推測される傾向、根拠データ、本人が確認すべき感覚・動作、誤っている可能性、確認質問を含めてください。根拠のない性格診断は禁止です。
+この分析のハイライトです。最大3件、「あなたは〇〇の傾向があります」の形式で、推測される傾向、根拠データ、本人が確認すべき感覚・動作、確認質問を含めてください。本人が既に自覚している悩み(記録済みの悩み・重点課題)の言い換えではなく、データからしか見えない新しい発見を優先してください。根拠のない性格診断は禁止です。
 
 ### 6. 改善方法（原因仮説を確認するための実験）
 各メニューに「目的 / 検証する原因仮説 / 実施方法 / 投擲数 / 意識すること / 意識してはいけないこと / 記録項目 / 成功判定 / 中止・変更基準 / 次に行う判断」を含めてください。Bullを60投、苦手ナンバーを投げ込む等だけで終わらせず、原因候補が複数なら1要因ずつ条件を変えて比較してください。
@@ -232,7 +245,7 @@ export function focusCategoryOf(
 /**
  * スキル診断の分析焦点。スコアリング形式で主役(R2)と副ターゲット(R3同一3投)が
  * 入れ替わるため、セッションの形式から動的に生成する。
- * 旧データ(scoringStyle未記録)はフィットブル配列(R2=Bull・R3同一=T20)で出題されている。
+ * 旧データ(scoringStyle未記録)はファットブル配列(R2=Bull・R3同一=T20)で出題されている。
  */
 function skillFocusSection(style: ScoringStyle | undefined): string {
   const effective: ScoringStyle = style ?? "fit_bull";
@@ -241,7 +254,7 @@ function skillFocusSection(style: ScoringStyle | undefined): string {
   const sub = mainIsBull ? "T20" : "Bull";
   const styleNote = style
     ? `スコアリング形式は「${scoringStyleLabel(style)}」です。`
-    : "スコアリング形式は記録されていません(旧バージョンの診断。フィットブル相当の出題構成)。";
+    : "スコアリング形式は記録されていません(旧バージョンの診断。ファットブル相当の出題構成)。";
   const mainDetail = mainIsBull
     ? "命中率・平均誤差・インナー/アウター比率"
     : "命中率・平均誤差・外した際の落下先(S20/S5/S1)の分布";
@@ -313,7 +326,12 @@ const FOCUS_SECTIONS: Record<Exclude<FocusCategory, "skill">, string> = {
 };
 
 const GOAL_SECTIONS: Partial<Record<NonNullable<PlayerProfile["goal"]>, string>> = {
-  recovery: `### 目的別の注意（復調）
+  rating: `### 目的別の注意（実力・レーティング向上）
+
+- レーティングに直結する指標(Bull・T20まわりの命中率、グルーピング、3投の再現性)を優先し、改善した場合の総合力への影響が大きい課題から順位付けしてください。
+- 平均値だけでなくばらつきに注目し、「悪い時の底上げ」につながる改善を重視してください。
+- 練習データからレベル感を概算で述べるのは構いませんが、公式レーティングの決定方式はサービスごとに異なるため、概算である旨を一言添えてください。`,
+  recovery: `### 目的別の注意（復調・イップス）
 
 - 命中結果と、止まらず投げられた割合・ルーティン達成度等の投擲プロセスを分けて扱ってください。
 - 投げる前の不安、リリースの怖さ、セッション中の変化、投げ急ぎ、結果を意識した力みを確認してください。データがなければ追加質問にしてください。
@@ -637,10 +655,10 @@ function throwTable(
 ): string {
   const out: string[] = [];
   out.push(
-    "| No. | セット | 投順 | 狙い | 着弾 | 命中 | X | Y | 誤差X | 誤差Y | 誤差距離 | ズレ方向 | 入力精度 | evaluation_kind | round_id | round_kind | pattern_id | pattern_kind | analysis_category | pattern_metadata_source | same_set_as_previous | previous_throw_was_hit_in_same_set | same_target_as_previous | ターゲット変更 | 経過時間 | メモ |"
+    "| No. | セット | 投順 | 狙い | 着弾 | 命中 | X | Y | 誤差X | 誤差Y | 誤差距離 | ズレ方向 | 入力精度 | evaluation_kind | round_id | round_kind | pattern_id | pattern_kind | analysis_category | pattern_metadata_source | same_set_as_previous | previous_throw_was_hit_in_same_set | same_target_as_previous | ターゲット変更 | 矢速(km/h) | 経過時間 | メモ |"
   );
   out.push(
-    "|---:|---:|---:|---|---|---|---:|---:|---:|---:|---:|---|---|---|---|---|---|---|---|---|---|---|---|---|---:|---|"
+    "|---:|---:|---:|---|---|---|---:|---:|---:|---:|---:|---|---|---|---|---|---|---|---|---|---|---|---|---|---:|---:|---|"
   );
   const sorted = throws
     .slice()
@@ -695,13 +713,14 @@ function throwTable(
             ? "あり"
             : "なし"
           : NA,
+        th.speedKmh != null ? th.speedKmh.toFixed(1) : NA,
         fmtElapsed(th.elapsedMs),
         th.note ?? "",
       ];
     out.push(`| ${cells.join(" | ")} |`);
   }
   out.push("");
-  out.push("(座標は外側ダブル半径=1.0の正規化値。≈は簡易入力による概算値。X:右が正 / Y:上が正)");
+  out.push("(座標は外側ダブル半径=1.0の正規化値。≈は簡易入力による概算値。X:右が正 / Y:上が正。矢速は任意入力のため未記録はN/A)");
   return out.join("\n");
 }
 
@@ -916,7 +935,7 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   } else {
     out.push("全投擲データは添付のCSVファイルを参照してください。");
     out.push("");
-    out.push("CSVの列: session_id, session_date, training_mode, board_type, scoring_style, set_number, global_throw_number, dart_in_set, dart_color, target_label, target_number, target_ring, landing_number, landing_ring, exact_hit, landing_x, landing_y, error_x, error_y, error_distance, miss_direction, position_precision, evaluation_kind, round_id, round_kind, pattern_id, pattern_kind, analysis_category, previous_throw_was_hit, same_set_as_previous, previous_throw_was_hit_in_same_set, same_target_as_previous, target_changed, elapsed_ms, session_progress, throw_note");
+    out.push("CSVの列: session_id, session_date, training_mode, board_type, scoring_style, set_number, global_throw_number, dart_in_set, dart_color, target_label, target_number, target_ring, landing_number, landing_ring, exact_hit, landing_x, landing_y, error_x, error_y, error_distance, miss_direction, position_precision, evaluation_kind, round_id, round_kind, pattern_id, pattern_kind, analysis_category, previous_throw_was_hit, same_set_as_previous, previous_throw_was_hit_in_same_set, same_target_as_previous, target_changed, speed_kmh, elapsed_ms, session_progress, throw_note");
   }
   out.push("");
   out.push("## セッションメモ");
@@ -928,6 +947,7 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   out.push("- 座標は外側ダブル外周の半径を1.0とする正規化値です(右が+X、上が+Y、20方向が角度0度で時計回り)。");
   out.push("- 入力精度が「概算」(segment_approximation)の投擲は、実際の着弾座標ではなく選択エリアの代表点(幾何学的中心)を使用しています。ズレ方向・誤差距離は概算値として扱ってください。");
   out.push("- バウンスアウトは着弾位置不明です。");
+  out.push("- 矢速(speed_kmh)は任意入力です。未記録の投擲が多くても異常ではなく、記録がある投擲だけで傾向を評価してください。");
   out.push("- 自己評価(疲労度・痛み等)は主観的な記録であり、医学的評価ではありません。");
   out.push("- このデータは個人のトレーニング記録です。分析は運動学習の参考情報であり、医学的診断を行わないでください。");
   out.push("");

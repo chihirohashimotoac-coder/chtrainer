@@ -6,6 +6,7 @@ import {
   landingFromSegment,
   landingOutboardDirection,
 } from "../domain/landing";
+import { parseSpeedKmh } from "../utils/speed";
 import { t } from "../i18n/ja";
 
 const OUTBOARD_DIRECTIONS: OutboardDirection[] = [
@@ -22,7 +23,7 @@ const OUTBOARD_DIRECTIONS: OutboardDirection[] = [
 
 interface SimpleInputProps {
   profile: BoardProfile;
-  onConfirm: (landing: LandingRecord) => void;
+  onConfirm: (landing: LandingRecord, speedKmh?: number) => void;
   onCancel?: () => void;
 }
 
@@ -34,6 +35,11 @@ export function SimpleInput({ profile, onConfirm, onCancel }: SimpleInputProps) 
   const s = t();
   const [number, setNumber] = useState<number | null>(null);
   const [ring, setRing] = useState<Ring | "outboard_menu" | null>(null);
+  const [speed, setSpeed] = useState("");
+
+  /** 任意入力の矢速を添えて着弾を確定する */
+  const emit = (landing: LandingRecord) =>
+    onConfirm(landing, parseSpeedKmh(speed));
 
   const needsNumber =
     ring === "outer_single" || ring === "double" || ring === "triple";
@@ -48,14 +54,14 @@ export function SimpleInput({ profile, onConfirm, onCancel }: SimpleInputProps) 
 
   const confirm = () => {
     if (ring === "inner_bull" || ring === "outer_bull") {
-      onConfirm(landingFromSegment(ring, profile));
+      emit(landingFromSegment(ring, profile));
       return;
     }
     if (
       number != null &&
       (ring === "outer_single" || ring === "double" || ring === "triple")
     ) {
-      onConfirm(landingFromSegment(ring, profile, number));
+      emit(landingFromSegment(ring, profile, number));
     }
   };
 
@@ -123,7 +129,7 @@ export function SimpleInput({ profile, onConfirm, onCancel }: SimpleInputProps) 
               <button
                 key={dir}
                 className="choice"
-                onClick={() => onConfirm(landingOutboardDirection(dir))}
+                onClick={() => emit(landingOutboardDirection(dir))}
               >
                 {dir === "unknown"
                   ? s.input.directionUnknown
@@ -138,12 +144,25 @@ export function SimpleInput({ profile, onConfirm, onCancel }: SimpleInputProps) 
         <div className="info-box">
           <button
             className="btn small block"
-            onClick={() => onConfirm(landingBounceOut())}
+            onClick={() => emit(landingBounceOut())}
           >
             {s.input.bounceOutUnknown}
           </button>
         </div>
       )}
+
+      <label className="field">
+        <span>{s.input.speedLabel}</span>
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          step={0.1}
+          value={speed}
+          onChange={(e) => setSpeed(e.target.value)}
+          placeholder={s.input.speedPlaceholder}
+        />
+      </label>
 
       <div className="btn-row action-bar">
         {onCancel && (

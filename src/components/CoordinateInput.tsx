@@ -9,6 +9,7 @@ import {
   landingOutboardWithCoordinate,
 } from "../domain/landing";
 import { segmentLabel } from "../domain/targets";
+import { parseSpeedKmh } from "../utils/speed";
 import { BoardSVG, BOARD_UNIT } from "./BoardSVG";
 import { t } from "../i18n/ja";
 import { fmtNum } from "../utils/format";
@@ -38,7 +39,7 @@ const OUTBOARD_DIRECTIONS: OutboardDirection[] = [
 
 interface CoordinateInputProps {
   profile: BoardProfile;
-  onConfirm: (landing: LandingRecord) => void;
+  onConfirm: (landing: LandingRecord, speedKmh?: number) => void;
   onCancel?: () => void;
   initial?: Point;
   /** バウンスアウト入力を許可 */
@@ -66,6 +67,7 @@ export function CoordinateInput({
   const [view, setView] = useState<ViewBox>(fullView);
   const [showOutboardPicker, setShowOutboardPicker] = useState(false);
   const [bounceMode, setBounceMode] = useState(false);
+  const [speed, setSpeed] = useState("");
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -248,16 +250,20 @@ export function CoordinateInput({
       : segmentLabel(judged.ring, judged.number)
     : "-";
 
+  /** 任意入力の矢速を添えて着弾を確定する */
+  const emit = (landing: LandingRecord) =>
+    onConfirm(landing, parseSpeedKmh(speed));
+
   const confirm = () => {
     if (!pos || !judged) return;
     if (bounceMode) {
-      onConfirm(landingBounceOut({ x: pos.x, y: pos.y }));
+      emit(landingBounceOut({ x: pos.x, y: pos.y }));
       return;
     }
     if (judged.ring === "outboard") {
-      onConfirm(landingOutboardWithCoordinate(pos.x, pos.y));
+      emit(landingOutboardWithCoordinate(pos.x, pos.y));
     } else {
-      onConfirm(landingFromCoordinate(pos.x, pos.y, profile));
+      emit(landingFromCoordinate(pos.x, pos.y, profile));
     }
   };
 
@@ -363,7 +369,7 @@ export function CoordinateInput({
           {s.input.bounceOutPosition}
           <button
             className="btn small block"
-            onClick={() => onConfirm(landingBounceOut())}
+            onClick={() => emit(landingBounceOut())}
           >
             {s.input.bounceOutUnknown}
           </button>
@@ -378,7 +384,7 @@ export function CoordinateInput({
               <button
                 key={dir}
                 className="choice"
-                onClick={() => onConfirm(landingOutboardDirection(dir))}
+                onClick={() => emit(landingOutboardDirection(dir))}
               >
                 {dir === "unknown"
                   ? s.input.directionUnknown
@@ -388,6 +394,19 @@ export function CoordinateInput({
           </div>
         </div>
       )}
+
+      <label className="field">
+        <span>{s.input.speedLabel}</span>
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          step={0.1}
+          value={speed}
+          onChange={(e) => setSpeed(e.target.value)}
+          placeholder={s.input.speedPlaceholder}
+        />
+      </label>
 
       <div className="btn-row action-bar">
         {onCancel && (
