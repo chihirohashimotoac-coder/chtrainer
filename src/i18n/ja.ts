@@ -100,7 +100,8 @@ export const ja = {
     goalSection: "練習の目的(任意)",
     goalSectionHint: "設定するとAI分析があなたの目的に合わせた回答になります",
     goal: "目的",
-    goalRecovery: "復調",
+    goalRating: "実力・レーティング向上",
+    goalRecovery: "復調・イップス",
     goalZeroOne: "01強化",
     goalCricket: "クリケット強化",
     goalPro: "プロ志望",
@@ -217,7 +218,7 @@ export const ja = {
     randomAutoInfo: "ターゲットはボード全体(S1〜S20・D1〜D20・T1〜T20・Bull)から自動で選ばれます。出題方式だけ選んでください。",
     diagnosticSetHint: "フリースキャンは1ターゲットあたりのサンプルが少なくなります。40セット(120投)以上を推奨します。",
     skillCheck: "スキル診断(定型メニュー)",
-    skillCheckDesc: "4ラウンドであなたの技能を測定します。各ラウンドの狙い方は投擲画面にも表示されます。20セット(各ラウンド5セット)を推奨。スコアリング形式(フィットブル/セパレートブル/ハード)は開始前設定で選択します。",
+    skillCheckDesc: "4ラウンドであなたの技能を測定します。各ラウンドの狙い方は投擲画面にも表示されます。20セット(各ラウンド5セット)を推奨。スコアリング形式(ファットブル/セパレートブル/ハード)は開始前設定で選択します。",
     skillRounds: [
       {
         name: "R1 グルーピング",
@@ -226,7 +227,7 @@ export const ja = {
       },
       {
         name: "R2 スコアリング",
-        aim: "01の削りの主役を狙う(フィットブル=Bull / セパレートブル・ハード=T20)",
+        aim: "01の削りの主役を狙う(ファットブル=Bull / セパレートブル・ハード=T20)",
         measure: "スコアリング(削り)の精度",
       },
       {
@@ -265,12 +266,12 @@ export const ja = {
     boardType: "ボード種別",
     scoringStyle: "スコアリング形式",
     scoringStyles: {
-      fit_bull: "フィットブル",
+      fit_bull: "ファットブル",
       separate_bull: "セパレートブル",
       steel: "ハード",
     },
     scoringStyleHint:
-      "01の削りの主役が変わります: フィットブル(ブル一律50点)=Bull / セパレートブル(内50・外25)とハード=T20。スキル診断のR2スコアリングとR3同一3投の出題に反映されます。",
+      "01の削りの主役が変わります: ファットブル(ブル一律50点)=Bull / セパレートブル(内50・外25)とハード=T20。スキル診断のR2スコアリングとR3同一3投の出題に反映されます。",
     dominantHand: "利き腕",
     equipment: "セッティング",
     inputMethod: "入力方式",
@@ -359,6 +360,8 @@ export const ja = {
     bounceOutUnknown: "位置不明のまま記録",
     zoomHint: "ピンチ / ダブルタップでズーム",
     currentSelection: "現在の選択",
+    speedLabel: "矢速(km/h・任意)",
+    speedPlaceholder: "例: 64.2",
   },
   direction: {
     center: "中心付近",
@@ -496,8 +499,8 @@ export const ja = {
     summaryCsv: "集計+CSV別添",
     summaryCsvDesc: "Markdownは統計のみ。全データはCSVで別途保存",
     compareTargets: "比較対象セッション",
-    generate: "Markdownを生成",
-    copyMarkdown: "Markdownをコピー",
+    generate: "AIへ渡すテキストを生成",
+    copyMarkdown: "AIへ渡すテキストをコピー",
     saveMd: ".mdファイルを保存",
     saveCsv: "CSVを保存",
     preview: "プレビュー",

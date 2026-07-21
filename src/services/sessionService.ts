@@ -32,6 +32,8 @@ export interface PendingDart {
   dartInSet: 1 | 2 | 3;
   target: TargetDefinition;
   landing: LandingRecord;
+  /** 矢速(km/h・任意) */
+  speedKmh?: number;
   note?: string;
 }
 
@@ -98,6 +100,7 @@ export async function commitSet(
       elapsedMs: Math.max(0, Date.now() - sessionStart),
       landing: dart.landing,
       derived,
+      ...(dart.speedKmh != null ? { speedKmh: dart.speedKmh } : {}),
       ...(dart.note ? { note: dart.note } : {}),
       createdAt: now,
       updatedAt: now,
