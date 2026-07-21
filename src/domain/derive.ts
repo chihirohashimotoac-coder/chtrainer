@@ -6,7 +6,7 @@ import type {
   TargetDefinition,
 } from "../types/models";
 import { toPolar } from "./board";
-import { isExactHit, isSameTarget } from "./targets";
+import { isExactHit, isGroupingOnlyTarget, isSameTarget } from "./targets";
 
 /**
  * 誤差ベクトルの角度(上=0度、時計回り)から8方向へ分類する。
@@ -68,7 +68,11 @@ export function deriveThrow(
   landing: LandingRecord,
   ctx: DeriveContext
 ): DerivedRecord {
-  const exactHit = isExactHit(target, landing);
+  // グルーピング専用ラウンド(R1)は命中を評価しない。命中判定に依存する項目
+  // (exactHit・前投命中)はN/A(undefined)とし、ミス(false)と混同させない。
+  // 同一セット・同一ターゲットの関係は実データのまま保持する。
+  const groupingOnly = isGroupingOnlyTarget(target);
+  const exactHit = groupingOnly ? undefined : isExactHit(target, landing);
   const sameSetAsPrevious = ctx.sameSetAsPrevious ?? false;
   // セットの1投目は、前セットとのターゲット差を「切替直後」に数えない。
   const targetChangedFromPrevious =
@@ -80,12 +84,14 @@ export function deriveThrow(
       ? ctx.globalThrowNumber / ctx.plannedThrowCount
       : 0;
 
+  const previousHit =
+    groupingOnly || !sameSetAsPrevious ? undefined : ctx.previousWasHit;
   const base: DerivedRecord = {
     exactHit,
     targetChangedFromPrevious,
-    previousThrowWasHit: sameSetAsPrevious ? ctx.previousWasHit : undefined,
+    previousThrowWasHit: previousHit,
     sameSetAsPrevious,
-    previousThrowWasHitInSameSet: sameSetAsPrevious ? ctx.previousWasHit : undefined,
+    previousThrowWasHitInSameSet: previousHit,
     sameTargetAsPrevious: sameSetAsPrevious && ctx.previousTarget != null
       ? !targetChangedFromPrevious
       : undefined,

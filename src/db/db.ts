@@ -10,12 +10,23 @@ import type {
   TrainingSession,
   UUID,
 } from "../types/models";
-import { SCHEMA_VERSION } from "../types/models";
+import { SCHEMA_VERSION, normalizeScoringStyle } from "../types/models";
 import type { BackupData } from "../export/backup";
 import { nowIso } from "../utils/id";
 
 /** IndexedDBのスキーマバージョン(データ移行用) */
-const DB_VERSION = 4;
+const DB_VERSION = 5;
+
+/**
+ * セッションのスコアリング形式を正式値へ正規化する(後方互換)。
+ * 旧 fit_bull を fat_bull へ。未設定はそのまま。内部・外部で一貫して fat_bull を扱う。
+ */
+function normalizeSession(session: TrainingSession): TrainingSession {
+  if (session.scoringStyle == null) return session;
+  const normalized = normalizeScoringStyle(session.scoringStyle);
+  if (normalized === session.scoringStyle) return session;
+  return { ...session, scoringStyle: normalized };
+}
 const DB_NAME = "darts-training-analyzer";
 
 interface DtaDb extends DBSchema {
@@ -47,7 +58,7 @@ let dbPromise: Promise<IDBPDatabase<DtaDb>> | undefined;
 export function getDb(): Promise<IDBPDatabase<DtaDb>> {
   if (!dbPromise) {
     dbPromise = openDB<DtaDb>(DB_NAME, DB_VERSION, {
-      upgrade(db, oldVersion, _newVersion, transaction) {
+      async upgrade(db, oldVersion, _newVersion, transaction) {
         if (oldVersion < 1) {
           db.createObjectStore("settings", { keyPath: "id" });
           db.createObjectStore("players", { keyPath: "id" });
@@ -77,6 +88,21 @@ export function getDb(): Promise<IDBPDatabase<DtaDb>> {
           // v4: 分母0の率は0ではなくundefined(N/A)へ変更。旧キャッシュには
           // hitRate:0が焼き込まれているため破棄し、参照時に再計算させる。
           void transaction.objectStore("sessionStatistics").clear();
+        }
+        if (oldVersion < 5) {
+          // v5: スコアリング形式の正式値を fat_bull に統一。旧誤記由来の
+          // fit_bull を保存済みセッションから fat_bull へ書き換える(後方互換)。
+          // 読み込み時にも normalizeSession で正規化するが、保存値も揃えておく。
+          const store = transaction.objectStore("sessions");
+          let cursor = await store.openCursor();
+          while (cursor) {
+            const session = cursor.value as TrainingSession;
+            // 旧値は型に存在しないため文字列比較で判定する(後方互換専用)。
+            if ((session.scoringStyle as string | undefined) === "fit_bull") {
+              await cursor.update({ ...session, scoringStyle: "fat_bull" });
+            }
+            cursor = await cursor.continue();
+          }
         }
       },
     });
@@ -165,14 +191,17 @@ export async function getTrainingPlans(): Promise<TrainingPlan[]> {
 export async function getSessions(): Promise<TrainingSession[]> {
   const db = await getDb();
   const all = await db.getAll("sessions");
-  return all.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  return all
+    .map(normalizeSession)
+    .sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 }
 
 export async function getSession(
   id: UUID
 ): Promise<TrainingSession | undefined> {
   const db = await getDb();
-  return db.get("sessions", id);
+  const session = await db.get("sessions", id);
+  return session ? normalizeSession(session) : undefined;
 }
 
 export async function saveSession(session: TrainingSession): Promise<void> {
@@ -183,7 +212,10 @@ export async function saveSession(session: TrainingSession): Promise<void> {
 export async function getActiveSession(): Promise<TrainingSession | undefined> {
   const db = await getDb();
   const actives = await db.getAllFromIndex("sessions", "byStatus", "active");
-  return actives.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
+  const latest = actives.sort((a, b) =>
+    b.startedAt.localeCompare(a.startedAt)
+  )[0];
+  return latest ? normalizeSession(latest) : undefined;
 }
 
 /** セッションと関連データを削除する */
@@ -296,7 +328,8 @@ export async function exportAllData(): Promise<BackupData> {
     players: await db.getAll("players"),
     equipmentProfiles: await db.getAll("equipmentProfiles"),
     trainingPlans: await db.getAll("trainingPlans"),
-    sessions: await db.getAll("sessions"),
+    // 外部向けバックアップも正式値へ正規化する(旧 fit_bull → fat_bull)。
+    sessions: (await db.getAll("sessions")).map(normalizeSession),
     throwSets: await db.getAll("throwSets"),
     throws: await db.getAll("throws"),
     sessionStatistics: await db.getAll("sessionStatistics"),
@@ -336,7 +369,9 @@ export async function importAllData(
     await tx.objectStore("equipmentProfiles").put(item);
   for (const item of data.trainingPlans)
     await tx.objectStore("trainingPlans").put(item);
-  for (const item of data.sessions) await tx.objectStore("sessions").put(item);
+  // 旧バックアップの fit_bull は取り込み時に fat_bull へ正規化する(後方互換)。
+  for (const item of data.sessions)
+    await tx.objectStore("sessions").put(normalizeSession(item));
   for (const item of data.throwSets)
     await tx.objectStore("throwSets").put(item);
   for (const item of data.throws) await tx.objectStore("throws").put(item);

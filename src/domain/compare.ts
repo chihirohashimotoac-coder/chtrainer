@@ -28,9 +28,21 @@ function scoreCandidate(
     score += 500;
     reasons.push("同じスコアリング形式");
   }
+  // スコアリング形式が異なるスキル診断は、ターゲットのラベル集合が一致しても
+  // R2(主役)・R3同一3投(副)の主役/副が入れ替わる。ラベル集合が同じというだけで
+  // 「同じターゲット構成」と表示すると誤解を生むため、その旨を明示する。
+  const scoringDiffers =
+    base.scoringStyle != null &&
+    session.scoringStyle != null &&
+    session.scoringStyle !== base.scoringStyle;
   if (targetSignature(session) === baseLabels) {
-    score += 400;
-    reasons.push("同じターゲット構成");
+    if (scoringDiffers) {
+      score += 150;
+      reasons.push("ターゲットの種類は共通(スコアリング形式でR2・R3の主役/副が入れ替わり)");
+    } else {
+      score += 400;
+      reasons.push("同じターゲット構成");
+    }
   }
   if (session.boardType === base.boardType) {
     score += 250;
@@ -112,19 +124,42 @@ export function targetSignature(session: TrainingSession): string {
   return [...labels].sort().join(",");
 }
 
-/** 比較条件が大きく異なるかどうか(警告表示用) */
+/** 比較条件が大きく異なるかどうか(警告表示の要否判定用) */
 export function isDissimilarComparison(
   base: TrainingSession,
   other: TrainingSession
 ): boolean {
-  return (
-    base.trainingMode !== other.trainingMode ||
-    base.boardType !== other.boardType ||
-    // スコアリング形式が両方記録されていて異なる場合は出題構成が入れ替わっている
-    (base.scoringStyle != null &&
+  const m = comparisonMismatches(base, other);
+  return m.mode || m.board || m.input || m.scoring;
+}
+
+/** 比較可能性に関わる条件の一致/不一致(警告理由の正確な表示に使う) */
+export interface ComparisonMismatch {
+  mode: boolean;
+  board: boolean;
+  input: boolean;
+  /** スコアリング形式。両方が記録されていて異なる場合のみ true */
+  scoring: boolean;
+}
+
+/**
+ * 2セッションの比較条件の差分を実データから判定する。
+ * スコアリング形式は「両方が記録されていて異なる」場合だけ差分とみなす
+ * (片方が旧データで未記録なら、形式差では非類似としない)。
+ */
+export function comparisonMismatches(
+  base: TrainingSession,
+  other: TrainingSession
+): ComparisonMismatch {
+  return {
+    mode: base.trainingMode !== other.trainingMode,
+    board: base.boardType !== other.boardType,
+    input: base.inputMethod !== other.inputMethod,
+    scoring:
+      base.scoringStyle != null &&
       other.scoringStyle != null &&
-      base.scoringStyle !== other.scoringStyle)
-  );
+      base.scoringStyle !== other.scoringStyle,
+  };
 }
 
 export interface StatDiff {

@@ -111,7 +111,7 @@ describe("deriveThrow (誤差の派生データ)", () => {
     expect(derived.errorDistance).toBeUndefined();
   });
 
-  it("フリーターゲット(グルーピング)では誤差・命中を記録しない", () => {
+  it("フリーターゲット(グルーピング)では誤差・命中を記録せず、命中はN/A", () => {
     const free = {
       id: "free",
       label: "1投目の着弾点",
@@ -121,12 +121,38 @@ describe("deriveThrow (誤差の派生データ)", () => {
     };
     const landing = landingFromCoordinate(0.3, 0.5, STEEL_BOARD);
     const derived = deriveThrow(free, landing, ctx);
-    expect(derived.exactHit).toBe(false);
+    // グルーピング専用は命中を評価しない → N/A(undefined)。false(ミス)ではない。
+    expect(derived.exactHit).toBeUndefined();
     expect(derived.errorX).toBeUndefined();
     expect(derived.errorDistance).toBeUndefined();
     expect(derived.missDirection).toBeUndefined();
     // 座標自体はlanding側に残る(まとまり計算用)
     expect(landing.x).toBeCloseTo(0.3);
+  });
+
+  it("grouping_only(R1)は前投命中・前投同一セット命中もN/A(実関係は保持)", () => {
+    const grouping = {
+      id: "r1",
+      label: "1投目の着弾点",
+      type: "custom_selection" as const,
+      areas: [],
+      evaluationKind: "grouping_only" as const,
+      representativePoint: { x: 0, y: 0 },
+    };
+    const landing = landingFromCoordinate(0.01, -0.01, STEEL_BOARD);
+    // セット2投目相当(同一セット・前投は命中扱いの入力)でも前投命中はN/A
+    const derived = deriveThrow(grouping, landing, {
+      ...ctx,
+      previousTarget: grouping,
+      previousWasHit: true,
+      sameSetAsPrevious: true,
+    });
+    expect(derived.exactHit).toBeUndefined();
+    expect(derived.previousThrowWasHit).toBeUndefined();
+    expect(derived.previousThrowWasHitInSameSet).toBeUndefined();
+    // 同一セット・同一ターゲットの実関係はそのまま保持する
+    expect(derived.sameSetAsPrevious).toBe(true);
+    expect(derived.sameTargetAsPrevious).toBe(true);
   });
 
   it("同一セット内のターゲット変更と前投命中を記録する", () => {

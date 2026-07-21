@@ -1,5 +1,6 @@
 import type { BoardProfile } from "../config/boardProfiles";
 import type { ScoringStyle, TargetDefinition } from "../types/models";
+import { normalizeScoringStyle } from "../types/models";
 import {
   makeBullAnyTarget,
   makeCustomTarget,
@@ -28,7 +29,8 @@ export const SKILL_ROUND_LABELS = [
 
 /** スコアリング形式ごとの「01の削りの主役ターゲット」 */
 export function scoringMainOf(style: ScoringStyle): "bull" | "t20" {
-  return style === "fit_bull" ? "bull" : "t20";
+  // 旧値 fit_bull もファットブルとして扱う(後方互換)。
+  return normalizeScoringStyle(style) === "fat_bull" ? "bull" : "t20";
 }
 
 /** 投擲画面に表示するラウンド別の指示文 */
@@ -179,7 +181,7 @@ function numberSameTarget(
 export function buildSkillCheckPlan(
   profile: BoardProfile,
   setCount: number,
-  scoringStyle: ScoringStyle = "fit_bull"
+  scoringStyle: ScoringStyle = "fat_bull"
 ): TargetDefinition[][] {
   const grouping = groupingTarget(profile);
   const scoring = scoringTarget(profile, scoringStyle);
@@ -250,7 +252,7 @@ export function skillCheckUniqueTargets(
 export function skillCheckUniqueTargets(
   profile: BoardProfile,
   setCountOrStyle: number | ScoringStyle = 20,
-  style: ScoringStyle = "fit_bull"
+  style: ScoringStyle = "fat_bull"
 ): TargetDefinition[] {
   const setCount = typeof setCountOrStyle === "number" ? setCountOrStyle : 20;
   const scoringStyle = typeof setCountOrStyle === "number" ? style : setCountOrStyle;

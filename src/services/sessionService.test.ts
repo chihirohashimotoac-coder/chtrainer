@@ -177,7 +177,7 @@ describe("session commit/export flow", () => {
   });
 
   it("R4切替パターンのメタデータと同一セット内切替だけを保存する", async () => {
-    const targets = buildSkillCheckPlan(SOFT_BOARD, 20, "fit_bull")[17]!;
+    const targets = buildSkillCheckPlan(SOFT_BOARD, 20, "fat_bull")[17]!;
     const session = fixtureSession({
       id: "session-r4-switch",
       setCount: 1,
@@ -221,7 +221,7 @@ describe("session commit/export flow", () => {
       true,
     ]);
 
-    const fixedTargets = buildSkillCheckPlan(SOFT_BOARD, 20, "fit_bull")[15]!;
+    const fixedTargets = buildSkillCheckPlan(SOFT_BOARD, 20, "fat_bull")[15]!;
     const fixedSession = fixtureSession({
       id: "session-r4-fixed",
       setCount: 1,
