@@ -84,16 +84,17 @@ export default function SessionPage() {
         setInputMethod(active.inputMethod);
         if (done >= active.setCount) {
           setStep("after");
+        } else if (
+          done === middleAssessmentSet(active.setCount) &&
+          !active.progress.middleAssessmentDone
+        ) {
+          // 中間評価の表示中はsetNumber=完了済みセット番号のまま(通常フローと同じ)。
+          // submitMiddleAssessmentが+1するため、ここでdone+1にすると次セットが飛ぶ
+          setSetNumber(done);
+          setStep("middle");
         } else {
           setSetNumber(done + 1);
-          if (
-            done === middleAssessmentSet(active.setCount) &&
-            !active.progress.middleAssessmentDone
-          ) {
-            setStep("middle");
-          } else {
-            setStep("throw");
-          }
+          setStep("throw");
         }
       } catch {
         alert(s.errors.restoreFailed);
