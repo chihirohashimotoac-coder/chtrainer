@@ -95,9 +95,10 @@ export default function ThrowsPage() {
                 : undefined
             }
             onCancel={() => setEditing(null)}
-            onConfirm={async (landing) => {
+            initialSpeedKmh={editing.speedKmh}
+            onConfirm={async (landing, speedKmh) => {
               try {
-                await updateThrowLanding(editing, landing);
+                await updateThrowLanding(editing, landing, undefined, speedKmh ?? null);
                 setEditing(null);
                 setSavedMsg(true);
                 await load();
@@ -110,9 +111,10 @@ export default function ThrowsPage() {
           <SimpleInput
             profile={profile}
             onCancel={() => setEditing(null)}
-            onConfirm={async (landing) => {
+            initialSpeedKmh={editing.speedKmh}
+            onConfirm={async (landing, speedKmh) => {
               try {
-                await updateThrowLanding(editing, landing);
+                await updateThrowLanding(editing, landing, undefined, speedKmh ?? null);
                 setEditing(null);
                 setSavedMsg(true);
                 await load();

@@ -44,6 +44,8 @@ interface CoordinateInputProps {
   initial?: Point;
   /** バウンスアウト入力を許可 */
   allowBounceOut?: boolean;
+  /** 矢速欄の初期値(再入力・編集時に既存値をプリフィル) */
+  initialSpeedKmh?: number;
 }
 
 /**
@@ -56,6 +58,7 @@ export function CoordinateInput({
   onCancel,
   initial,
   allowBounceOut = true,
+  initialSpeedKmh,
 }: CoordinateInputProps) {
   const s = t();
   const extent = profile.radii.inputAreaOuter * BOARD_UNIT + 4;
@@ -67,7 +70,9 @@ export function CoordinateInput({
   const [view, setView] = useState<ViewBox>(fullView);
   const [showOutboardPicker, setShowOutboardPicker] = useState(false);
   const [bounceMode, setBounceMode] = useState(false);
-  const [speed, setSpeed] = useState("");
+  const [speed, setSpeed] = useState(
+    initialSpeedKmh != null ? String(initialSpeedKmh) : ""
+  );
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
