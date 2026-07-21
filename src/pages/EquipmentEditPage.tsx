@@ -121,10 +121,15 @@ export default function EquipmentEditPage() {
     };
     try {
       await saveEquipmentProfile(profile);
+      // 保存がIndexedDBへ反映されたことを読み戻しで確認してから遷移する
+      const saved = await getEquipmentProfile(profile.id);
+      if (!saved) throw new Error("equipment profile was not persisted");
       await refresh();
-      navigate(-1);
+      // 履歴に依存する navigate(-1) はディープリンク時にアプリ外へ出てしまうため、
+      // 保存後は必ず一覧へ遷移する
+      navigate("/settings/equipment", { replace: true });
     } catch {
-      alert(s.errors.dbSaveFailed);
+      setError(s.errors.dbSaveFailed);
     }
   };
 
@@ -198,7 +203,7 @@ export default function EquipmentEditPage() {
             await deleteEquipmentProfile(id);
             await refresh();
           }
-          navigate(-1);
+          navigate("/settings/equipment", { replace: true });
         }}
       >
         <p>{s.equipment.deleteConfirm}</p>
