@@ -126,6 +126,16 @@ export type PlayerGoal =
   | "pro"
   | "form_check"
   | "bull";
+
+/** レーティング体系(体系ごとに同じ数字でも意味が異なるため必ずセットで保持する) */
+export type RatingSystem = "darts_live" | "phoenix";
+
+/** 自己申告のレーティング(体系＋数値)。AI依頼文の参照・目標ギャップ算出に使う。 */
+export interface PlayerRating {
+  system: RatingSystem;
+  /** レーティング値。DARTSLIVE=1〜18 / PHOENIX=1〜30 */
+  value: number;
+}
 export type Stance = "closed" | "middle" | "open";
 
 export type GripFingerCount = "2" | "3" | "4" | "other" | "unknown";
@@ -162,6 +172,10 @@ export interface PlayerProfile {
   currentLevel?: string;
   /** 目標レベル(自由記述) */
   targetLevel?: string;
+  /** 現在のレーティング(体系＋数値・任意) */
+  currentRating?: PlayerRating;
+  /** 目標のレーティング(体系＋数値・任意) */
+  targetRating?: PlayerRating;
   /** 直近の悩み・重点課題(自由記述) */
   concern?: string;
   defaultBoardType: BoardType;
@@ -235,6 +249,8 @@ export interface SessionContextSnapshot {
   goal?: PlayerGoal;
   currentLevel?: string;
   targetLevel?: string;
+  currentRating?: PlayerRating;
+  targetRating?: PlayerRating;
   concern?: string;
   dartColors: [string, string, string];
   boardType: BoardType;
