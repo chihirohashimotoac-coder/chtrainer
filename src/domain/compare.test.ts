@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { fixtureSession } from "../test/fixtures";
-import { isDissimilarComparison, rankComparisonCandidates } from "./compare";
+import { fixtureSession, handComputedThrows } from "../test/fixtures";
+import { calculateStatistics } from "./stats";
+import {
+  compareStatistics,
+  isDissimilarComparison,
+  rankComparisonCandidates,
+  rankDissimilarCandidates,
+} from "./compare";
 
 describe("比較候補のスコアリング形式対応", () => {
   const base = fixtureSession({
@@ -48,5 +54,58 @@ describe("比較候補のスコアリング形式対応", () => {
       trainingMode: "skill_check",
     });
     expect(isDissimilarComparison(base, legacy)).toBe(false);
+  });
+});
+
+describe("比較候補のモード互換性", () => {
+  const base = fixtureSession({
+    id: "base-skill",
+    trainingMode: "skill_check",
+    startedAt: "2026-07-01T10:00:00.000Z",
+  });
+  const zeroOne = fixtureSession({
+    id: "other-01",
+    trainingMode: "zero_one",
+    startedAt: "2026-06-30T10:00:00.000Z",
+  });
+  const sameMode = fixtureSession({
+    id: "same-skill",
+    trainingMode: "skill_check",
+    startedAt: "2026-06-01T10:00:00.000Z",
+  });
+
+  it("モードが異なるセッションはおすすめ候補に含めない", () => {
+    const ranked = rankComparisonCandidates(base, [zeroOne, sameMode]);
+    expect(ranked.map((r) => r.session.id)).toEqual(["same-skill"]);
+  });
+
+  it("同モードが無ければおすすめ候補は空になる", () => {
+    expect(rankComparisonCandidates(base, [zeroOne])).toHaveLength(0);
+  });
+
+  it("異モードは明示用の別リスト(rankDissimilarCandidates)に出る", () => {
+    const dissimilar = rankDissimilarCandidates(base, [zeroOne, sameMode]);
+    expect(dissimilar.map((r) => r.session.id)).toEqual(["other-01"]);
+  });
+});
+
+describe("N/A統計の比較", () => {
+  it("片方がN/A(分母0)なら差もN/Aになる", () => {
+    // R1グルーピング相当: 命中判定対象0 → 率はundefined
+    const naStats = calculateStatistics("na", 60, []);
+    const normal = calculateStatistics("normal", 6, handComputedThrows());
+    const c = compareStatistics(naStats, normal);
+    expect(normal.exactHitRate).toBeCloseTo(1 / 6);
+    expect(c.hitRate.base).toBeUndefined();
+    expect(c.hitRate.other).toBeCloseTo(1 / 6);
+    expect(c.hitRate.diff).toBeUndefined();
+    expect(c.byDartInSet["2"].hitRate.diff).toBeUndefined();
+    expect(c.firstHalfHitRate.diff).toBeUndefined();
+  });
+
+  it("両方に分母があれば0.0%側も通常どおり差を計算する", () => {
+    const normal = calculateStatistics("normal", 6, handComputedThrows());
+    const c = compareStatistics(normal, normal);
+    expect(c.hitRate.diff).toBeCloseTo(0);
   });
 });

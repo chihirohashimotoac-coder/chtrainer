@@ -467,6 +467,7 @@ export const ja = {
     completed: "完了",
     aborted: "中断",
     active: "進行中",
+    progress: "進捗",
     filter: "絞り込み",
     filterMode: "モード",
     filterBoard: "ボード種別",
@@ -497,6 +498,10 @@ export const ja = {
     noSelection: "比較するセッションを選択してください",
     thisSession: "今回",
     pastSession: "過去",
+    noSameMode: "比較可能な同モードセッションがありません",
+    showDissimilar: "条件の異なるセッションを表示",
+    hideDissimilar: "条件の異なるセッションを隠す",
+    dissimilarHint: "モードが異なるため統計の意味が違います。参考程度にしてください。",
   },
   export: {
     title: "AI分析データ出力",
