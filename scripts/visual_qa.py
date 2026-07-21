@@ -191,7 +191,7 @@ def main() -> None:
         capture(page, "throw-history-1024", report)
 
         page.goto(f"{BASE_URL}/#/session/qa-session/export", wait_until="networkidle")
-        page.get_by_role("button", name="Markdownを生成").wait_for()
+        page.get_by_role("button", name="AIへ渡すテキストを生成").wait_for()
         capture(page, "ai-export-1024", report)
 
         page.keyboard.press("Tab")
