@@ -6,7 +6,11 @@
  *  - ナビゲーションはネットワーク失敗時に index.html へフォールバック
  *  - 新しい SW が waiting になったらクライアントへ更新可能を通知
  */
-const CACHE_VERSION = "dta-v1.25.0";
+// __APP_VERSION__ はビルド時に package.json の version へ置換される
+// (vite.config.ts の inject-sw-version プラグイン)。これにより新リリースごとに
+// sw.js の内容が変わり、Service Worker の更新検知(updatefound)と更新バナーが
+// 正しく発火する。dev では SW 未登録のためプレースホルダのままでも影響しない。
+const CACHE_VERSION = "dta-v__APP_VERSION__";
 const APP_SHELL = [
   "./",
   "./index.html",
