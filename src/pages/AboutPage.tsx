@@ -31,7 +31,16 @@ export default function AboutPage() {
               <strong>v{entry.version}</strong>
               <span className="muted small"> ({entry.date})</span>
             </span>
-            <span className="small" style={{ textAlign: "left", flex: 1, marginLeft: "0.8rem" }}>
+            <span
+              className="small"
+              style={{
+                textAlign: "left",
+                flex: 1,
+                minWidth: 0,
+                marginLeft: "0.8rem",
+                overflowWrap: "anywhere",
+              }}
+            >
               {entry.summary}
             </span>
           </div>
