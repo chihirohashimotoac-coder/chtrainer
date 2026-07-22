@@ -581,11 +581,15 @@ table.stats tbody tr:nth-child(even) { background: var(--row-alt); }
 .top-bar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
 }
 .top-bar h1 {
   flex: 1;
+  /* タイトルは1文字ずつ縦に折り返させない。並ぶボタンが収まらないときは
+     flex-wrap で次の行へ送る(狭幅でも見出しは横書きのまま保つ)。 */
+  white-space: nowrap;
   margin: 0;
 }
 
