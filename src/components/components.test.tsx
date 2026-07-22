@@ -12,6 +12,7 @@ import { SetupProvider } from "../state/SetupContext";
 import { STEEL_BOARD } from "../config/boardProfiles";
 import { calculateStatistics } from "../domain/stats";
 import { handComputedThrows } from "../test/fixtures";
+import { SCHEMA_VERSION, type PlayerProfile } from "../types/models";
 
 describe("SimpleInput (簡易入力)", () => {
   it("トリプル+20でT20の概算着弾を返す", async () => {
@@ -139,6 +140,50 @@ describe("PlayerForm (アクセシブルな任意フォーム情報)", () => {
     expect(screen.getByRole("combobox", { name: "グリップ位置" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "テイクバック" })).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "投擲テンポ" })).toBeInTheDocument();
+  });
+
+  it("レベル欄は補足メモ1つに統合され、旧の現在/目標レベル欄は無い", () => {
+    render(<PlayerForm onSave={vi.fn()} />);
+    expect(
+      screen.getByRole("textbox", { name: /実力・目標の補足メモ/ })
+    ).toBeInTheDocument();
+    expect(screen.queryByText("現在のレベル(自己申告)")).not.toBeInTheDocument();
+    expect(screen.queryByText("目標レベル")).not.toBeInTheDocument();
+  });
+
+  it("旧 currentLevel/targetLevel は補足メモへ移行され、保存は levelNote へ書き込む", async () => {
+    const user = userEvent.setup();
+    const onSave = vi.fn();
+    const legacyPlayer: PlayerProfile = {
+      schemaVersion: SCHEMA_VERSION,
+      id: "legacy-1",
+      displayName: "旧ユーザー",
+      dominantHand: "right",
+      currentLevel: "レーティング8相当",
+      targetLevel: "レーティング10",
+      defaultBoardType: "soft",
+      dartColors: ["#e05252", "#4f7fe0", "#f0f0f0"],
+      defaultInputMethod: "coordinate",
+      vibrationEnabled: true,
+      soundEnabled: false,
+      autoAdvanceEnabled: true,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    };
+    render(<PlayerForm initial={legacyPlayer} onSave={onSave} />);
+    const memo = screen.getByRole("textbox", {
+      name: /実力・目標の補足メモ/,
+    }) as HTMLTextAreaElement;
+    // 旧2欄が1つのメモへ結合されて初期表示される
+    expect(memo.value).toBe("現在: レーティング8相当 / 目標: レーティング10");
+
+    await user.click(screen.getByRole("button", { name: "保存" }));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    const saved = onSave.mock.calls[0]![0] as PlayerProfile;
+    expect(saved.levelNote).toBe("現在: レーティング8相当 / 目標: レーティング10");
+    // 保存データには旧フィールドを書き込まない
+    expect(saved.currentLevel).toBeUndefined();
+    expect(saved.targetLevel).toBeUndefined();
   });
 });
 

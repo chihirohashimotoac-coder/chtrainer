@@ -126,6 +126,7 @@ export default function PreSessionPage() {
         ...(player?.stance ? { stance: player.stance } : {}),
         ...(player?.form ? { form: { ...player.form } } : {}),
         ...(player?.goal ? { goal: player.goal } : {}),
+        ...(player?.levelNote ? { levelNote: player.levelNote } : {}),
         ...(player?.currentLevel ? { currentLevel: player.currentLevel } : {}),
         ...(player?.targetLevel ? { targetLevel: player.targetLevel } : {}),
         ...(player?.currentRating ? { currentRating: player.currentRating } : {}),
