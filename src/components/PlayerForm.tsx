@@ -56,8 +56,18 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
   );
   const [formConcern, setFormConcern] = useState(initial?.form?.concern ?? "");
   const [goal, setGoal] = useState<PlayerGoal | "">(initial?.goal ?? "");
-  const [currentLevel, setCurrentLevel] = useState(initial?.currentLevel ?? "");
-  const [targetLevel, setTargetLevel] = useState(initial?.targetLevel ?? "");
+  // 旧 currentLevel / targetLevel は levelNote へ統合。既存データは失わないよう、
+  // levelNote 未設定なら旧フィールドを一度だけ結合して初期値にする(保存時に levelNote へ移行)。
+  const [levelNote, setLevelNote] = useState(() => {
+    if (initial?.levelNote != null) return initial.levelNote;
+    const legacy = [
+      initial?.currentLevel ? `現在: ${initial.currentLevel}` : "",
+      initial?.targetLevel ? `目標: ${initial.targetLevel}` : "",
+    ]
+      .filter(Boolean)
+      .join(" / ");
+    return legacy;
+  });
   const [ratingSystem, setRatingSystem] = useState<RatingSystem | "">(
     initial?.currentRating?.system ?? initial?.targetRating?.system ?? ""
   );
@@ -102,8 +112,7 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
           }
         : {}),
       ...(goal ? { goal } : {}),
-      ...(currentLevel.trim() ? { currentLevel: currentLevel.trim() } : {}),
-      ...(targetLevel.trim() ? { targetLevel: targetLevel.trim() } : {}),
+      ...(levelNote.trim() ? { levelNote: levelNote.trim() } : {}),
       ...(makeRating(currentRatingValue) ? { currentRating: makeRating(currentRatingValue) } : {}),
       ...(makeRating(targetRatingValue) ? { targetRating: makeRating(targetRatingValue) } : {}),
       ...(concern.trim() ? { concern: concern.trim() } : {}),
@@ -295,23 +304,16 @@ export function PlayerForm({ initial, onSave, saveLabel }: PlayerFormProps) {
           ))}
         </div>
         <label className="field">
-          <span>{s.player.currentLevel}</span>
-          <input
-            type="text"
-            value={currentLevel}
-            onChange={(e) => setCurrentLevel(e.target.value)}
-            placeholder={s.player.currentLevelPlaceholder}
-            maxLength={60}
-          />
-        </label>
-        <label className="field">
-          <span>{s.player.targetLevel}</span>
-          <input
-            type="text"
-            value={targetLevel}
-            onChange={(e) => setTargetLevel(e.target.value)}
-            placeholder={s.player.targetLevelPlaceholder}
-            maxLength={60}
+          <span>{s.player.levelNote}</span>
+          <p className="muted small" style={{ margin: "0 0 0.4rem" }}>
+            {s.player.levelNoteHint}
+          </p>
+          <textarea
+            value={levelNote}
+            onChange={(e) => setLevelNote(e.target.value)}
+            placeholder={s.player.levelNotePlaceholder}
+            rows={2}
+            maxLength={200}
           />
         </label>
 

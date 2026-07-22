@@ -192,10 +192,21 @@ export interface PlayerProfile {
   form?: FormInformation;
   /** 練習の目的(任意) */
   goal?: PlayerGoal;
-  /** 現在のレベル(自由記述・自己申告) */
+  /**
+   * @deprecated v2.1 以降は levelNote に統合。読み込み・旧データ互換のため型に残す。
+   * 現在のレベル(自由記述・自己申告)。
+   */
   currentLevel?: string;
-  /** 目標レベル(自由記述) */
+  /**
+   * @deprecated v2.1 以降は levelNote に統合。読み込み・旧データ互換のため型に残す。
+   * 目標レベル(自由記述)。
+   */
   targetLevel?: string;
+  /**
+   * 実力・目標の補足メモ(自由記述)。レーティング欄と重複しない、言葉での補足用。
+   * 旧 currentLevel / targetLevel を統合した後継フィールド(任意)。
+   */
+  levelNote?: string;
   /** 現在のレーティング(体系＋数値・任意) */
   currentRating?: PlayerRating;
   /** 目標のレーティング(体系＋数値・任意) */
@@ -271,8 +282,12 @@ export interface SessionContextSnapshot {
   stance?: Stance;
   form?: FormInformation;
   goal?: PlayerGoal;
+  /** @deprecated levelNote に統合。旧セッションのスナップショット互換のため残す。 */
   currentLevel?: string;
+  /** @deprecated levelNote に統合。旧セッションのスナップショット互換のため残す。 */
   targetLevel?: string;
+  /** 実力・目標の補足メモ(自由記述)。 */
+  levelNote?: string;
   currentRating?: PlayerRating;
   targetRating?: PlayerRating;
   concern?: string;

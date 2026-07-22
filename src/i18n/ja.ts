@@ -111,6 +111,11 @@ export const ja = {
     currentLevelPlaceholder: "例: レーティング8相当",
     targetLevel: "目標レベル",
     targetLevelPlaceholder: "例: レーティング10",
+    levelNote: "実力・目標の補足メモ(任意・自由記述)",
+    levelNoteHint:
+      "レーティングは下の欄で選べます。ここには数値化しにくい実力・課題・目標を言葉で補足できます。",
+    levelNotePlaceholder:
+      "例: 安定して80点/R。ダブルが内側に外れやすい。半年で県大会ベスト8が目標",
     ratingSection: "レーティング(任意)",
     ratingHint: "設定するとAI分析に、目標までの1ダート得点(PPD)・1ラウンドマーク(MPR)の目安ギャップが参照として含まれます。",
     ratingSystem: "レーティング体系",

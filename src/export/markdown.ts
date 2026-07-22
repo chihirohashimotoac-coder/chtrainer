@@ -873,6 +873,7 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
         goal: snapshot.goal,
         currentLevel: snapshot.currentLevel,
         targetLevel: snapshot.targetLevel,
+        levelNote: snapshot.levelNote,
         currentRating: snapshot.currentRating,
         targetRating: snapshot.targetRating,
         concern: snapshot.concern,
@@ -956,6 +957,7 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
   if (
     player &&
     (player.goal ||
+      player.levelNote ||
       player.currentLevel ||
       player.targetLevel ||
       player.concern ||
@@ -965,8 +967,13 @@ export function buildAnalysisMarkdown(input: MarkdownInput): string {
     out.push("");
     if (player.goal)
       out.push(`- 目的: ${GOAL_LABELS[player.goal] ?? player.goal}`);
-    if (player.currentLevel) out.push(`- 現在のレベル(自己申告): ${player.currentLevel}`);
-    if (player.targetLevel) out.push(`- 目標レベル: ${player.targetLevel}`);
+    // levelNote(後継)があればそれを、なければ旧 currentLevel / targetLevel を出力する。
+    if (player.levelNote) {
+      out.push(`- 実力・目標メモ: ${player.levelNote}`);
+    } else {
+      if (player.currentLevel) out.push(`- 現在のレベル(自己申告): ${player.currentLevel}`);
+      if (player.targetLevel) out.push(`- 目標レベル: ${player.targetLevel}`);
+    }
     for (const line of ratingLines) out.push(line);
     if (player.concern) out.push(`- 主な悩み・重点課題: ${player.concern}`);
     out.push("");
