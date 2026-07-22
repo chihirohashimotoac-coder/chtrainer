@@ -23,6 +23,7 @@ import ComparePage from "./pages/ComparePage";
 import ExportPage from "./pages/ExportPage";
 import BackupPage from "./pages/BackupPage";
 import AppSettingsPage from "./pages/AppSettingsPage";
+import ThemeSettingsPage from "./pages/ThemeSettingsPage";
 import AboutPage from "./pages/AboutPage";
 
 function UpdateBanner() {
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/setup" element={<OnboardingPage />} />
             <Route path="/settings" element={<AppSettingsPage />} />
+            <Route path="/settings/theme" element={<ThemeSettingsPage />} />
             <Route path="/settings/player" element={<PlayerSettingsPage />} />
             <Route path="/settings/equipment" element={<EquipmentListPage />} />
             <Route

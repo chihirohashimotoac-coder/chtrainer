@@ -580,12 +580,46 @@ export const ja = {
   },
   appSettings: {
     title: "アプリ設定",
+    theme: "テーマ / 外観",
     player: "プレイヤー設定",
     equipment: "セッティング",
     backup: "バックアップ・復元",
     about: "アプリ情報・免責事項",
     updateAvailable: "新しいバージョンがあります",
     updateNow: "更新する",
+  },
+  theme: {
+    title: "テーマ / 外観",
+    lead: "アプリの配色・質感を選べます。操作・機能・レイアウトは変わりません。ダーツ盤の表示はすべてのテーマで共通です。",
+    current: "選択中",
+    dark: "ダーク",
+    light: "ライト",
+    options: {
+      default: {
+        name: "オリジナル",
+        desc: "既定の配色。ネイビー×ゴールドのダーク",
+      },
+      slate: {
+        name: "スレート＆チョーク",
+        desc: "黒板スコアボード風。スレート×チョーク＆アンバー",
+      },
+      cobalt: {
+        name: "コバルト・コート",
+        desc: "中継グラフィックス風。ミッドナイト×電光ブルー",
+      },
+      bronze: {
+        name: "ブロンズ＆アイボリー",
+        desc: "大会プログラム風。アイボリー×ブロンズの明るい配色",
+      },
+      graphite: {
+        name: "グラファイト・グリッド",
+        desc: "スイス/分析端末風。紙×機能的レッドの明るい配色",
+      },
+      hyperdrive: {
+        name: "HYPERDRIVE",
+        desc: "サイバー/ゲーミング。漆黒×ネオン(マゼンタ×シアン)",
+      },
+    },
   },
   about: {
     title: "アプリ情報・免責事項",
