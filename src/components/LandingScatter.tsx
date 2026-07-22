@@ -108,7 +108,7 @@ export function LandingScatter({
       </div>
 
       <div className="board-wrap" style={{ maxWidth: "min(92vw, 420px)" }}>
-        <BoardSVG profile={profile}>
+        <BoardSVG profile={profile} showOutboardArea>
           <g aria-hidden>
             {showHeat &&
               points.map((p, i) => (
