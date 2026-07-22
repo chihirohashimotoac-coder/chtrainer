@@ -96,8 +96,11 @@ export async function buildSummaryCardBlob(
   ctx.fillStyle = DIM;
   ctx.font = font(30, "400");
   const boardLabel = session.boardType === "steel" ? "スティール" : "ソフト";
+  // 装備名は開始時スナップショット(改名・削除後も不変)を優先し、なければ現行プロファイル。
+  const equipmentName =
+    session.contextSnapshot?.equipmentSnapshot?.name ?? equipment?.name;
   ctx.fillText(
-    `${modeLabel(session.trainingMode)} ・ ${boardLabel}${equipment ? " ・ " + equipment.name : ""}`,
+    `${modeLabel(session.trainingMode)} ・ ${boardLabel}${equipmentName ? " ・ " + equipmentName : ""}`,
     M,
     236
   );
