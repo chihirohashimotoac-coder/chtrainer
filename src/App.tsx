@@ -24,6 +24,8 @@ import ExportPage from "./pages/ExportPage";
 import BackupPage from "./pages/BackupPage";
 import AppSettingsPage from "./pages/AppSettingsPage";
 import ThemeSettingsPage from "./pages/ThemeSettingsPage";
+import CheckoutPage from "./pages/CheckoutPage";
+import EquipmentComparePage from "./pages/EquipmentComparePage";
 import AboutPage from "./pages/AboutPage";
 
 function UpdateBanner() {
@@ -56,7 +58,8 @@ export default function App() {
   const inSession = location.pathname.startsWith("/train/session");
   const wideLayout = /^\/session\/[^/]+\/(result|throws|compare|export)$/.test(location.pathname)
     || location.pathname === "/history"
-    || location.pathname === "/history/trend";
+    || location.pathname === "/history/trend"
+    || location.pathname === "/history/equipment";
   return (
     <AppProvider>
       <SetupProvider>
@@ -74,6 +77,7 @@ export default function App() {
               element={<EquipmentEditPage />}
             />
             <Route path="/settings/backup" element={<BackupPage />} />
+            <Route path="/tools/checkout" element={<CheckoutPage />} />
             <Route path="/train/mode" element={<ModeSelectPage />} />
             <Route path="/train/targets" element={<TargetSelectPage />} />
             <Route path="/train/sets" element={<SetCountPage />} />
@@ -81,6 +85,7 @@ export default function App() {
             <Route path="/train/session" element={<SessionPage />} />
             <Route path="/history" element={<SessionsPage />} />
             <Route path="/history/trend" element={<TrendPage />} />
+            <Route path="/history/equipment" element={<EquipmentComparePage />} />
             <Route path="/session/:id" element={<SessionDetailPage />} />
             <Route path="/session/:id/result" element={<ResultPage />} />
             <Route path="/session/:id/throws" element={<ThrowsPage />} />
