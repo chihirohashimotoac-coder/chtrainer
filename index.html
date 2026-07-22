@@ -15,6 +15,21 @@
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <title>CH Darts Training Analyzer</title>
+    <script>
+      // 保存済みテーマを初回描画前に適用し、色のちらつき(FOUC)を防ぐ。
+      // キーは src/theme/theme.ts の STORAGE_KEY と一致させること。
+      (function () {
+        try {
+          var t = localStorage.getItem("chtrainer-theme");
+          if (
+            t &&
+            ["slate", "cobalt", "bronze", "graphite", "hyperdrive"].indexOf(t) >= 0
+          ) {
+            document.documentElement.setAttribute("data-theme", t);
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

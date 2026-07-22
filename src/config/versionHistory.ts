@@ -11,6 +11,12 @@ export interface VersionEntry {
 
 export const VERSION_HISTORY: VersionEntry[] = [
   {
+    version: "1.26.0",
+    date: "2026-07-22",
+    summary:
+      "外観テーマ機能を追加。設定 > テーマから、オリジナル(既定)に加えてスレート＆チョーク・コバルト・コート・ブロンズ＆アイボリー・グラファイト・グリッド・HYPERDRIVEの5テーマを選択可能に。配色・質感・タイポグラフィのみを切り替え、操作・機能・レイアウトおよびダーツ盤SVGの表示は全テーマ共通で不変。選択は端末内(localStorage)に保存し、次回起動時も維持(データやバックアップ形式には影響しない)",
+  },
+  {
     version: "1.25.0",
     date: "2026-07-21",
     summary:
