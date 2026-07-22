@@ -25,6 +25,23 @@ interface ViewBox {
   w: number;
 }
 
+/** ルーペの表示倍率(現在の表示に対する追加拡大率)。 */
+export const LOUPE_ZOOM = 2;
+
+/**
+ * ルーペ内に表示する viewBox。現在の view を LOUPE_ZOOM 倍に拡大し、正規化座標 pos を中心にする。
+ * pos は正規化座標(x=右+, y=上+)、返り値は BoardSVG のSVG単位(y下向き)。
+ */
+export function loupeViewBox(
+  pos: Point,
+  view: ViewBox
+): { x: number; y: number; w: number } {
+  const w = view.w / LOUPE_ZOOM;
+  const cx = pos.x * BOARD_UNIT;
+  const cy = -pos.y * BOARD_UNIT;
+  return { x: cx - w / 2, y: cy - w / 2, w };
+}
+
 const OUTBOARD_DIRECTIONS: OutboardDirection[] = [
   "up",
   "up_right",
@@ -76,6 +93,8 @@ export function CoordinateInput({
   const [speed, setSpeed] = useState(
     initialSpeedKmh != null ? String(initialSpeedKmh) : ""
   );
+  /** ドラッグ微調整中に指の位置を示すルーペ(盤ラッパー基準のCSSピクセル)。null=非表示。 */
+  const [loupe, setLoupe] = useState<{ px: number; py: number } | null>(null);
 
   const wrapRef = useRef<HTMLDivElement>(null);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -152,6 +171,7 @@ export function CoordinateInput({
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     moved.current = false;
     if (pointers.current.size === 2) {
+      setLoupe(null);
       const [p1, p2] = [...pointers.current.values()];
       if (p1 && p2) {
         pinchStart.current = {
@@ -170,6 +190,7 @@ export function CoordinateInput({
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (pointers.current.size === 2 && pinchStart.current) {
+      setLoupe(null);
       const [p1, p2] = [...pointers.current.values()];
       if (!p1 || !p2) return;
       const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
@@ -200,6 +221,9 @@ export function CoordinateInput({
         const radius = Math.hypot(norm.x, norm.y);
         const max = profile.radii.inputAreaOuter;
         if (radius <= max) setPos(norm);
+        // 触れて動かしている間は、指で隠れる着弾点をルーペで表示する
+        const rect = wrapRef.current?.getBoundingClientRect();
+        if (rect) setLoupe({ px: e.clientX - rect.left, py: e.clientY - rect.top });
       }
     }
   };
@@ -207,6 +231,7 @@ export function CoordinateInput({
   const onPointerUp = (e: React.PointerEvent) => {
     const wasPinch = pointers.current.size >= 2;
     pointers.current.delete(e.pointerId);
+    if (pointers.current.size === 0) setLoupe(null);
     if (pointers.current.size < 2) pinchStart.current = null;
     if (wasPinch || moved.current) return;
 
@@ -277,6 +302,38 @@ export function CoordinateInput({
 
   const markerScale = view.w / FULL;
 
+  // ルーペ(ドラッグ微調整中に指の下の点を拡大表示)のレイアウトを算出する。
+  const LOUPE_D = 132; // 直径(px)
+  const LOUPE_GAP = 22; // 指との間隔(px)
+  let loupeLayout: {
+    left: number;
+    top: number;
+    vb: string;
+    cross: number;
+    stroke: number;
+    cx: number;
+    cy: number;
+  } | null = null;
+  if (loupe && pos) {
+    const wrapW = wrapRef.current?.clientWidth ?? 0;
+    const left = Math.min(
+      Math.max(loupe.px - LOUPE_D / 2, 4),
+      Math.max(4, wrapW - LOUPE_D - 4)
+    );
+    const above = loupe.py - LOUPE_GAP - LOUPE_D;
+    const top = above >= 4 ? above : loupe.py + LOUPE_GAP;
+    const vb = loupeViewBox(pos, view);
+    loupeLayout = {
+      left,
+      top,
+      vb: `${vb.x} ${vb.y} ${vb.w} ${vb.w}`,
+      cross: vb.w * 0.09,
+      stroke: vb.w * 0.014,
+      cx: pos.x * BOARD_UNIT,
+      cy: -pos.y * BOARD_UNIT,
+    };
+  }
+
   return (
     <div>
       <p className="muted small" style={{ textAlign: "center", margin: "0.2rem 0" }}>
@@ -285,6 +342,7 @@ export function CoordinateInput({
       <div
         ref={wrapRef}
         className="board-wrap"
+        style={{ position: "relative" }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
@@ -344,6 +402,46 @@ export function CoordinateInput({
             </g>
           )}
         </BoardSVG>
+        {loupeLayout && (
+          <div
+            className="coord-loupe"
+            aria-hidden
+            style={{
+              left: loupeLayout.left,
+              top: loupeLayout.top,
+              width: LOUPE_D,
+              height: LOUPE_D,
+            }}
+          >
+            <BoardSVG profile={profile} showOutboardArea viewBox={loupeLayout.vb}>
+              <g transform={`translate(${loupeLayout.cx} ${loupeLayout.cy})`}>
+                <line
+                  x1={-loupeLayout.cross}
+                  x2={loupeLayout.cross}
+                  y1={0}
+                  y2={0}
+                  stroke="#e4ad50"
+                  strokeWidth={loupeLayout.stroke}
+                />
+                <line
+                  y1={-loupeLayout.cross}
+                  y2={loupeLayout.cross}
+                  x1={0}
+                  x2={0}
+                  stroke="#e4ad50"
+                  strokeWidth={loupeLayout.stroke}
+                />
+                <circle
+                  r={loupeLayout.cross * 0.42}
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth={loupeLayout.stroke * 0.9}
+                />
+                <circle r={loupeLayout.stroke * 1.3} fill="#e4ad50" />
+              </g>
+            </BoardSVG>
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ padding: "0.5rem 0.8rem" }}>
