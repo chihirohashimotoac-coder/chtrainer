@@ -585,7 +585,6 @@ export const ja = {
   appSettings: {
     title: "アプリ設定",
     theme: "テーマ / 外観",
-    checkout: "チェックアウト表(フィニッシュ練習)",
     player: "プレイヤー設定",
     equipment: "セッティング",
     backup: "バックアップ・復元",
@@ -653,18 +652,6 @@ export const ja = {
     hitRate: "命中率",
     avgError: "平均誤差",
     throws: "投擲",
-  },
-  checkout: {
-    title: "チェックアウト表",
-    lead: "残り点数から、標準的な上がり筋(狙う面の順)を表示します。フィニッシュ練習の目安にどうぞ。",
-    remaining: "残り点数",
-    route: "上がり筋",
-    rangeError: "2〜170の整数を入力してください。",
-    bogey: "3ダートでの上がりはありません(ボギーナンバー)。",
-    bogeyShort: "上がりなし",
-    note: "T=トリプル / D=ダブル / BULL=ブル(50) / 数字はシングル。最終ダートは必ずダブルかブルです。候補は一例で、得意な面に合わせて調整してください。",
-    showTable: "全体の早見表を表示",
-    hideTable: "早見表を隠す",
   },
   equipCompare: {
     title: "セッティング別比較",

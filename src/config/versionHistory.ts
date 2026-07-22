@@ -11,6 +11,12 @@ export interface VersionEntry {
 
 export const VERSION_HISTORY: VersionEntry[] = [
   {
+    version: "1.28.0",
+    date: "2026-07-22",
+    summary:
+      "チェックアウト表(フィニッシュ練習補助)を削除。団体別(JAPAN/PERFECT/PDC等)・アウト方式(ダブル/マスター)・ブル方式(セパレート/ファット)でアレンジ筋が異なり、公式の参照表を出典明記で扱う方針が固まるまで一旦取り下げる。他の機能(着弾マップ・矢速相関・セッティング別比較・ライブ表示・要約カード・AI連携)と盤面SVG・データ形式は変更なし。",
+  },
+  {
     version: "1.27.0",
     date: "2026-07-22",
     summary:
