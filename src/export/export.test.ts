@@ -211,6 +211,15 @@ describe("Markdown生成", () => {
     expect(markdown).toContain("着弾データだけから");
   });
 
+  it("表面的な言い換えを禁じ、深掘りを必須にする指示を含む", () => {
+    expect(markdown).toContain("深掘りの必須要件");
+    // 表面的な指摘の例示(数値の言い換え)を禁止していること
+    expect(markdown).toContain("そのまま言い換えただけの指摘");
+    expect(markdown).toContain("2つ以上の指標・条件を掛け合わせて");
+    // ハイライト章でも単一指標の表面的傾向を禁止していること
+    expect(markdown).toContain("単一指標で分かる表面的傾向");
+  });
+
   it("全投擲データの表を含む", () => {
     expect(markdown).toContain("| No. | セット | 投順 |");
     expect(markdown).toContain("| T20 |");
@@ -865,6 +874,54 @@ describe("スコアリング形式の機械可読値 fat_bull への統一と後
       const col = CSV_COLUMNS.indexOf("scoring_style");
       expect((csv.trim().split("\r\n")[1] ?? "").split(",")[col]).toBe(style);
     }
+  });
+});
+
+describe("セッティング(装備)の全項目がAI依頼文に含まれる", () => {
+  const equipment = {
+    schemaVersion: 1,
+    id: "equip-1",
+    name: "マイダーツ",
+    barrel: { maker: "TRiNiDAD", model: "GOMEZ", weightG: 18.5, lengthMm: 45, maxDiameterMm: 6.8 },
+    shaft: { maker: "L-style", model: "L-Shaft", lengthMm: 26 },
+    flight: { maker: "L-style", model: "L1", shape: "Standard" },
+    point: { maker: "CONDOR", model: "Tip", lengthMm: 25 },
+    notes: "先端やや長め。冬場は指先が乾く",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+
+  it("バレル(重量・全長・最大径)・シャフト全長・フライト・ポイント・メモをすべて出力する", () => {
+    const md = buildAnalysisMarkdown({
+      session,
+      player: undefined,
+      equipment,
+      stats,
+      throws,
+      setNumberOf,
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    expect(md).toContain("マイダーツ");
+    expect(md).toContain("バレル: TRiNiDAD GOMEZ 18.5g 全長45mm 最大径6.8mm");
+    expect(md).toContain("シャフト: L-style L-Shaft 全長26mm");
+    expect(md).toContain("フライト: L-style L1 Standard");
+    expect(md).toContain("ポイント: CONDOR Tip 全長25mm");
+    expect(md).toContain("メモ: 先端やや長め。冬場は指先が乾く");
+  });
+
+  it("最小構成(名前のみ)でも壊れない", () => {
+    const md = buildAnalysisMarkdown({
+      session,
+      player: undefined,
+      equipment: { ...equipment, barrel: undefined, shaft: undefined, flight: undefined, point: undefined, notes: undefined },
+      stats,
+      throws,
+      setNumberOf,
+      comparisons: [],
+      embedAllThrows: false,
+    });
+    expect(md).toContain("- セッティング: マイダーツ");
   });
 });
 
