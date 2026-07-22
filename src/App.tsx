@@ -24,7 +24,6 @@ import ExportPage from "./pages/ExportPage";
 import BackupPage from "./pages/BackupPage";
 import AppSettingsPage from "./pages/AppSettingsPage";
 import ThemeSettingsPage from "./pages/ThemeSettingsPage";
-import CheckoutPage from "./pages/CheckoutPage";
 import EquipmentComparePage from "./pages/EquipmentComparePage";
 import AboutPage from "./pages/AboutPage";
 
@@ -77,7 +76,6 @@ export default function App() {
               element={<EquipmentEditPage />}
             />
             <Route path="/settings/backup" element={<BackupPage />} />
-            <Route path="/tools/checkout" element={<CheckoutPage />} />
             <Route path="/train/mode" element={<ModeSelectPage />} />
             <Route path="/train/targets" element={<TargetSelectPage />} />
             <Route path="/train/sets" element={<SetCountPage />} />
