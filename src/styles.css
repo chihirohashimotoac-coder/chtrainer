@@ -587,10 +587,22 @@ table.stats tbody tr:nth-child(even) { background: var(--row-alt); }
 }
 .top-bar h1 {
   flex: 1;
-  /* タイトルは1文字ずつ縦に折り返させない。並ぶボタンが収まらないときは
-     flex-wrap で次の行へ送る(狭幅でも見出しは横書きのまま保つ)。 */
+  /* タイトルは1文字ずつ縦に折り返させない(狭幅でも見出しは横書きのまま保つ)。 */
   white-space: nowrap;
   margin: 0;
+}
+
+/* 見出しの下に並ぶアクションボタン列。狭幅でも縦積み・2段にせず横1列に並べる。
+   各ボタンを均等幅で分け合い、長いラベルはボタン内で折り返す(はみ出し防止)。 */
+.top-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.top-actions > .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
 }
 
 .badge {

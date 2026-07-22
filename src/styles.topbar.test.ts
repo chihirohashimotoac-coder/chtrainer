@@ -5,12 +5,12 @@ import { describe, expect, it } from "vitest";
 const css = readFileSync("src/styles.css", "utf8");
 
 /**
- * 履歴画面などの .top-bar は h1 見出しと複数のボタンを横並びにする。
- * 折り返し指定がないと、狭幅(スマホ)でボタンに圧迫された h1(flex:1)が
- * 日本語見出しを1文字ずつ縦に折り返し、「過去セッション」が縦書きになる。
- * 回帰防止として、CSS が以下を満たすことを保証する:
- *   - .top-bar が flex-wrap: wrap(収まらないボタンは次の行へ送る)
- *   - .top-bar h1 が white-space: nowrap(見出しは横書きのまま保つ)
+ * 履歴画面のヘッダー崩れに対する回帰テスト。
+ *
+ * 1) .top-bar の h1 見出しは white-space:nowrap で、狭幅でも日本語見出しが
+ *    1文字ずつ縦に折り返さない(「過去セッション」の縦書きを防ぐ)。
+ * 2) 見出し下のアクション列 .top-actions は、各ボタンを均等幅(flex:1 1 0)で
+ *    分け合い、狭幅(スマホ)でも縦積み・2段にならず横1列に収まる。
  */
 function block(source: string, selector: string): string {
   const start = source.indexOf(selector + " {");
@@ -20,12 +20,18 @@ function block(source: string, selector: string): string {
   return source.slice(open + 1, close);
 }
 
-describe(".top-bar の折り返し(スマホでタイトルが縦書きにならない)", () => {
-  it(".top-bar は flex-wrap: wrap を持つ", () => {
-    expect(block(css, ".top-bar")).toMatch(/flex-wrap:\s*wrap/);
+describe("履歴ヘッダーのレイアウト(スマホで崩れない)", () => {
+  it(".top-bar h1 は white-space: nowrap を持つ(見出しが縦書きにならない)", () => {
+    expect(block(css, ".top-bar h1")).toMatch(/white-space:\s*nowrap/);
   });
 
-  it(".top-bar h1 は white-space: nowrap を持つ", () => {
-    expect(block(css, ".top-bar h1")).toMatch(/white-space:\s*nowrap/);
+  it(".top-actions > .btn は均等幅(flex:1 1 0)で1列に並ぶ", () => {
+    const rule = block(css, ".top-actions > .btn");
+    expect(rule).toMatch(/flex:\s*1\s+1\s+0/);
+    expect(rule).toMatch(/min-width:\s*0/);
+  });
+
+  it(".top-actions は縦積みにする flex-direction:column を持たない", () => {
+    expect(block(css, ".top-actions")).not.toMatch(/flex-direction:\s*column/);
   });
 });

@@ -296,9 +296,12 @@ export default function ExportPage() {
                 key={p.id}
                 className="btn"
                 onClick={async () => {
+                  // ポップアップブロックを避けるため、ユーザー操作と同じ同期フレーム
+                  // 内でタブを先に開く(await の後だと Safari 等でブロックされ得る)。
+                  // noopener 指定時は戻り値が null になり得るため参照には依存しない。
+                  window.open(p.url, "_blank", "noopener,noreferrer");
                   const ok = await copyToClipboard(markdown);
                   setMessage(ok ? s.export.copiedOpen : s.errors.copyFailed);
-                  window.open(p.url, "_blank", "noopener,noreferrer");
                 }}
               >
                 {p.name}{s.export.openSuffix}
