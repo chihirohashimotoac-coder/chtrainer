@@ -5,8 +5,9 @@ import { ConfirmDialog } from "../components/ConfirmDialog";
 import { CoordinateInput } from "../components/CoordinateInput";
 import { SimpleInput } from "../components/SimpleInput";
 import { getBoardProfile } from "../config/boardProfiles";
-import { getActiveSession, getThrowSets, saveSession } from "../db/db";
+import { getActiveSession, getThrows, getThrowSets, saveSession } from "../db/db";
 import { isSameTarget, segmentLabel } from "../domain/targets";
+import { liveSummary, type LiveSummary } from "../domain/liveSummary";
 import {
   commitSet,
   finishSession,
@@ -23,6 +24,7 @@ import type {
 } from "../types/models";
 import { nowIso } from "../utils/id";
 import { parseSpeedKmh } from "../utils/speed";
+import { fmtNum, fmtRate } from "../utils/format";
 import { t } from "../i18n/ja";
 
 type Step = "throw" | "input" | "confirm" | "middle" | "after";
@@ -63,6 +65,7 @@ export default function SessionPage() {
   const [swapSelection, setSwapSelection] = useState<number | null>(null);
   const [confirmAbort, setConfirmAbort] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [live, setLive] = useState<LiveSummary | null>(null);
   const setStartedAt = useRef<string | undefined>(undefined);
   /** 現在のセットが自動保存済みの場合、そのセットID(置換保存に使う) */
   const savedSetIdRef = useRef<string | null>(null);
@@ -82,6 +85,7 @@ export default function SessionPage() {
         const done = sets.length;
         setSession(active);
         setInputMethod(active.inputMethod);
+        void refreshLive(active.id);
         if (done >= active.setCount) {
           setStep("after");
         } else if (
@@ -188,6 +192,15 @@ export default function SessionPage() {
       });
     return persistChain.current;
   };
+
+  /** コミット済み投擲からライブ・フィードバック用サマリを更新する(補助表示)。 */
+  const refreshLive = useCallback(async (sessionId: string) => {
+    try {
+      setLive(liveSummary(await getThrows(sessionId)));
+    } catch {
+      // ライブ表示は補助的なので失敗しても本フローに影響させない
+    }
+  }, []);
 
   const handleLanding = (landing: LandingRecord, speedKmh?: number) => {
     feedback(player);
@@ -302,6 +315,7 @@ export default function SessionPage() {
       };
       await saveSession(updated);
       setSession(updated);
+      void refreshLive(session.id);
 
       if (isLast) {
         setStep("after");
@@ -316,7 +330,7 @@ export default function SessionPage() {
     } finally {
       setSaving(false);
     }
-  }, [session, saving, landings, notes, speeds, targets, setNumber, player, s]);
+  }, [session, saving, landings, notes, speeds, targets, setNumber, player, s, refreshLive]);
 
   const submitMiddleAssessment = async (assessment: SelfAssessment) => {
     if (!session) return;
@@ -366,6 +380,45 @@ export default function SessionPage() {
   const dartColor = sessionDartColors?.[dartIndex] ?? "#ccc";
   const currentTarget = targets[dartIndex];
 
+  // 同一セットの既投擲(座標あり)を、入力中の1本を除いてゴースト表示する
+  const ghostPoints = landings
+    .map((l, i) =>
+      i !== dartIndex &&
+      l &&
+      l.x != null &&
+      l.y != null &&
+      l.ring !== "bounce_out"
+        ? { x: l.x, y: l.y, dart: (i + 1) as 1 | 2 | 3 }
+        : null
+    )
+    .filter((p): p is { x: number; y: number; dart: 1 | 2 | 3 } => p != null);
+
+  const liveBar =
+    live && live.completedThrows > 0 ? (
+      <div className="live-bar" role="status" aria-live="polite">
+        <span>
+          <span className="live-k">{s.live.hitRate}</span>
+          <strong>
+            {live.scorableThrows > 0 ? fmtRate(live.hitRate) : "N/A"}
+          </strong>
+          {live.scorableThrows > 0 && (
+            <span className="muted small">
+              {" "}
+              ({live.hits}/{live.scorableThrows})
+            </span>
+          )}
+        </span>
+        <span>
+          <span className="live-k">{s.live.avgError}</span>
+          <strong>{fmtNum(live.averageErrorDistance)}</strong>
+        </span>
+        <span>
+          <span className="live-k">{s.live.throws}</span>
+          <strong>{live.completedThrows}</strong>
+        </span>
+      </div>
+    ) : null;
+
   return (
     <div>
       <div className="top-bar">
@@ -377,6 +430,8 @@ export default function SessionPage() {
           {s.throwing.abort}
         </button>
       </div>
+
+      {(step === "throw" || step === "confirm") && liveBar}
 
       {step === "throw" && (
         <div className="throw-screen">
@@ -473,6 +528,7 @@ export default function SessionPage() {
               profile={profile}
               onConfirm={handleLanding}
               initialSpeedKmh={parseSpeedKmh(speeds[dartIndex] ?? "")}
+              ghostPoints={ghostPoints}
             />
           ) : (
             <SimpleInput

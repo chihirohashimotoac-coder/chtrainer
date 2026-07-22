@@ -46,6 +46,8 @@ interface CoordinateInputProps {
   allowBounceOut?: boolean;
   /** 矢速欄の初期値(再入力・編集時に既存値をプリフィル) */
   initialSpeedKmh?: number;
+  /** 同一セットの既投擲(正規化座標)。薄く表示して入力の目安にする。 */
+  ghostPoints?: { x: number; y: number; dart: 1 | 2 | 3 }[];
 }
 
 /**
@@ -59,6 +61,7 @@ export function CoordinateInput({
   initial,
   allowBounceOut = true,
   initialSpeedKmh,
+  ghostPoints,
 }: CoordinateInputProps) {
   const s = t();
   const extent = profile.radii.inputAreaOuter * BOARD_UNIT + 4;
@@ -292,6 +295,25 @@ export function CoordinateInput({
           showOutboardArea
           viewBox={`${view.x} ${view.y} ${view.w} ${view.w}`}
         >
+          {ghostPoints?.map((g, i) => (
+            <g
+              key={`ghost-${i}`}
+              transform={`translate(${g.x * BOARD_UNIT} ${-g.y * BOARD_UNIT})`}
+              aria-hidden
+              opacity={0.4}
+            >
+              <circle r={3.2 * markerScale} fill="none" stroke="#cfe0e5" strokeWidth={1 * markerScale} />
+              <circle r={0.8 * markerScale} fill="#cfe0e5" />
+              <text
+                x={5 * markerScale}
+                y={-4 * markerScale}
+                fontSize={7 * markerScale}
+                fill="#cfe0e5"
+              >
+                {g.dart}
+              </text>
+            </g>
+          ))}
           {pos && (
             <g
               transform={`translate(${pos.x * BOARD_UNIT} ${-pos.y * BOARD_UNIT})`}

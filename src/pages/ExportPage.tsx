@@ -13,6 +13,7 @@ import { rankComparisonCandidates } from "../domain/compare";
 import { buildSessionCsv, csvToBlob } from "../export/csv";
 import { copyToClipboard, downloadBlob, downloadText, timestampForFilename } from "../export/download";
 import { buildAnalysisMarkdown, modeLabel } from "../export/markdown";
+import { AI_PROVIDERS } from "../export/aiLinks";
 import { buildAnalysisZip } from "../export/zip";
 import { MAX_EMBEDDED_MARKDOWN_CHARS } from "../config/constants";
 import { recalcAndSaveStatistics } from "../services/sessionService";
@@ -286,6 +287,25 @@ export default function ExportPage() {
             </button>
           </div>
           {message && <p className="ok-text small">{message}</p>}
+
+          <h2>{s.export.openInAi}</h2>
+          <p className="muted small">{s.export.openInAiHint}</p>
+          <div className="btn-row">
+            {AI_PROVIDERS.map((p) => (
+              <button
+                key={p.id}
+                className="btn"
+                onClick={async () => {
+                  const ok = await copyToClipboard(markdown);
+                  setMessage(ok ? s.export.copiedOpen : s.errors.copyFailed);
+                  window.open(p.url, "_blank", "noopener,noreferrer");
+                }}
+              >
+                {p.name}{s.export.openSuffix}
+              </button>
+            ))}
+          </div>
+
           <h2>{s.export.preview}</h2>
           <div className="markdown-preview">{markdown}</div>
         </>

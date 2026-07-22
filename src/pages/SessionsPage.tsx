@@ -68,6 +68,9 @@ export default function SessionsPage() {
         <Link className="btn small" to="/history/trend">
           {s.trend.title}
         </Link>
+        <Link className="btn small" to="/history/equipment">
+          {s.equipCompare.title}
+        </Link>
         <button
           className="btn small"
           onClick={() => setShowFilters((v) => !v)}
