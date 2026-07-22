@@ -527,6 +527,17 @@ table.stats tbody tr:nth-child(even) { background: var(--row-alt); }
   width: 100%;
   height: auto;
 }
+/* ドラッグ微調整中に指の下の着弾点を拡大表示するルーペ。指の操作は妨げない。 */
+.coord-loupe {
+  position: absolute;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--accent, #e4ad50);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  background: var(--bg-raised, #07141f);
+  pointer-events: none;
+  z-index: 5;
+}
 .board-controls {
   display: flex;
   gap: 0.5rem;
