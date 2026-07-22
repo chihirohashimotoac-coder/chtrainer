@@ -167,6 +167,8 @@ export const ANALYSIS_INSTRUCTIONS = `以下の順序とルールで、統計の
 
 ## 分析の姿勢
 - この分析の最大の価値は、ユーザー自身が気付いていないクセ・傾向・改善点を発見して言語化することです。投順、方向偏り、前後半、修正パターン、自己評価との関係などデータを多角的に突き合わせ、本人が言語化していないパターンを積極的に指摘してください。
+- 【深掘りの必須要件】統計値をそのまま言い換えただけの指摘(例:「命中率が低い」「3投目の誤差が大きい」「アウトボードが多い」など、依頼文の数値を見れば誰でも即座に分かること)を、発見・結論・重要な洞察として提示しないでください。価値ある指摘は、2つ以上の指標・条件を掛け合わせて初めて見える非自明な関係に限ります。目安として、"条件×結果"(例: 前投が命中した直後だけ3投目が右へ散る=命中後の力み)、"時間変化×自己評価"(例: 自己申告の集中度が下がったセットでのみ左右のばらつきが増える)、"切替×再現性"(例: 同一ターゲット継続は安定だが、セット内切替直後の1投だけ手前に落ちる)のように、複数の軸の交差・交互作用・時間推移から、本人が数値を眺めるだけでは気づけない層を提示してください。単一指標だけで分かる表面的事実は、深掘りの前提や根拠として使うのは構いませんが、それ自体を主要な結論・洞察として扱わないでください。
+- 表面的な事実に留まりそうな場合は、「なぜそれが起きるのか(条件)」「どの局面で強まるのか(いつ・どの投順・どのターゲット・どの自己評価状態で)」を必ず一段掘り下げてから提示してください。
 - 重要な指摘は【事実】【統計的傾向】【原因仮説】【分析不能】【追加確認が必要】のいずれかで区別してください。区別した上で、原因仮説は「最有力はどれか」まで順位付けして踏み込んでください。候補の大量列挙や両論併記で終わらせないでください。
 - 重要な指摘には「確からしさ：高 / 中 / 低」を添えてください(複数セット・複数指標で再現=高、1指標で一定傾向=中、少数または間接推測=低)。必要データがない項目だけを分析不能としてください。標本が少ない項目(目安: 該当10投未満、または中断により予定の半分未満しか完了していない)は、傾向が明確でも確からしさを「高」にしないでください。
 - 数値の裏付けがない指摘を、データがあるかのように述べないでください。統計的有意差は計算していないため「有意」という表現は使わず、1投しかない個別ターゲットを得意・不得意と評価しないでください。
@@ -194,7 +196,7 @@ export const ANALYSIS_INSTRUCTIONS = `以下の順序とルールで、統計の
 回答の一番最初に冒頭の注意書き(1〜2文)、一番最後に末尾の注意書き(1文)を置き、その間を以下の構成にしてください。
 
 ### 1. 最重要結論
-最大3点。各点に、何が問題か、根拠データ、目標への影響、確からしさを含め、言い切れる部分は言い切ってください。
+最大3点。各点に、何が問題か、根拠データ、目標への影響、確からしさを含め、言い切れる部分は言い切ってください。数値の単純な言い換えではなく、複数条件の掛け合わせから見える踏み込んだ結論にしてください(「命中率が低い」で終わらせず、どの条件でなぜ崩れるかまで)。
 
 ### 2. ユーザーの問題点
 優先順の表にし、列は「優先度 / 問題点 / 根拠 / ユーザーへの影響 / 確からしさ / 不足している情報」としてください。単なる「命中率が低い」で終わらせず、1〜3投目差、命中後の再現性、ミス後の修正・過剰修正、同一ターゲット継続、セット内切替直後、方向偏り、前後半、疲労・集中・不安・リリースの怖さ、固定と切替の差をデータがある範囲で調べ、ない項目は分析不能としてください。
@@ -206,7 +208,7 @@ export const ANALYSIS_INSTRUCTIONS = `以下の順序とルールで、統計の
 問題点ごとに最大3件の表とし、列は「原因候補 / 根拠 / 確からしさ / 仮説と矛盾する点 / 不足データ / 正しい場合に出やすい感覚・現象 / 確認方法 / 正しかった場合の改善方法」としてください。着弾、投順、切替、自己評価と関係する候補だけを選び、最有力の候補がどれかを明示してください。
 
 ### 5. ユーザーが気付いていない可能性がある傾向
-この分析のハイライトです。最大3件、「あなたは〇〇の傾向があります」の形式で、推測される傾向、根拠データ、本人が確認すべき感覚・動作、確認質問を含めてください。本人が既に自覚している悩み(記録済みの悩み・重点課題)の言い換えではなく、データからしか見えない新しい発見を優先してください。根拠のない性格診断は禁止です。
+この分析のハイライトです。最大3件、「あなたは〇〇の傾向があります」の形式で、推測される傾向、根拠データ、本人が確認すべき感覚・動作、確認質問を含めてください。本人が既に自覚している悩み(記録済みの悩み・重点課題)の言い換えではなく、データからしか見えない新しい発見を優先してください。ここでは単一指標で分かる表面的傾向(命中率・平均誤差の高低など)は禁止とし、条件依存・交互作用・時間変化・自己評価との関係など、複数の軸を掛け合わせてはじめて見える層に限定してください。各件について「この傾向は数値を眺めるだけでは気づけない」と言える根拠(どの指標とどの指標を突き合わせたか)を明示してください。根拠のない性格診断は禁止です。
 
 ### 6. 改善方法（原因仮説を確認するための実験）
 各メニューに「目的 / 検証する原因仮説 / 実施方法 / 投擲数 / 意識すること / 意識してはいけないこと / 記録項目 / 成功判定 / 中止・変更基準 / 次に行う判断」を含めてください。Bullを60投、苦手ナンバーを投げ込む等だけで終わらせず、原因候補が複数なら1要因ずつ条件を変えて比較してください。
@@ -391,21 +393,46 @@ const TEMPO_LABELS: Record<string, string> = {
 function equipmentSummary(equipment: EquipmentProfile | EquipmentSnapshot | undefined): string {
   if (!equipment) return NA;
   const parts: string[] = [equipment.name];
-  if (equipment.barrel?.maker || equipment.barrel?.model) {
-    const w = equipment.barrel.weightG != null ? ` ${equipment.barrel.weightG}g` : "";
+  const b = equipment.barrel;
+  if (b?.maker || b?.model || b?.weightG != null || b?.lengthMm != null || b?.maxDiameterMm != null) {
+    const specs = [
+      [b.maker, b.model].filter(Boolean).join(" "),
+      b.weightG != null ? `${b.weightG}g` : "",
+      b.lengthMm != null ? `全長${b.lengthMm}mm` : "",
+      b.maxDiameterMm != null ? `最大径${b.maxDiameterMm}mm` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    parts.push(`バレル: ${specs}`);
+  }
+  const sh = equipment.shaft;
+  if (sh?.maker || sh?.model || sh?.lengthMm != null) {
+    const specs = [
+      [sh.maker, sh.model].filter(Boolean).join(" "),
+      sh.lengthMm != null ? `全長${sh.lengthMm}mm` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    parts.push(`シャフト: ${specs}`);
+  }
+  const fl = equipment.flight;
+  if (fl?.maker || fl?.model || fl?.shape) {
     parts.push(
-      `バレル: ${[equipment.barrel.maker, equipment.barrel.model].filter(Boolean).join(" ")}${w}`
+      `フライト: ${[fl.maker, fl.model, fl.shape].filter(Boolean).join(" ")}`
     );
   }
-  if (equipment.shaft?.maker || equipment.shaft?.model) {
-    parts.push(
-      `シャフト: ${[equipment.shaft.maker, equipment.shaft.model].filter(Boolean).join(" ")}`
-    );
+  const pt = equipment.point;
+  if (pt?.maker || pt?.model || pt?.lengthMm != null) {
+    const specs = [
+      [pt.maker, pt.model].filter(Boolean).join(" "),
+      pt.lengthMm != null ? `全長${pt.lengthMm}mm` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    parts.push(`ポイント: ${specs}`);
   }
-  if (equipment.flight?.shape || equipment.flight?.model) {
-    parts.push(
-      `フライト: ${[equipment.flight.maker, equipment.flight.model, equipment.flight.shape].filter(Boolean).join(" ")}`
-    );
+  if (equipment.notes) {
+    parts.push(`メモ: ${equipment.notes}`);
   }
   return parts.join(" / ");
 }
