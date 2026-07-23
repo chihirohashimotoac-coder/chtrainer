@@ -341,6 +341,30 @@ describe("データ不足時の挙動", () => {
     expect(stats.grouping).toBeUndefined();
   });
 
+  it("スキル診断ではR2スコアリング等の同一ターゲットセットをグルーピングに含めない", () => {
+    // R1(グルーピング専用)1セット + R2(スコアリング=Bull同一3投, 命中評価)1セット。
+    // skill_check では grouping はR1の測定なので、R2はvalidSetCountに含めない。
+    const groupingTarget = buildSkillCheckPlan(SOFT_BOARD, 20)[0]![0]!;
+    const scoringTarget = { ...makeBullAnyTarget(), evaluationKind: "exact_hit" as const, roundId: "skill-r2", roundKind: "scoring" as const };
+    const throws = buildThrows(
+      [
+        { target: groupingTarget, setId: "r1", landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+        { target: groupingTarget, setId: "r1", landing: landingFromCoordinate(0.1, 0, SOFT_BOARD) },
+        { target: groupingTarget, setId: "r1", landing: landingFromCoordinate(0, 0.1, SOFT_BOARD) },
+        { target: scoringTarget, setId: "r2", landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+        { target: scoringTarget, setId: "r2", landing: landingFromCoordinate(0.3, 0, SOFT_BOARD) },
+        { target: scoringTarget, setId: "r2", landing: landingFromCoordinate(0, 0.4, SOFT_BOARD) },
+      ],
+      6
+    );
+    const stats = calculateStatistics("session-skill", 6, throws, "skill_check");
+    const g = stats.grouping!;
+    // R1の1セットのみが有効。R2(スコアリング)は含まれない
+    expect(g.validSetCount).toBe(1);
+    expect(g.groupingThrowCount).toBe(3);
+    expect(g.perSet).toHaveLength(1);
+  });
+
   it("R1グルーピングのみのセッションは命中率が全レイヤーでN/Aになる", () => {
     const groupingTarget = buildSkillCheckPlan(SOFT_BOARD, 20)[0]![0]!;
     const throws = buildThrows(

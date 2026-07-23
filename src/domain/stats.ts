@@ -355,14 +355,20 @@ export function calculateStatistics(
     list.push(dart);
     setsById.set(dart.setId, list);
   }
+  // スキル診断(skill_check)では、AI/Markdownが参照する grouping 実測値は
+  // R1(grouping_only)のまとまり測定を意味する。R2スコアリング・R3同一3投・
+  // R4ダブル固定などは同一ターゲットかつ命中評価セットのため、これらを含めると
+  // R1グルーピング指標(validSetCount・径・perSet・groupingThrowCount)が
+  // 汚染される。そのため skill_check では grouping_only セットのみを対象にする。
+  const includeSameTargetSets = mode !== "skill_check";
   const groupingSets = new Map<string, ThrowRecord[]>();
   for (const [setId, set] of setsById) {
     const first = set[0];
     if (!first) continue;
     const allGroupingOnly = set.every((dart) => isGroupingOnly(dart));
-    const sameTargetSet = set.every((dart) =>
-      isSameTarget(dart.target, first.target)
-    );
+    const sameTargetSet =
+      includeSameTargetSets &&
+      set.every((dart) => isSameTarget(dart.target, first.target));
     if (allGroupingOnly || sameTargetSet) {
       groupingSets.set(setId, set);
     }
