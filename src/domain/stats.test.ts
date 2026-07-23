@@ -288,6 +288,83 @@ describe("データ不足時の挙動", () => {
     expect(g.interDartDistances?.d1d3).toBeCloseTo((0.4 + 0.1) / 2);
   });
 
+  it("ブル反復練習(通常ターゲット)でもグルーピング実測値を出力する", () => {
+    // グルーピング専用ターゲットではなく通常のBull狙いを3投×2セット反復する。
+    const bull = makeBullAnyTarget();
+    // セットA: (0,0)(0.3,0)(0,0.4) → ペア距離 0.3 / 0.5 / 0.4
+    // セットB: (0,0)(0.1,0)(0,0.1) → ペア距離 0.1 / √0.02 / 0.1
+    const coords: [number, number][][] = [
+      [
+        [0, 0],
+        [0.3, 0],
+        [0, 0.4],
+      ],
+      [
+        [0, 0],
+        [0.1, 0],
+        [0, 0.1],
+      ],
+    ];
+    const throws = buildThrows(
+      coords.flatMap((set, setIndex) =>
+        set.map(([x, y]) => ({
+          target: bull,
+          setId: `bull-set-${setIndex}`,
+          landing: landingFromCoordinate(x, y, SOFT_BOARD),
+        }))
+      ),
+      6
+    );
+    const stats = calculateStatistics("session-bull", 6, throws, "bull");
+    // グルーピング専用投擲は存在しないが、同一ターゲット反復なので grouping が出る
+    expect(stats.groupingOnlyThrows).toBe(0);
+    const g = stats.grouping!;
+    expect(g).toBeDefined();
+    expect(g.status).toBe("available");
+    expect(g.validSetCount).toBe(2);
+    expect(g.groupingThrowCount).toBe(6);
+    expect(g.perSet).toHaveLength(2);
+    expect(g.perSet![0]!.maxPairDistance).toBeCloseTo(0.5);
+    const dB = Math.hypot(0.1, 0.1);
+    expect(g.averageDiameter).toBeCloseTo((0.5 + dB) / 2);
+  });
+
+  it("セット内でターゲットが変わる(ランダム出題)場合はグルーピング対象外", () => {
+    // 各セットの3投が別ターゲット → グルーピングは狙いの違いに由来するため出力しない
+    const bull = makeBullAnyTarget();
+    const specs = [
+      { target: T20, setId: "mix-set", landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+      { target: D16, setId: "mix-set", landing: landingFromCoordinate(0.1, 0, SOFT_BOARD) },
+      { target: bull, setId: "mix-set", landing: landingFromCoordinate(0, 0.1, SOFT_BOARD) },
+    ];
+    const stats = calculateStatistics("session-mix", 3, buildThrows(specs, 3), "single");
+    expect(stats.grouping).toBeUndefined();
+  });
+
+  it("スキル診断ではR2スコアリング等の同一ターゲットセットをグルーピングに含めない", () => {
+    // R1(グルーピング専用)1セット + R2(スコアリング=Bull同一3投, 命中評価)1セット。
+    // skill_check では grouping はR1の測定なので、R2はvalidSetCountに含めない。
+    const groupingTarget = buildSkillCheckPlan(SOFT_BOARD, 20)[0]![0]!;
+    const scoringTarget = { ...makeBullAnyTarget(), evaluationKind: "exact_hit" as const, roundId: "skill-r2", roundKind: "scoring" as const };
+    const throws = buildThrows(
+      [
+        { target: groupingTarget, setId: "r1", landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+        { target: groupingTarget, setId: "r1", landing: landingFromCoordinate(0.1, 0, SOFT_BOARD) },
+        { target: groupingTarget, setId: "r1", landing: landingFromCoordinate(0, 0.1, SOFT_BOARD) },
+        { target: scoringTarget, setId: "r2", landing: landingFromCoordinate(0, 0, SOFT_BOARD) },
+        { target: scoringTarget, setId: "r2", landing: landingFromCoordinate(0.3, 0, SOFT_BOARD) },
+        { target: scoringTarget, setId: "r2", landing: landingFromCoordinate(0, 0.4, SOFT_BOARD) },
+      ],
+      6
+    );
+    const stats = calculateStatistics("session-skill", 6, throws, "skill_check");
+    const g = stats.grouping!;
+    // R1の1セットのみが有効。R2(スコアリング)は含まれない
+    expect(g.validSetCount).toBe(1);
+    expect(g.groupingThrowCount).toBe(3);
+    expect(g.perSet).toHaveLength(1);
+  });
+
   it("R1グルーピングのみのセッションは命中率が全レイヤーでN/Aになる", () => {
     const groupingTarget = buildSkillCheckPlan(SOFT_BOARD, 20)[0]![0]!;
     const throws = buildThrows(

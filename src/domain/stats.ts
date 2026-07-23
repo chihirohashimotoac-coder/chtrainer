@@ -10,7 +10,7 @@ import type {
   UUID,
 } from "../types/models";
 import { nowIso } from "../utils/id";
-import { isGroupingOnlyTarget } from "./targets";
+import { isGroupingOnlyTarget, isSameTarget } from "./targets";
 
 export function mean(values: readonly number[]): number | undefined {
   if (values.length === 0) return undefined;
@@ -343,11 +343,35 @@ export function calculateStatistics(
   const firstHalf = computeHalfStats(sorted.slice(0, halfIndex));
   const secondHalf = computeHalfStats(sorted.slice(halfIndex));
 
-  const groupingSets = new Map<string, ThrowRecord[]>();
-  for (const dart of groupingOnly) {
-    const list = groupingSets.get(dart.setId) ?? [];
+  // グルーピング評価対象セットを抽出する。
+  // スキル診断R1のようなグルーピング専用ラウンドのセットに加え、
+  // ブル反復練習・同一ターゲット指定練習のように「セット内の3投がすべて
+  // 同一ターゲット」を狙ったセットも、同じ狙点への着弾のばらつきとして
+  // 評価対象に含める。1投でも異なるターゲット(ランダム出題等)を含むセットは、
+  // セット内の散らばりが狙いの違いに由来するため対象外とする。
+  const setsById = new Map<string, ThrowRecord[]>();
+  for (const dart of sorted) {
+    const list = setsById.get(dart.setId) ?? [];
     list.push(dart);
-    groupingSets.set(dart.setId, list);
+    setsById.set(dart.setId, list);
+  }
+  // スキル診断(skill_check)では、AI/Markdownが参照する grouping 実測値は
+  // R1(grouping_only)のまとまり測定を意味する。R2スコアリング・R3同一3投・
+  // R4ダブル固定などは同一ターゲットかつ命中評価セットのため、これらを含めると
+  // R1グルーピング指標(validSetCount・径・perSet・groupingThrowCount)が
+  // 汚染される。そのため skill_check では grouping_only セットのみを対象にする。
+  const includeSameTargetSets = mode !== "skill_check";
+  const groupingSets = new Map<string, ThrowRecord[]>();
+  for (const [setId, set] of setsById) {
+    const first = set[0];
+    if (!first) continue;
+    const allGroupingOnly = set.every((dart) => isGroupingOnly(dart));
+    const sameTargetSet =
+      includeSameTargetSets &&
+      set.every((dart) => isSameTarget(dart.target, first.target));
+    if (allGroupingOnly || sameTargetSet) {
+      groupingSets.set(setId, set);
+    }
   }
   const pairDistances: number[] = [];
   const perSet: { maxPairDistance: number; averagePairDistance: number }[] = [];
@@ -457,7 +481,7 @@ export function calculateStatistics(
     secondHalf,
     ...(mode === "cricket" ? { cricket: calculateCricketStats(sorted) } : {}),
     ...(mode === "zero_one" ? { zeroOne: calculateZeroOneStats(sorted) } : {}),
-    ...(groupingOnly.length > 0 ? { grouping: {
+    ...(groupingSets.size > 0 ? { grouping: {
       status: groupingStatus,
       validSetCount,
       groupingThrowCount: validSetCount * 3,
